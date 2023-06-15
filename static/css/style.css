@@ -66,14 +66,42 @@ a, a:visited {
 .header-options_searchbar {
     border: 1px solid grey;
     border-radius: 20px;
-    width: 200px;
-    height: 30px;
+    width: 350px;
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.header-options_searchbar input {
+    border: none;
+    border-radius: 20px 0 0 20px;
+    width: 300px;
+    height: 50px;
+    padding: 0 10px;
+    font-size: 18px;
+}
+
+.header-options_searchbar button {
+    width: 50px;
+    height: 50px;
+    background: black;
+    color: white;
+    border-radius: 0 20px 20px 0;
+    padding: 0;
+}
+
+header nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 100px;
 }
 
 header nav ul {
     display: flex;
     justify-content: space-evenly;
     padding: 0;
+    gap: 50px;
 }
 
 header nav ul li {
