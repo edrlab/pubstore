@@ -230,5 +230,17 @@ footer h5 {
     height: 30px;
 }
 
+.footer-social-logos i {
+    font-size: 50px;
+}
+
+.footer-social-logos .fa-facebook {
+    color: #3b5998;
+}
+
+.footer-social-logos .fa-twitter {
+    color: #00acee;
+}
+
 
 

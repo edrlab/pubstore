@@ -9,12 +9,13 @@
 
 {{define "content"}}
     <div class="main-content-header">
-            <h2>Catalog</h2>
-            <input
-                    oninput="w3.filterHTML('#searchList', 'li', this.value)"
-                    placeholder=" Search for a book.."
-                    class="header-options_searchbar"
-            />
+        <h2>Catalog</h2>
+        <p>{{.NbPublication}} results found</p>
+        <input
+                oninput="w3.filterHTML('#searchList', 'li', this.value)"
+                placeholder=" Search for a book.."
+                class="header-options_searchbar"
+        />
     </div>
     <div class="catalog-content">
         <aside class="categories">
@@ -64,12 +65,14 @@
         <ul class="book-list" id="searchList">
             {{range .publications}}
                 <li>
-                    <div class="book-cover-container">
-                        <img class="book-cover" src="{{.CoverHref}}">
-                    </div>
-                    <span>
-                        {{.Title}} from {{.Author}}
-                    </span>
+                    <a href="/catalog/publication/{{.Id}}">
+                        <div class="book-cover-container">
+                            <img class="book-cover" src="{{.CoverHref}}">
+                        </div>
+                        <span>
+                            {{.Title}} from {{.Author}}
+                        </span>
+                    </a>
                 </li>
             {{end}}
         </ul>
