@@ -46,6 +46,17 @@ type Publication struct {
 	Author    string
 }
 
+type publications struct {
+    CoverHref       string
+    TransactionDate string
+    Title           string
+    NbCopies        int
+    NbPrints        int
+    LoanStartDate   string
+    LoanEndDate     string
+    Revoked         bool
+}
+
 func catalog(w http.ResponseWriter, r *http.Request) {
 	// Implementation for the catalog handler
 	// This function will handle the "/catalog" route
@@ -62,6 +73,43 @@ func catalog(w http.ResponseWriter, r *http.Request) {
 		"publications": []Publication{{CoverHref: "/static/cover/1.jpg", Title: "my first book", Author: "pierre"},
 			{CoverHref: "/static/cover/2.jpg", Title: "my second book", Author: "arthur"}},
 	})
+	if err != nil {
+		fmt.Fprintf(w, "Render index error: %v!", err)
+	}
+}
+
+func mybooks(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the catalog handler
+	// This function will handle the "/catalog" route
+
+	err := goview.Render(w, http.StatusOK, "mybooks", goview.M{
+		"title": "bookshelf!",
+		"add": func(a int, b int) int {
+			return a + b
+		},
+		"publications" : []publications{
+            {
+            CoverHref: "",
+            TransactionDate: "2023-06-15",
+            Title: "My first book",
+            NbCopies: 500,
+            NbPrints: 10,
+            LoanStartDate: "",
+            LoanEndDate: "",
+            Revoked: false,
+            },
+            {
+            CoverHref: "",
+            TransactionDate: "2023-06-14",
+            Title: "My second book",
+            NbCopies: 500,
+            NbPrints: 20,
+            LoanStartDate: "2023-06-14",
+            LoanEndDate: "2023-07-14",
+            Revoked: true,
+            },
+		},
+			})
 	if err != nil {
 		fmt.Fprintf(w, "Render index error: %v!", err)
 	}
@@ -113,6 +161,7 @@ func Rooter() {
 			http.ServeFile(w, r, "static/index.html")
 		})
 		r.Get("/catalog", catalog)
+		r.Get("/mybooks", mybooks)
 		r.Get("/catalog/publication/{id}", publication)
 	})
 

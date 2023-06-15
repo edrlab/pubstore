@@ -211,6 +211,22 @@ header nav ul li a:hover {
     justify-content: space-between;
 }
 
+
+.revoked {
+    border-radius: 10px;
+    padding: 5px 10px;
+    color: white;
+
+}
+
+.false {
+    background-color: grey;
+}
+
+.true {
+    background-color: red;
+}
+
 .latest-publications-infos, .latest-purchases-infos {
     display: flex;
     align-items: center;
