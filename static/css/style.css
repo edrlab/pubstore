@@ -196,6 +196,9 @@ footer {
     display: flex;
     justify-content: space-evenly;
     align-items: start;
+    position: absolute;
+    bottom: 0;
+    width: 100vw;
 }
 
 footer h5 {
@@ -234,11 +237,11 @@ footer h5 {
     font-size: 50px;
 }
 
-.footer-social-logos .fa-facebook {
+.footer-social-logos i.fa-facebook {
     color: #3b5998;
 }
 
-.footer-social-logos .fa-twitter {
+.footer-social-logos i.fa-twitter {
     color: #00acee;
 }
 
