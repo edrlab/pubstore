@@ -1,0 +1,68 @@
+{{define "head"}}
+<link href="../static/css/style.css" rel="stylesheet" />
+<link href="../static/css/catalog.css" rel="stylesheet">
+<link href="../static/css/publication.css" rel="stylesheet">
+<script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
+{{end}}
+
+{{define "content"}}
+<div class="pub-container">
+    <div class="pub-left-side">
+        <a href="#"><img src="" class="{{.CoverHref}}"/></a>
+        <div class="pub-actions">
+            <button id="buy">Buy</button>
+            <button id="loan">Borrow</button>
+        </div>
+    </div>
+
+    <div class="pub-right-side">
+        <h2>{{ .Title}}</h2>
+        <h3>by {{.Author}}</h3>
+        <div class="pub-categories-tags">
+            {{ range .categories}}
+            <p class="tag">{{.}}</p>
+            {{end}}
+        </div>
+        <div class="summary">
+            <h4>Summary</h4>
+            <p>{{ .Description}}</p>
+        </div>
+    </div>
+</div>
+
+<div class="related">
+    <h4>More from this author</h4>
+    <div class="related-pub">
+        <a href="#"><img src="" class="related-pub-cover"/></a>
+        <a href="#"><img src="" class="related-pub-cover"/></a>
+        <a href="#"><img src="" class="related-pub-cover"/></a>
+    </div>
+</div>
+
+<div class="fade" id="modal-window" tabindex="-1" style="display: none;" aria-hidden="true">
+    <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">
+        <div class="modal-wrapper js-modal-stop">
+            <div class="modal-body-publications">
+                <form class="modal-form-options">
+                    <div class="select-global-options">
+                        <label for="copy">Number Of Copies</label>
+                        <input id="copy" name="copy" type="number">
+                        <label for="print">Number Of Prints</label>
+                        <input id="print" name="print" type="number">
+                    </div>
+                    <div class="select-loan-dates">
+                        <label for="start-date">Start Date</label>
+                        <input id="start-date" name="start-date" type="date">
+                        <label for="end-date">End Date</label>
+                        <input id="end-date" name="end-date" type="date">
+                    </div>
+                    <div class="modal-loan-buttons">
+                        <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
+                        <button type="submit"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </aside>
+</div>
+{{end}}

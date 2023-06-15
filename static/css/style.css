@@ -1,0 +1,234 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    max-width: 1920px;
+}
+
+a, a:visited {
+    color: black;
+    text-decoration: none;
+}
+
+.inactive {
+    color: #DDDBDD!important;
+    text-decoration-line: line-through;
+    font-style: italic;
+}
+
+.logo:hover {
+    animation: rotation 1.5s ease-in-out;
+}
+
+@keyframes rotation {
+    from {
+        transform: rotateY(0deg);
+    }
+    to {
+        transform: rotateY(-360deg);
+    }
+}
+
+.header-infos {
+    display: flex;
+    justify-content: space-between;
+    padding: 30px 20px 0;
+}
+
+.header-infos-title {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.header-infos img {
+    width: 75px;
+}
+
+.header-options {
+    margin: 20px;
+    text-align: end;
+}
+
+.header-options button {
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+}
+
+.header-options_settings {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    justify-content: end;
+}
+
+.header-options_searchbar {
+    border: 1px solid grey;
+    border-radius: 20px;
+    width: 200px;
+    height: 30px;
+}
+
+header nav ul {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 0;
+}
+
+header nav ul li {
+    list-style: none;
+    height: 50px;
+}
+
+header nav ul li a {
+    font-size: 24px;
+    transition: 500ms;
+}
+
+header nav ul li a:hover {
+    font-size: 30px;
+}
+
+#login-button,
+#signup-button {
+    padding: 5px 20px;
+    border-radius: 20px;
+    transition: 500ms;
+}
+
+#login-button:hover,
+#signup-button:hover {
+    background: black;
+    color: white;
+}
+
+#Banner {
+    display: flex;
+    align-items: center;
+    width: 100vw;
+    height: 5px;
+    justify-content: center;
+    margin-bottom: 50px;
+    background-color: #a7c6f8;
+    position: relative;
+    overflow: hidden;
+}
+
+#Banner-Home {
+    width: 100vw;
+    height: 700px;
+    justify-content: end;
+    margin-bottom: 50px;
+    background-color: #a7c6f8;
+    position: relative;
+    overflow: hidden;
+}
+
+#Banner img {
+    width: 40vw;
+    z-index: 10;
+}
+
+#Banner-Home img {
+    width: 60vw;
+    z-index: 10;
+    justify-content: end;
+}
+
+#Banner h2 {
+    color: white;
+    font-size: 60px;
+    padding-bottom: 200px;
+}
+
+#Banner-Home h2{
+    color: white;
+    font-size: 60px;
+    text-align: center;
+}
+
+#Banner-Home li {
+    color: white;
+    font-size: 26px;
+    padding: 10px;
+    font-style: italic;
+}
+
+#Banner-Home .Banner-infos {
+    display: flex;
+    justify-content: end;
+    align-items: center;
+}
+
+#Banner:after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0.2) 20%, rgba(255,255,255, 0.5) 60%, rgba(255,255,255, 0));
+    animation: shimmer 4s infinite;
+    content: '';
+}
+
+.main-content {
+    padding: 0 20px;
+}
+
+.main-content-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.latest-publications-infos, .latest-purchases-infos {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+}
+
+footer {
+    border-top: 1px solid black;
+    text-align: center;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: start;
+}
+
+footer h5 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.footer-about,
+.footer-readium,
+.footer-contact,
+.footer-social {
+    width: 350px;
+    font-size: 14px;
+}
+
+
+.footer-contact ul {
+    list-style-type: none;
+    text-align: start;
+}
+
+.footer-contact ul li a {
+
+}
+
+.footer-contact ul li a i {
+    margin-right: 20px;
+}
+
+.footer-readium-logos img {
+    max-width: 100px;
+    height: 30px;
+}
+
+
+

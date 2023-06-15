@@ -1,0 +1,130 @@
+.pub-container {
+    padding: 0 10%;
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+}
+
+.pub-left-side { text-align: center}
+
+.pub-left-side a {
+    width: 300px;
+    height: 450px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+    list-style: none;
+    border: 1px solid black;
+    position: relative;
+    overflow: hidden;
+    background-color: #DDDBDD;
+}
+
+.pub-left-side a:after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0.2) 20%, rgba(255,255,255, 0.5) 60%, rgba(255,255,255, 0));
+    animation: shimmer 2s infinite;
+    content: '';
+}
+
+.pub-left-side .pub-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.pub-left-side .pub-actions button {
+    padding: 10px 5px;
+    font-size: 18px;
+    background-color: black;
+    color: white;
+    border-radius: 25px;
+    border: none;
+    cursor: pointer;
+    width: 150px;
+    margin: 10px;
+
+}
+
+.pub-left-side .pub-actions button:hover {
+    box-shadow: 5px 5px 5px grey;
+}
+
+.pub-left-side .pub-actions button:active {
+    scale: 0.9;
+}
+
+.pub-right-side {
+    text-align: start;
+}
+
+.pub-right-side .pub-categories-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pub-right-side .pub-categories-tags .tag {
+    border: 1px solid grey;
+    border-radius: 25px;
+    background: black;
+    color: white;
+    max-width: 200px;
+    max-height: 30px;
+    padding: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.pub-right-side .pub-categories-tags .tag:hover {
+    background: white;
+    color: black;
+}
+
+.pub-right-side .summary h4 {
+    border-bottom: 1px solid grey;
+    padding: 10px;
+}
+
+.related {
+    margin-bottom: 50px;
+    padding: 0 10%;
+}
+
+.related-pub {
+    display: flex;
+    gap: 30px;
+}
+
+.related-pub a {
+    width: 150px;
+    height: 225px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+    list-style: none;
+    border: 1px solid black;
+    position: relative;
+    overflow: hidden;
+    background-color: #DDDBDD;
+}
+
+.related-pub a:after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0.2) 20%, rgba(255,255,255, 0.5) 60%, rgba(255,255,255, 0));
+    animation: shimmer 2s infinite;
+    content: '';
+}

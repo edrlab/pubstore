@@ -1,48 +1,82 @@
-
 {{define "head"}}
-<style>
-    .hello{ color: red;}
-    hr{ border: 1px #ccc dashed;}
-</style>
+    <link href="/static/css/style.css" rel="stylesheet" />
+    <link href="/static/css/catalog.css" rel="stylesheet">
+    <script type="module" src="/static/js/filter-categories.js"></script>
+    <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
+
 
 
 {{define "content"}}
-<h1 class="hello">This is content!!!!</h1>
-<p>123 + 333 = {{call $.add 123 333}}</p>
-<hr>
-
-<p>Author</p>
-<ul>
-    <p>Authors : </p>
-    {{range .authors}}
-    <li><a href="/catalog?author={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-<ul>
-    <p>Categories : </p>
-    {{range .categories}}
-    <li><a href="/catalog?category={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-<ul>
-    <p>Languages : </p>
-    {{range .languages}}
-    <li><a href="/catalog?language={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-<ul>
-    <p>Publishers : </p>
-    {{range .publishers}}
-    <li><a href="/catalog?publisher={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-
-<p>Publications : </p>
-{{range .publications}}
-<img src="{{.CoverHref}}" />
-<p>{{.Title}}</p>
-<p>{{.Author}}</p>
-{{end}}
-
+    <div class="main-content-header">
+            <h2>Catalog</h2>
+            <input
+                    oninput="w3.filterHTML('#searchList', 'li', this.value)"
+                    placeholder=" Search for a book.."
+                    class="header-options_searchbar"
+            />
+    </div>
+    <div class="catalog-content">
+        <aside class="categories">
+            <ul>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Authors" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .authors}}
+                        <li><a href="/catalog?author={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Categories" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .categories}}
+                        <li><a href="/catalog?categories={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Languages" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .languages}}
+                        <li><a href="/catalog?language={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Publishers" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .publishers}}
+                        <li><a href="/catalog?publisher={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+        <ul class="book-list" id="searchList">
+            {{range .publications}}
+                <li>
+                    <div class="book-cover-container">
+                        <img class="book-cover" src="{{.CoverHref}}">
+                    </div>
+                    <span>
+                        {{.Title}} from {{.Author}}
+                    </span>
+                </li>
+            {{end}}
+        </ul>
+    </div>
+    <div class="pages">
+        <p>Page</p>
+        <a href="#" class="on-page">1</a>
+        <a href="#">2</a>
+    </div>
 {{end}}

@@ -1,0 +1,232 @@
+.book-list,
+.book-list-latest {
+    display: grid;
+    gap: 20px;
+    max-width: 1920px;
+    overflow-x: scroll;
+}
+
+.book-list-latest {
+    grid-template-columns: repeat(10,1fr);
+}
+
+.book-list {
+    grid-template-columns: repeat(7,1fr);
+}
+
+
+@media screen and (max-width: 1600px) {
+    .book-list {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+@media screen and (max-width: 1200px) {
+    .book-list {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.book-list li,
+.book-list-latest li {
+    list-style-type: none;
+}
+
+.book-list li div,
+.book-list-latest li div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+    list-style: none;
+    width: 200px;
+    height: 300px;
+    border: 1px solid black;
+    position: relative;
+    overflow: hidden;
+    background-color: #DDDBDD;
+    cursor: pointer;
+}
+
+.book-edit-icons {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 5px;
+    color: white;
+    z-index: 12;
+}
+
+.book-edit-icons .fa-solid {
+    padding: 5px;
+}
+
+.book-list li div:after,
+.book-list-latest li div:after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0.2) 20%, rgba(255,255,255, 0.5) 60%, rgba(255,255,255, 0));
+    animation: shimmer 2s infinite;
+    content: '';
+}
+
+.book-cover-container {
+    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    transition: 100ms linear;
+}
+
+.book-cover-container:hover {
+    box-shadow: 0 2px 16px rgba(0,0,0,1);
+}
+
+.book-cover {
+    width: 100%;
+    z-index: 10;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.pages {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.pages a {
+    border-radius: 10px;
+    padding: 2px 5px;
+}
+
+.on-page {
+    background-color: black;
+    color: white!important;
+}
+
+
+.userListContainer,
+.purchasesListContainer {
+    text-align: center;
+    width: 100%;
+    padding: 30px;
+    margin: auto;
+}
+
+.userListContainer tr:hover,
+.purchasesListContainer tr:hover {
+    background-color: rgba(167, 198, 248, 0.24);
+}
+
+
+th,
+td {
+    border-bottom: 1px solid;
+    padding: 20px 0;
+}
+
+.purchase-button,
+.see-more {
+    padding: 15px;
+    font-size: 18px;
+    background-color: black;
+    color: white;
+    border-radius: 25px;
+    border: none;
+    cursor: pointer;
+}
+
+
+.purchase-button:hover,
+.see-more:hover {
+    box-shadow: 5px 5px 5px grey;
+}
+
+.purchase-button:active,
+.see-more:active{
+    scale: 0.9;
+}
+
+.purchase-cover {
+    width: 50px;
+}
+
+.catalog-content {
+    display: flex;
+}
+
+.categories {
+    width: 250px;
+}
+
+.categories ul {
+    padding: 0;
+}
+
+.dropdown {
+    list-style-type: none;
+    position: relative;
+    width: 250px;
+    border-bottom: 1px solid grey;
+}
+
+.dropdown:before {
+    content: '';
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    z-index: 10000;
+    width: 8px;
+    height: 8px;
+    border: 2px solid black;
+    border-top: 2px solid white;
+    border-right: 2px solid white;
+    transform: rotate(-135deg);
+    transition: 0.3s;
+    pointer-events: none;
+}
+
+.dropdown.active:before {
+    top: 15px;
+    transform: rotate(-45deg);
+}
+
+.filter-title input {
+    font-size: 18px;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    padding: 12px 20px;
+    border-radius: 10px;
+}
+
+.filter-title input::placeholder {
+    color: black;
+}
+
+.dropdown .option {
+    list-style: none;
+    padding: 0;
+    display: none;
+}
+
+.dropdown.active .option {
+    display: block;
+}
+
+.option li {
+    cursor: pointer;
+}
+
+.option li:hover {
+    background: #62baea;
+    color: white;
+}
+

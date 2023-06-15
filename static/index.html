@@ -1,16 +1,55 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>PubStore</title>
+    <meta charset="UTF-8">
+    <title>LCP Pub-Store</title>
+    <script src="https://www.w3schools.com/lib/w3.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="/css/catalog.css" rel="stylesheet">
+    <link href="/css/login.css" rel="stylesheet">
+    <link href="/css/modal.css" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <header>
-        <a href="/catalog">catalog</a>
-        <a href="/bookshelf">bookshelf</a>
+        <div class="header-infos">
+            <div class="header-infos-title">
+                <a href="index.html"><img src="/images/edrlab-logo.jpeg" alt="logo" class="logo"/></a>
+                <h1>Pub Store</h1>
+            </div>
+            <div class="header-options">
+                <div class="header-options_settings">
+                    <button id="login-button">Sign In</button>
+                    <button id="signup-button">Sign Up</button>
+                    <button id="user-options"></button>
+                </div>
+            </div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/catalog">Catalog</a></li>
+                <li><a href="/mybooks">My Books</a></li>
+            </ul>
+        </nav>
     </header>
-    <main>
-        <h1>This is my index page</h1>
-    </main>
-    <footer>
-        Edrlab.org footer
-    </footer>
-</body
+<section id="Banner-Home">
+    <h2>WELCOME</h2>
+    <div class="Banner-infos">
+        <ul>
+            <li>Sign in</li>
+            <li>Discover and browse our Catalog to find a book</li>
+            <li>Click on it and choose the type of license you want</li>
+            <li>Download your new license in " My Books" tab</li>
+            <li>Enjoy your book</li>
+        </ul>
+        <img src="https://www.edrlab.org/wp-content/uploads/2016/12/edrlab_mea_about6.png" alt="banner"/>
+    </div>
+</section>
+
+<main class="main-content">
+</main>
+</body>
+</html>
