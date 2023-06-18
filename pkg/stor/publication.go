@@ -33,6 +33,7 @@ type Publication struct {
 	UUID            string `gorm:"uniqueIndex"`
 	DatePublication time.Time
 	Description     string
+	CoverUrl        string
 	Language        []Language  `gorm:"many2many:publication_language;"`
 	Publisher       []Publisher `gorm:"many2many:publication_publisher;"`
 	Author          []Author    `gorm:"many2many:publication_author;"`
@@ -40,8 +41,8 @@ type Publication struct {
 }
 
 // CreatePublication creates a new publication
-func CreatePublication(publication *Publication) error {
-	if err := db.Create(publication).Error; err != nil {
+func (stor *Stor) CreatePublication(publication *Publication) error {
+	if err := stor.db.Create(publication).Error; err != nil {
 		return err
 	}
 
@@ -49,9 +50,9 @@ func CreatePublication(publication *Publication) error {
 }
 
 // GetPublicationByID retrieves a publication by ID
-func GetPublicationByID(id uint) (*Publication, error) {
+func (stor *Stor) GetPublicationByID(id uint) (*Publication, error) {
 	var publication Publication
-	if err := db.First(&publication, id).Error; err != nil {
+	if err := stor.db.First(&publication, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("Publication not found")
 		}
@@ -61,21 +62,34 @@ func GetPublicationByID(id uint) (*Publication, error) {
 	return &publication, nil
 }
 
-func GetAllPublications(page int, pageSize int) ([]Publication, error) {
+// GetPublicationByID retrieves a publication by ID
+func (stor *Stor) GetPublicationByUUID(uuid string) (*Publication, error) {
+	var publication Publication
+	if err := stor.db.Where("UUID = ?", uuid).First(&publication).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Publication not found")
+		}
+		return nil, err
+	}
+
+	return &publication, nil
+}
+
+func (stor *Stor) GetAllPublications(page int, pageSize int) ([]Publication, error) {
 	var publications []Publication
 	offset := (page - 1) * pageSize
 
-	if err := db.Offset(offset).Limit(pageSize).Find(&publications).Error != nil {
-		return nil, result.Error
+	if err := stor.db.Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		return nil, err
 	}
 
 	return publications, nil
 }
 
 // GetPublicationByID retrieves a publication by Title
-func GetPublicationByTitle(title string) (*Publication, error) {
+func (stor *Stor) GetPublicationByTitle(title string) (*Publication, error) {
 	var publication Publication
-	if err := db.Where("Title = ?", title).First(&publication).Error; err != nil {
+	if err := stor.db.Where("Title = ?", title).First(&publication).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("Publication not found")
 
@@ -87,9 +101,9 @@ func GetPublicationByTitle(title string) (*Publication, error) {
 }
 
 // GetPublicationByCategory retrieves publications by category
-func GetPublicationByCategory(category string) ([]Publication, error) {
+func (stor *Stor) GetPublicationByCategory(category string) ([]Publication, error) {
 	var publications []Publication
-	if err := db.Preload("Category").Joins("JOIN publication_category ON publication_category.publication_id = publications.id").
+	if err := stor.db.Preload("Category").Joins("JOIN publication_category ON publication_category.publication_id = publications.id").
 		Joins("JOIN categories ON categories.id = publication_category.category_id").
 		Where("categories.name = ?", category).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -102,9 +116,9 @@ func GetPublicationByCategory(category string) ([]Publication, error) {
 }
 
 // GetPublicationByAuthor retrieves publications by author
-func GetPublicationByAuthor(author string) ([]Publication, error) {
+func (stor *Stor) GetPublicationByAuthor(author string) ([]Publication, error) {
 	var publications []Publication
-	if err := db.Preload("Author").Joins("JOIN publication_author ON publication_author.publication_id = publications.id").
+	if err := stor.db.Preload("Author").Joins("JOIN publication_author ON publication_author.publication_id = publications.id").
 		Joins("JOIN authors ON authors.id = publication_author.author_id").
 		Where("authors.name = ?", author).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -117,9 +131,9 @@ func GetPublicationByAuthor(author string) ([]Publication, error) {
 }
 
 // GetPublicationByAuthor retrieves publications by publisher
-func GetPublicationByPublisher(publisher string) ([]Publication, error) {
+func (stor *Stor) GetPublicationByPublisher(publisher string) ([]Publication, error) {
 	var publications []Publication
-	if err := db.Preload("Publisher").Joins("JOIN publication_publisher ON publication_publisher.publication_id = publications.id").
+	if err := stor.db.Preload("Publisher").Joins("JOIN publication_publisher ON publication_publisher.publication_id = publications.id").
 		Joins("JOIN publishers ON publishers.id = publication_publisher.publisher_id").
 		Where("publishers.name = ?", publisher).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -132,9 +146,9 @@ func GetPublicationByPublisher(publisher string) ([]Publication, error) {
 }
 
 // GetPublicationByAuthor retrieves publications by language
-func GetPublicationByLanguage(code string) ([]Publication, error) {
+func (stor *Stor) GetPublicationByLanguage(code string) ([]Publication, error) {
 	var publications []Publication
-	if err := db.Preload("Language").Joins("JOIN publication_language ON publication_language.publication_id = publications.id").
+	if err := stor.db.Preload("Language").Joins("JOIN publication_language ON publication_language.publication_id = publications.id").
 		Joins("JOIN languages ON languages.id = publication_language.language_id").
 		Where("languages.code = ?", code).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -147,8 +161,8 @@ func GetPublicationByLanguage(code string) ([]Publication, error) {
 }
 
 // UpdatePublication updates a publication
-func UpdatePublication(publication *Publication) error {
-	if err := db.Save(publication).Error; err != nil {
+func (stor *Stor) UpdatePublication(publication *Publication) error {
+	if err := stor.db.Save(publication).Error; err != nil {
 		return err
 	}
 
@@ -158,17 +172,17 @@ func UpdatePublication(publication *Publication) error {
 // DeletePublication deletes a publication
 // TODO: delete many2many link if empty
 // category,publisher,... items are not deleted if is only linked with this deleted publication
-func DeletePublication(publication *Publication) error {
-	if err := db.Delete(publication).Error; err != nil {
+func (stor *Stor) DeletePublication(publication *Publication) error {
+	if err := stor.db.Delete(publication).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func GetCategories() ([]Category, error) {
+func (stor *Stor) GetCategories() ([]Category, error) {
 	var categories []Category
-	if err := db.Find(&categories).Error; err != nil {
+	if err := stor.db.Find(&categories).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("No categories found")
 		}
@@ -178,38 +192,38 @@ func GetCategories() ([]Category, error) {
 	return categories, nil
 }
 
-func GetAuthors() ([]Author, error) {
-    var authors []Author
-    if err := db.Find(&authors).Error; err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, errors.New("No authors found")
-        }
-        return nil, err
-    }
+func (stor *Stor) GetAuthors() ([]Author, error) {
+	var authors []Author
+	if err := stor.db.Find(&authors).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("No authors found")
+		}
+		return nil, err
+	}
 
-    return authors, nil
+	return authors, nil
 }
 
-func GetPublishers() ([]Publisher, error) {
-    var publishers []Publisher
-    if err := db.Find(&publishers).Error; err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, errors.New("No publishers found")
-        }
-        return nil, err
-    }
+func (stor *Stor) GetPublishers() ([]Publisher, error) {
+	var publishers []Publisher
+	if err := stor.db.Find(&publishers).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("No publishers found")
+		}
+		return nil, err
+	}
 
-    return publishers, nil
+	return publishers, nil
 }
 
-func GetLanguages() ([]Language, error) {
-    var languages []Language
-    if err := db.Find(&languages).Error; err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, errors.New("No languages found")
-        }
-        return nil, err
-    }
+func (stor *Stor) GetLanguages() ([]Language, error) {
+	var languages []Language
+	if err := stor.db.Find(&languages).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("No languages found")
+		}
+		return nil, err
+	}
 
-    return languages, nil
+	return languages, nil
 }
