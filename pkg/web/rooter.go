@@ -17,7 +17,8 @@ type Web struct {
 }
 
 func Init(s *stor.Stor) *Web {
-	return &Web{stor: s}
+	v := view.Init(s)
+	return &Web{stor: s, view: v}
 }
 
 func signin(w http.ResponseWriter, r *http.Request) {

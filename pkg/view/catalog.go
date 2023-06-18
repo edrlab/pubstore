@@ -31,6 +31,10 @@ type View struct {
 	stor *stor.Stor
 }
 
+func Init(s *stor.Stor) *View {
+	return &View{stor: s}
+}
+
 func (view *View) GetFacetsView() *FacetsView {
 	var facets FacetsView
 
