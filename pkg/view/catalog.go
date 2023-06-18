@@ -91,7 +91,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
-			publications = make([]PublicationView, len(publications))
+			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
 				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
 			}
@@ -102,7 +102,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
-			publications = make([]PublicationView, len(publications))
+			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
 				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
 			}
@@ -113,7 +113,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
-			publications = make([]PublicationView, len(publications))
+			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
 				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
 			}
@@ -124,7 +124,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
-			publications = make([]PublicationView, len(publications))
+			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
 				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
 			}
@@ -135,7 +135,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
-			publications = make([]PublicationView, len(publications))
+			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
 				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
 			}

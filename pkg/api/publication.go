@@ -38,7 +38,7 @@ import (
 	      {"name": "Test Category B"}
 	    ]
 	  }' \
-	  http://localhost:8080/publications
+	  http://localhost:8080/api/v1/publication
 */
 func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate the request body
