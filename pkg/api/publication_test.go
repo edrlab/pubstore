@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
@@ -25,12 +24,52 @@ func TestGetPublicationHandler(t *testing.T) {
 	r.Get("/api/v1/publication/{id}", api.getPublicationHandler)
 	r.Post("/api/v1/publication", api.createPublicationHandler)
 
-	// Create a mock publication
-	publication := &stor.Publication{
-		Title:           "Test Publication",
-		DatePublication: time.Now(),
-		Description:     "Test description",
-		CoverUrl:        "http://example.com/cover.jpg",
+	jsonData := `
+	{
+	    "title": "Test Publication",
+	    "datePublication": "2023-06-16T12:00:00Z",
+	    "description": "Test description",
+	    "coverUrl": "http://example.com/cover.jpg",
+	    "language": [
+	        {
+	            "code": "en"
+	        },
+	        {
+	            "code": "fr"
+	        }
+	    ],
+	    "publisher": [
+	        {
+	            "name": "Test Publisher A"
+	        },
+	        {
+	            "name": "Test Publisher B"
+	        }
+	    ],
+	    "author": [
+	        {
+	            "name": "Test Author A"
+	        },
+	        {
+	            "name": "Test Author B"
+	        }
+	    ],
+	    "category": [
+	        {
+	            "name": "Test Category A"
+	        },
+	        {
+	            "name": "Test Category B"
+	        }
+	    ]
+	}
+	`
+
+	var publication Publication
+	err := json.Unmarshal([]byte(jsonData), &publication)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
 	}
 
 	// Encode the request body
@@ -76,13 +115,52 @@ func TestCreatePublicationHandler(t *testing.T) {
 	r := chi.NewRouter()
 	r.Post("/api/v1/publication", api.createPublicationHandler)
 
-	// Create a mock publication
-	publication := &stor.Publication{
-		Title:           "Test Publication",
-		UUID:            "12345678-1234-1234-1234-1234567890AB",
-		DatePublication: time.Now(),
-		Description:     "Test description",
-		CoverUrl:        "http://example.com/cover.jpg",
+	jsonData := `
+	{
+	    "title": "Test Publication",
+	    "datePublication": "2023-06-16T12:00:00Z",
+	    "description": "Test description",
+	    "coverUrl": "http://example.com/cover.jpg",
+	    "language": [
+	        {
+	            "code": "en"
+	        },
+	        {
+	            "code": "fr"
+	        }
+	    ],
+	    "publisher": [
+	        {
+	            "name": "Test Publisher A"
+	        },
+	        {
+	            "name": "Test Publisher B"
+	        }
+	    ],
+	    "author": [
+	        {
+	            "name": "Test Author A"
+	        },
+	        {
+	            "name": "Test Author B"
+	        }
+	    ],
+	    "category": [
+	        {
+	            "name": "Test Category A"
+	        },
+	        {
+	            "name": "Test Category B"
+	        }
+	    ]
+	}
+	`
+
+	var publication Publication
+	err := json.Unmarshal([]byte(jsonData), &publication)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
 	}
 
 	// Encode the request body
