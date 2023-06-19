@@ -141,6 +141,10 @@ func (web *Web) Rooter() *chi.Mux {
 		})
 		r.Get("/catalog", web.catalogHangler)
 		r.Get("/catalog/publication/{id}", publication)
+		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, "static/404.html")
+			w.WriteHeader(http.StatusNotFound)
+		})
 	})
 
 	// Public signin/signout/signup
