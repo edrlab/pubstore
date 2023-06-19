@@ -2,13 +2,16 @@ package stor
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
+
+var stor Stor
 
 func TestPublicationCRUD(t *testing.T) {
 	// Test CreatePublication
@@ -35,13 +38,13 @@ func TestPublicationCRUD(t *testing.T) {
 		},
 	}
 
-	err := CreatePublication(publication)
+	err := stor.CreatePublication(publication)
 	if err != nil {
 		t.Errorf("Error creating publication: %s", err.Error())
 	}
 
 	// Test GetPublicationByID
-	fetchedPublication, err := GetPublicationByID(publication.ID)
+	fetchedPublication, err := stor.GetPublicationByID(publication.ID)
 	if err != nil {
 		t.Errorf("Error getting publication by ID: %s", err.Error())
 	} else {
@@ -55,7 +58,7 @@ func TestPublicationCRUD(t *testing.T) {
 	}
 
 	// Test GetPublicationByTitle
-	fetchedPublication, err = GetPublicationByTitle(publication.Title)
+	fetchedPublication, err = stor.GetPublicationByTitle(publication.Title)
 	if err != nil {
 		t.Errorf("Error getting publication by title: %s", err.Error())
 	} else {
@@ -70,13 +73,13 @@ func TestPublicationCRUD(t *testing.T) {
 
 	// Test UpdatePublication
 	fetchedPublication.Title = "Updated Test Publication"
-	err = UpdatePublication(fetchedPublication)
+	err = stor.UpdatePublication(fetchedPublication)
 	if err != nil {
 		t.Errorf("Error updating publication: %s", err.Error())
 	}
 
 	// Fetch the updated publication again to ensure the changes were saved
-	updatedPublication, err := GetPublicationByID(fetchedPublication.ID)
+	updatedPublication, err := stor.GetPublicationByID(fetchedPublication.ID)
 	if err != nil {
 		t.Errorf("Error getting publication by ID: %s", err.Error())
 	} else {
@@ -86,13 +89,13 @@ func TestPublicationCRUD(t *testing.T) {
 	}
 
 	// Test DeletePublication
-	err = DeletePublication(updatedPublication)
+	err = stor.DeletePublication(updatedPublication)
 	if err != nil {
 		t.Errorf("Error deleting publication: %s", err.Error())
 	}
 
 	// Ensure the publication is no longer present in the database
-	_, err = GetPublicationByID(updatedPublication.ID)
+	_, err = stor.GetPublicationByID(updatedPublication.ID)
 	if err == nil {
 		t.Error("Publication was not deleted")
 	}
@@ -119,17 +122,17 @@ func TestGetPublicationByCategory(t *testing.T) {
 		},
 	}
 
-	err := CreatePublication(publication1)
+	err := stor.CreatePublication(publication1)
 	if err != nil {
 		t.Errorf("Error creating publication 1: %s", err.Error())
 	}
-	err = CreatePublication(publication2)
+	err = stor.CreatePublication(publication2)
 	if err != nil {
 		t.Errorf("Error creating publication 2: %s", err.Error())
 	}
 
 	// Test GetPublicationByCategory
-	publications, err := GetPublicationByCategory("Category B")
+	publications, err := stor.GetPublicationByCategory("Category B")
 	if err != nil {
 		t.Errorf("Error getting publications by category: %s", err.Error())
 	} else {
@@ -148,11 +151,11 @@ func TestGetPublicationByCategory(t *testing.T) {
 	}
 
 	// Clean up the test data
-	err = DeletePublication(publication1)
+	err = stor.DeletePublication(publication1)
 	if err != nil {
 		t.Errorf("Error deleting publication 1: %s", err.Error())
 	}
-	err = DeletePublication(publication2)
+	err = stor.DeletePublication(publication2)
 	if err != nil {
 		t.Errorf("Error deleting publication 2: %s", err.Error())
 	}
@@ -179,17 +182,17 @@ func TestGetPublicationByAuthor(t *testing.T) {
 		},
 	}
 
-	err := CreatePublication(publication1)
+	err := stor.CreatePublication(publication1)
 	if err != nil {
 		t.Errorf("Error creating publication 1: %s", err.Error())
 	}
-	err = CreatePublication(publication2)
+	err = stor.CreatePublication(publication2)
 	if err != nil {
 		t.Errorf("Error creating publication 2: %s", err.Error())
 	}
 
 	// Test GetPublicationByAuthor
-	publications, err := GetPublicationByAuthor("Author B")
+	publications, err := stor.GetPublicationByAuthor("Author B")
 	if err != nil {
 		t.Errorf("Error getting publications by author: %s", err.Error())
 	} else {
@@ -208,11 +211,11 @@ func TestGetPublicationByAuthor(t *testing.T) {
 	}
 
 	// Clean up the test data
-	err = DeletePublication(publication1)
+	err = stor.DeletePublication(publication1)
 	if err != nil {
 		t.Errorf("Error deleting publication 1: %s", err.Error())
 	}
-	err = DeletePublication(publication2)
+	err = stor.DeletePublication(publication2)
 	if err != nil {
 		t.Errorf("Error deleting publication 2: %s", err.Error())
 	}
@@ -265,17 +268,17 @@ func TestCreate2PublicationsWithSameCategory(t *testing.T) {
 		},
 	}
 
-	err := CreatePublication(publication)
+	err := stor.CreatePublication(publication)
 	if err != nil {
 		t.Errorf("Error creating publication: %s", err.Error())
 	}
 
-	err = CreatePublication(publication2)
+	err = stor.CreatePublication(publication2)
 	if err != nil {
 		t.Errorf("Error creating publication: %s", err.Error())
 	}
 
-	categories, err2 := GetCategories()
+	categories, err2 := stor.GetCategories()
 	if err2 != nil {
 		t.Errorf("Error getting categories: %s", err.Error())
 	}
@@ -303,11 +306,11 @@ func TestCreate2PublicationsWithSameCategory(t *testing.T) {
 	}
 
 	// Clean up the test data
-	err = DeletePublication(publication)
+	err = stor.DeletePublication(publication)
 	if err != nil {
 		t.Errorf("Error deleting publication 1: %s", err.Error())
 	}
-	err = DeletePublication(publication2)
+	err = stor.DeletePublication(publication2)
 	if err != nil {
 		t.Errorf("Error deleting publication 2: %s", err.Error())
 	}
@@ -335,17 +338,17 @@ func TestGetPublicationByPublisher(t *testing.T) {
 		},
 	}
 
-	err := CreatePublication(publication1)
+	err := stor.CreatePublication(publication1)
 	if err != nil {
 		t.Errorf("Error creating publication 1: %s", err.Error())
 	}
-	err = CreatePublication(publication2)
+	err = stor.CreatePublication(publication2)
 	if err != nil {
 		t.Errorf("Error creating publication 2: %s", err.Error())
 	}
 
 	// Test GetPublicationByPublisher
-	publications, err := GetPublicationByPublisher("Publisher B")
+	publications, err := stor.GetPublicationByPublisher("Publisher B")
 	if err != nil {
 		t.Errorf("Error getting publications by publisher: %s", err.Error())
 	} else {
@@ -364,11 +367,11 @@ func TestGetPublicationByPublisher(t *testing.T) {
 	}
 
 	// Clean up the test data
-	err = DeletePublication(publication1)
+	err = stor.DeletePublication(publication1)
 	if err != nil {
 		t.Errorf("Error deleting publication 1: %s", err.Error())
 	}
-	err = DeletePublication(publication2)
+	err = stor.DeletePublication(publication2)
 	if err != nil {
 		t.Errorf("Error deleting publication 2: %s", err.Error())
 	}
@@ -395,17 +398,17 @@ func TestGetPublicationByLanguage(t *testing.T) {
 		},
 	}
 
-	err := CreatePublication(publication1)
+	err := stor.CreatePublication(publication1)
 	if err != nil {
 		t.Errorf("Error creating publication 1: %s", err.Error())
 	}
-	err = CreatePublication(publication2)
+	err = stor.CreatePublication(publication2)
 	if err != nil {
 		t.Errorf("Error creating publication 2: %s", err.Error())
 	}
 
 	// Test GetPublicationByLanguage
-	publications, err := GetPublicationByLanguage("bb")
+	publications, err := stor.GetPublicationByLanguage("bb")
 	if err != nil {
 		t.Errorf("Error getting publications by language: %s", err.Error())
 	} else {
@@ -424,11 +427,11 @@ func TestGetPublicationByLanguage(t *testing.T) {
 	}
 
 	// Clean up the test data
-	err = DeletePublication(publication1)
+	err = stor.DeletePublication(publication1)
 	if err != nil {
 		t.Errorf("Error deleting publication 1: %s", err.Error())
 	}
-	err = DeletePublication(publication2)
+	err = stor.DeletePublication(publication2)
 	if err != nil {
 		t.Errorf("Error deleting publication 2: %s", err.Error())
 	}
@@ -436,8 +439,7 @@ func TestGetPublicationByLanguage(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	// Set up the database connection
-	var err error
-	db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	var db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		panic("Failed to connect to database: " + err.Error())
 	}
@@ -447,6 +449,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic("Failed to migrate database: " + err.Error())
 	}
+
+	stor.db = db
 
 	// Run the tests
 	exitCode := m.Run()
