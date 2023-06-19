@@ -3,6 +3,7 @@ package stor
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Stor struct {
@@ -15,10 +16,14 @@ func Init(sqliteDsn string) *Stor {
 		sqliteDsn = "pub.db"
 	}
 
-	db, err := gorm.Open(sqlite.Open(sqliteDsn), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(sqliteDsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		panic("failed to connect database")
 	}
+
+	// db = db.Session(&gorm.Session{FullSaveAssociations: true})
 
 	// Migrate the schema
 	db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{})

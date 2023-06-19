@@ -87,7 +87,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 	switch facet {
 
 	case "author":
-		if pubs, err := view.stor.GetPublicationByAuthor(value); err != nil {
+		if pubs, err := view.stor.GetPublicationsByAuthor(value); err != nil {
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
@@ -98,7 +98,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		}
 
 	case "publisher":
-		if pubs, err := view.stor.GetPublicationByPublisher(value); err != nil {
+		if pubs, err := view.stor.GetPublicationsByPublisher(value); err != nil {
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
@@ -109,7 +109,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		}
 
 	case "language":
-		if pubs, err := view.stor.GetPublicationByLanguage(value); err != nil {
+		if pubs, err := view.stor.GetPublicationsByLanguage(value); err != nil {
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
@@ -120,7 +120,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		}
 
 	case "category":
-		if pubs, err := view.stor.GetPublicationByCategory(value); err != nil {
+		if pubs, err := view.stor.GetPublicationsByCategory(value); err != nil {
 			fmt.Println(err)
 			publications = make([]PublicationView, 0)
 		} else {
