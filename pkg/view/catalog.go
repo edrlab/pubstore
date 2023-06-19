@@ -93,7 +93,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		} else {
 			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
+				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID}
 			}
 		}
 
@@ -104,7 +104,11 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		} else {
 			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 
@@ -115,7 +119,11 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		} else {
 			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 
@@ -126,7 +134,11 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		} else {
 			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 
@@ -137,7 +149,11 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 		} else {
 			publications = make([]PublicationView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: "", UUID: element.UUID}
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 	}
