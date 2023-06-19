@@ -87,12 +87,6 @@
     z-index: 10;
 }
 
-@keyframes shimmer {
-    100% {
-        transform: translateX(100%);
-    }
-}
-
 .pages {
     display: flex;
     align-items: center;

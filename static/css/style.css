@@ -146,20 +146,13 @@ header nav ul li a:hover {
 #Banner-Home {
     width: 100vw;
     height: 700px;
-    justify-content: end;
-    margin-bottom: 50px;
     background-color: #a7c6f8;
     position: relative;
     overflow: hidden;
 }
 
-#Banner img {
-    width: 40vw;
-    z-index: 10;
-}
-
 #Banner-Home img {
-    width: 60vw;
+    width: 50vw;
     z-index: 10;
     justify-content: end;
 }
@@ -185,11 +178,12 @@ header nav ul li a:hover {
 
 #Banner-Home .Banner-infos {
     display: flex;
-    justify-content: end;
+    justify-content: space-evenly;
     align-items: center;
 }
 
-#Banner:after {
+#Banner:after,
+.status:after {
     position: absolute;
     top: 0;
     right: 0;
@@ -199,6 +193,12 @@ header nav ul li a:hover {
     background-image: linear-gradient(90deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0.2) 20%, rgba(255,255,255, 0.5) 60%, rgba(255,255,255, 0));
     animation: shimmer 4s infinite;
     content: '';
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 .main-content {
@@ -240,14 +240,12 @@ footer {
     display: flex;
     justify-content: space-evenly;
     align-items: start;
-    position: absolute;
-    bottom: 0;
     width: 100vw;
 }
 
 footer h5 {
     font-size: 18px;
-    margin: 0;
+    margin: 10px;
 }
 
 .footer-about,
@@ -289,5 +287,65 @@ footer h5 {
     color: #00acee;
 }
 
+.error-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 50px;
+    color: #a7c6f8;
+}
+
+.error-content i {
+    rotate: 20deg;
+    color: #a7c6f8;
+    transition: 300ms;
+}
+
+.error-content i:hover {
+    scale: 1.1;
+    color: black;
+}
 
 
+.status {
+    font-size: 150px;
+    position: relative;
+    overflow: hidden;
+}
+
+
+@media screen and (max-width: 800px) {
+    footer {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    #Banner-Home {
+        height: 100%;
+    }
+    .Banner-infos,
+    header nav {
+        flex-direction: column;
+        padding: 0 50px;
+    }
+    header nav ul {
+        margin: 0;
+    }
+    .header-options_searchbar {
+        margin-bottom: 10px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .header-infos {
+        flex-direction: column;
+    }
+    .header-options {
+        text-align: center;
+    }
+    .header-options_settings {
+        justify-content: center;
+    }
+}
