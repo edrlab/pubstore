@@ -29,15 +29,15 @@ func (api *Api) Rooter(r *chi.Mux) *chi.Mux {
 		// r.Delete("/api/v1/publication/{id}", apiV1PublicationDelete)
 	})
 
-	// // api Routes CRUD User
-	// // Require Authentication
-	// r.Group(func(r chi.Router) {
-	// 	r.Use(AuthMiddleware)
-	// 	r.Get("/api/v1/user/{id}", apiV1UserGet)
-	// 	r.Post("/api/v1/user/{id}", apiV1UserPost)
-	// 	r.Put("/api/v1/user/{id}", apiV1UserPut)
-	// 	r.Delete("/api/v1/user/{id}", apiV1UserDelete)
-	// })
+	// api Routes CRUD User
+	// Require Authentication
+	r.Group(func(r chi.Router) {
+		// r.Use(AuthMiddleware)
+		r.Get("/api/v1/user/{id}", api.getUserHandler)
+		r.Post("/api/v1/user", api.createUserHandler)
+		// r.Put("/api/v1/user/{id}", apiV1UserPut)
+		// r.Delete("/api/v1/user/{id}", apiV1UserDelete)
+	})
 
 	return r
 }

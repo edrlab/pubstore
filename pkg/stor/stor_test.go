@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+var stor Stor
+
 func TestMain(m *testing.M) {
 	// Set up the database connection
 	var db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{

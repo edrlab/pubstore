@@ -8,8 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var stor Stor
-
 func checkLanguageEquality(a, b []Language) bool {
 	if len(a) != len(b) {
 		return false

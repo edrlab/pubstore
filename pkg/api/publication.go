@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -187,8 +186,6 @@ func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Publication not found", http.StatusNotFound)
 		return
 	}
-
-	fmt.Println(publicationStor)
 
 	publication := convertPublicationFromStor(*publicationStor)
 
