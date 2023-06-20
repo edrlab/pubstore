@@ -4,12 +4,105 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
+
+type Language struct {
+	Code string `json:"code"`
+}
+
+type Publisher struct {
+	Name string `json:"name"`
+}
+
+type Author struct {
+	Name string `json:"name"`
+}
+
+type Category struct {
+	Name string `json:"name"`
+}
+
+type Publication struct {
+	Title           string      `json:"title"`
+	UUID            string      `json:"uuid" validate:"omitempty,uuid4_rfc4122"`
+	DatePublication time.Time   `json:"datePublication"`
+	Description     string      `json:"description"`
+	CoverUrl        string      `json:"coverUrl"`
+	Language        []Language  `json:"language"`
+	Publisher       []Publisher `json:"publisher"`
+	Author          []Author    `json:"author"`
+	Category        []Category  `json:"category"`
+}
+
+func convertPublicationFromStor(originalPublication stor.Publication) Publication {
+	convertedPublication := Publication{
+		Title:           originalPublication.Title,
+		UUID:            originalPublication.UUID,
+		DatePublication: originalPublication.DatePublication,
+		Description:     originalPublication.Description,
+		CoverUrl:        originalPublication.CoverUrl,
+	}
+
+	// Convert Language slice
+	for _, language := range originalPublication.Language {
+		convertedPublication.Language = append(convertedPublication.Language, Language{Code: language.Code})
+	}
+
+	// Convert Publisher slice
+	for _, publisher := range originalPublication.Publisher {
+		convertedPublication.Publisher = append(convertedPublication.Publisher, Publisher{Name: publisher.Name})
+	}
+
+	// Convert Author slice
+	for _, author := range originalPublication.Author {
+		convertedPublication.Author = append(convertedPublication.Author, Author{Name: author.Name})
+	}
+
+	// Convert Category slice
+	for _, category := range originalPublication.Category {
+		convertedPublication.Category = append(convertedPublication.Category, Category{Name: category.Name})
+	}
+
+	return convertedPublication
+}
+
+func convertPublicationToStor(convertedPublication Publication) stor.Publication {
+	originalPublication := stor.Publication{
+		Title:           convertedPublication.Title,
+		UUID:            convertedPublication.UUID,
+		DatePublication: convertedPublication.DatePublication,
+		Description:     convertedPublication.Description,
+		CoverUrl:        convertedPublication.CoverUrl,
+	}
+
+	// Convert Language slice
+	for _, language := range convertedPublication.Language {
+		originalPublication.Language = append(originalPublication.Language, stor.Language{Code: language.Code})
+	}
+
+	// Convert Publisher slice
+	for _, publisher := range convertedPublication.Publisher {
+		originalPublication.Publisher = append(originalPublication.Publisher, stor.Publisher{Name: publisher.Name})
+	}
+
+	// Convert Author slice
+	for _, author := range convertedPublication.Author {
+		originalPublication.Author = append(originalPublication.Author, stor.Author{Name: author.Name})
+	}
+
+	// Convert Category slice
+	for _, category := range convertedPublication.Category {
+		originalPublication.Category = append(originalPublication.Category, stor.Category{Name: category.Name})
+	}
+
+	return originalPublication
+}
 
 /*
 *
@@ -42,16 +135,12 @@ import (
 */
 func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate the request body
-	var publication stor.Publication
+	var publication Publication
 	err := json.NewDecoder(r.Body).Decode(&publication)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println("######")
-	fmt.Println(publication)
-	fmt.Println("######")
 
 	// Validate the publication struct using the validator
 	err = validate.Struct(publication)
@@ -63,9 +152,13 @@ func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Generate UUID for the publication
-	publication.UUID = uuid.New().String()
+	if len(publication.UUID) == 0 {
+		publication.UUID = uuid.New().String()
+	}
 
-	err = api.stor.CreatePublication(&publication)
+	publicationStor := convertPublicationToStor(publication)
+
+	err = api.stor.CreatePublication(&publicationStor)
 	if err != nil {
 		http.Error(w, "Failed to create publication", http.StatusInternalServerError)
 		return
@@ -74,10 +167,6 @@ func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusCreated)
 	// Set the response content type to JSON
 	w.Header().Set("Content-Type", "application/json")
-
-	fmt.Println("######")
-	fmt.Println(publication)
-	fmt.Println("######")
 
 	// Encode the publication as JSON and write it to the response
 	err = json.NewEncoder(w).Encode(publication)
@@ -93,11 +182,15 @@ func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
 	publicationID := chi.URLParam(r, "id")
 
 	// Retrieve the publication from the database
-	publication, err := api.stor.GetPublicationByUUID(publicationID)
+	publicationStor, err := api.stor.GetPublicationByUUID(publicationID)
 	if err != nil {
 		http.Error(w, "Publication not found", http.StatusNotFound)
 		return
 	}
+
+	fmt.Println(publicationStor)
+
+	publication := convertPublicationFromStor(*publicationStor)
 
 	// Set the response content type to JSON
 	w.Header().Set("Content-Type", "application/json")
