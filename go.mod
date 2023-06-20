@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
+	github.com/brianvoe/gofakeit/v6 v6.22.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/foolin/goview v0.3.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
