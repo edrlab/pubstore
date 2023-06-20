@@ -14,7 +14,7 @@ type User struct {
 	SessionId   string `gorm:"uniqueIndex"`
 }
 
-// CreatePublication creates a new publication
+// CreateUser creates a new user
 func (stor *Stor) CreateUser(user *User) error {
 	if err := stor.db.Create(user).Error; err != nil {
 		return err
@@ -23,7 +23,7 @@ func (stor *Stor) CreateUser(user *User) error {
 	return nil
 }
 
-// UpdatePublication updates a publication
+// UpdateUser updates a user
 func (stor *Stor) UpdateUser(user *User) error {
 	if err := stor.db.Save(user).Error; err != nil {
 		return err
@@ -32,9 +32,7 @@ func (stor *Stor) UpdateUser(user *User) error {
 	return nil
 }
 
-// DeletePublication deletes a publication
-// TODO: delete many2many link if empty
-// category,publisher,... items are not deleted if is only linked with this deleted publication
+// DeleteUser deletes a user
 func (stor *Stor) DeleteUser(user *User) error {
 	if err := stor.db.Delete(user).Error; err != nil {
 		return err

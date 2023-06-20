@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Run migrations
-	err = db.AutoMigrate(&Publication{}, &Language{}, &Publisher{}, &Author{}, &Category{}, &User{})
+	err = db.AutoMigrate(&Publication{}, &Language{}, &Publisher{}, &Author{}, &Category{}, &User{}, &Transaction{})
 	if err != nil {
 		panic("Failed to migrate database: " + err.Error())
 	}
@@ -44,4 +44,5 @@ func TestSuite(t *testing.T) {
 	t.Run("GetPublicationByAuthor", TestGetPublicationByAuthor)
 	t.Run("GetPublicationByUUID", TestGetPublicationByUUID)
 	t.Run("UserCRUD", TestUserCRUD)
+	t.Run("TransactionCRUD", TestTransactionCRUD)
 }
