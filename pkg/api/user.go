@@ -15,7 +15,7 @@ type User struct {
 	Pass        string `json:"password" validate:"omitempty"`
 	LcpHintMsg  string `json:"lcpHintMsg"`
 	LcpPassHash string `json:"lcpPassHash"`
-	SessionId   string `json:"sessionId" validate:"uuid4_rfc4122"`
+	SessionId   string `json:"sessionId" validate:"-"`
 }
 
 func ConvertUserFromUserStor(u stor.User) *User {
