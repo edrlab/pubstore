@@ -26,7 +26,7 @@ func Init(sqliteDsn string) *Stor {
 	// db = db.Session(&gorm.Session{FullSaveAssociations: true})
 
 	// Migrate the schema
-	db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{})
+	db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{}, &User{}, &Transaction{})
 
 	return &Stor{db: db}
 

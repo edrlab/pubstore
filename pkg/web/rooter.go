@@ -120,7 +120,6 @@ func (web *Web) publication(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Render index error: %v!", err)
 		}
 	}
-
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
