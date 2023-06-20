@@ -40,7 +40,7 @@ type Publication struct {
 	Category        []Category  `json:"category"`
 }
 
-func ConvertPublicationFromStor(originalPublication stor.Publication) Publication {
+func convertPublicationFromStor(originalPublication stor.Publication) Publication {
 	convertedPublication := Publication{
 		Title:           originalPublication.Title,
 		UUID:            originalPublication.UUID,
@@ -72,7 +72,7 @@ func ConvertPublicationFromStor(originalPublication stor.Publication) Publicatio
 	return convertedPublication
 }
 
-func ConvertPublicationToStor(convertedPublication Publication) stor.Publication {
+func convertPublicationToStor(convertedPublication Publication) stor.Publication {
 	originalPublication := stor.Publication{
 		Title:           convertedPublication.Title,
 		UUID:            convertedPublication.UUID,
@@ -156,7 +156,7 @@ func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request)
 		publication.UUID = uuid.New().String()
 	}
 
-	publicationStor := ConvertPublicationToStor(publication)
+	publicationStor := convertPublicationToStor(publication)
 
 	err = api.stor.CreatePublication(&publicationStor)
 	if err != nil {
@@ -190,7 +190,7 @@ func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(publicationStor)
 
-	publication := ConvertPublicationFromStor(*publicationStor)
+	publication := convertPublicationFromStor(*publicationStor)
 
 	// Set the response content type to JSON
 	w.Header().Set("Content-Type", "application/json")

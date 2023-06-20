@@ -1,0 +1,32 @@
+
+{{define "head"}}
+
+{{end}}
+
+
+{{define "content"}}
+<p>Publications : </p>
+<a href="/catalog/publication/{{.uuid}}">SelfLink</a>
+<img src="{{.coverUrl}}" />
+<p>{{.title}}</p>
+<p>{{.datePublication}}</p>
+<p>{{.description}}</p>
+<p>Authors:</p>
+{{range .authors}}
+<p>{{.}}</p>
+{{end}}
+<p>Publkishse:</p>
+{{range .publishers}}
+<p>{{.}}</p>
+{{end}}
+<p>lang:</p>
+{{range .languages}}
+<p>{{.}}</p>
+{{end}}
+<p>Categories:</p>
+{{range .categories}}
+<p>{{.}}</p>
+{{end}}
+
+
+{{end}}

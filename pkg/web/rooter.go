@@ -94,9 +94,33 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func publication(w http.ResponseWriter, r *http.Request) {
+func (web *Web) publication(w http.ResponseWriter, r *http.Request) {
 	// Implementation for the publication handler
 	// This function will handle the "/catalog/publication/{id}" route
+
+	pubUUID := chi.URLParam(r, "id")
+
+	if publication, err := web.view.GetPublicationView(pubUUID); err != nil {
+		http.ServeFile(w, r, "static/404.html")
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		goviewModel := goview.M{
+			"title":           publication.Title,
+			"uuid":            publication.UUID,
+			"datePublication": publication.DatePublication,
+			"description":     publication.Description,
+			"coverUrl":        publication.CoverUrl,
+			"authors":         publication.Author,
+			"publishers":      publication.Publisher,
+			"languages":       publication.Language,
+			"categories":      publication.Category,
+		}
+		err := goview.Render(w, http.StatusOK, "publication", goviewModel)
+		if err != nil {
+			fmt.Fprintf(w, "Render index error: %v!", err)
+		}
+	}
+
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -140,7 +164,7 @@ func (web *Web) Rooter() *chi.Mux {
 			http.ServeFile(w, r, "static/index.html")
 		})
 		r.Get("/catalog", web.catalogHangler)
-		r.Get("/catalog/publication/{id}", publication)
+		r.Get("/catalog/publication/{id}", web.publication)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, "static/404.html")
 			w.WriteHeader(http.StatusNotFound)

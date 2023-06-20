@@ -2,11 +2,9 @@ package view
 
 import (
 	"fmt"
-
-	"github.com/edrlab/pubstore/pkg/stor"
 )
 
-type PublicationView struct {
+type PublicationCatalogView struct {
 	CoverHref string
 	Title     string
 	Author    string
@@ -22,17 +20,9 @@ type FacetsView struct {
 
 type CatalogView struct {
 	FacetsView
-	Publications   []PublicationView
+	Publications   []PublicationCatalogView
 	NbPages        string
 	NbPublications string
-}
-
-type View struct {
-	stor *stor.Stor
-}
-
-func Init(s *stor.Stor) *View {
-	return &View{stor: s}
 }
 
 func (view *View) GetFacetsView() *FacetsView {
@@ -81,79 +71,79 @@ func (view *View) GetFacetsView() *FacetsView {
 	return &facets
 }
 
-func (view *View) GetPublicationsView(facet string, value string) *[]PublicationView {
+func (view *View) GetPublicationsView(facet string, value string) *[]PublicationCatalogView {
 
-	var publications []PublicationView
+	var publications []PublicationCatalogView
 	switch facet {
 
 	case "author":
 		if pubs, err := view.stor.GetPublicationsByAuthor(value); err != nil {
 			fmt.Println(err)
-			publications = make([]PublicationView, 0)
+			publications = make([]PublicationCatalogView, 0)
 		} else {
-			publications = make([]PublicationView, len(pubs))
+			publications = make([]PublicationCatalogView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID}
 			}
 		}
 
 	case "publisher":
 		if pubs, err := view.stor.GetPublicationsByPublisher(value); err != nil {
 			fmt.Println(err)
-			publications = make([]PublicationView, 0)
+			publications = make([]PublicationCatalogView, 0)
 		} else {
-			publications = make([]PublicationView, len(pubs))
+			publications = make([]PublicationCatalogView, len(pubs))
 			for i, element := range pubs {
 				var author = ""
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 
 	case "language":
 		if pubs, err := view.stor.GetPublicationsByLanguage(value); err != nil {
 			fmt.Println(err)
-			publications = make([]PublicationView, 0)
+			publications = make([]PublicationCatalogView, 0)
 		} else {
-			publications = make([]PublicationView, len(pubs))
+			publications = make([]PublicationCatalogView, len(pubs))
 			for i, element := range pubs {
 				var author = ""
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 
 	case "category":
 		if pubs, err := view.stor.GetPublicationsByCategory(value); err != nil {
 			fmt.Println(err)
-			publications = make([]PublicationView, 0)
+			publications = make([]PublicationCatalogView, 0)
 		} else {
-			publications = make([]PublicationView, len(pubs))
+			publications = make([]PublicationCatalogView, len(pubs))
 			for i, element := range pubs {
 				var author = ""
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 
 	default:
 		if pubs, err := view.stor.GetAllPublications(1, 50); err != nil {
 			fmt.Println(err)
-			publications = make([]PublicationView, 0)
+			publications = make([]PublicationCatalogView, 0)
 		} else {
-			publications = make([]PublicationView, len(pubs))
+			publications = make([]PublicationCatalogView, len(pubs))
 			for i, element := range pubs {
 				var author = ""
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
 			}
 		}
 	}
@@ -161,7 +151,7 @@ func (view *View) GetPublicationsView(facet string, value string) *[]Publication
 	return &publications
 }
 
-func GetCatalogView(pubs *[]PublicationView, facets *FacetsView) *CatalogView {
+func GetCatalogView(pubs *[]PublicationCatalogView, facets *FacetsView) *CatalogView {
 
 	var catalogView CatalogView
 
@@ -169,9 +159,9 @@ func GetCatalogView(pubs *[]PublicationView, facets *FacetsView) *CatalogView {
 	catalogView.Categories = facets.Categories
 	catalogView.Languages = facets.Languages
 	catalogView.Publishers = facets.Publishers
-	catalogView.Publications = make([]PublicationView, len(*pubs))
+	catalogView.Publications = make([]PublicationCatalogView, len(*pubs))
 	for i, element := range *pubs {
-		catalogView.Publications[i] = PublicationView{CoverHref: element.CoverHref, Title: element.Title, Author: element.Author}
+		catalogView.Publications[i] = PublicationCatalogView{CoverHref: element.CoverHref, Title: element.Title, Author: element.Author, UUID: element.UUID}
 	}
 
 	return &catalogView
