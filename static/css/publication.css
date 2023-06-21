@@ -5,7 +5,13 @@
     gap: 20px;
 }
 
-.pub-left-side { text-align: center}
+.pub-left-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
 
 .pub-left-side a {
     width: 300px;
@@ -63,6 +69,7 @@
 
 .pub-right-side {
     text-align: start;
+    flex: 2;
 }
 
 .pub-right-side .pub-categories-tags {
@@ -78,9 +85,9 @@
     color: white;
     max-width: 200px;
     max-height: 30px;
-    padding: 5px;
+    padding: 5px 10px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .pub-right-side .pub-categories-tags .tag:hover {

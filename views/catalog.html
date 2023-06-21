@@ -58,14 +58,14 @@
         <ul class="book-list" id="searchList">
             {{range .publications}}
                 <li>
-<!--                    <a href="/catalog/publication/{{.UUID}}">-->
+                    <a href="/catalog/publication/{{.UUID}}">
                         <div class="book-cover-container">
                             <img class="book-cover" src="{{.CoverHref}}">
                         </div>
                         <span>
                             {{.Title}} from {{.Author}}
                         </span>
-<!--                    </a>-->
+                    </a>
                 </li>
             {{end}}
         </ul>

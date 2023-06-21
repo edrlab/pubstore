@@ -131,6 +131,12 @@ header nav ul li a:hover {
     color: white;
 }
 
+#login-button a:hover,
+#signup-button a:hover {
+    color: white!important;
+}
+
+
 #Banner {
     display: flex;
     align-items: center;
