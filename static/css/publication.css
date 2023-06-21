@@ -2,7 +2,6 @@
     padding: 0 10%;
     display: flex;
     justify-content: space-around;
-    gap: 20px;
 }
 
 .pub-left-side {
@@ -70,6 +69,16 @@
 .pub-right-side {
     text-align: start;
     flex: 2;
+}
+
+.pub-right-side h2 {
+    margin: 0;
+}
+
+.pub-right-side .authors {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .pub-right-side .pub-categories-tags {

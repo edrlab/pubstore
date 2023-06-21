@@ -9,7 +9,7 @@
 {{define "content"}}
 <div class="pub-container">
     <div class="pub-left-side">
-        <a href="#"><img src="" class="{{.CoverHref}}"/></a>
+        <a href="#"><img src="" class="{{.CoverUrl}}"/></a>
         <div class="pub-actions">
             <button id="buy">Buy</button>
             <button id="loan">Borrow</button>
@@ -17,8 +17,13 @@
     </div>
 
     <div class="pub-right-side">
-        <h2>{{ .Title}}</h2>
-        <h3>by {{ .Author}}</h3>
+        <h2>{{.title}}</h2>
+        <div class="authors">
+            <p>written by</p>
+            {{ range .authors}}
+            <h3>{{.}},</h3>
+            {{end}}
+        </div>
         <div class="pub-categories-tags">
             {{ range .categories}}
             <p class="tag">{{.}}</p>
@@ -26,7 +31,7 @@
         </div>
         <div class="summary">
             <h4>Summary</h4>
-            <p>{{ .Description}}</p>
+            <p>{{.description}}</p>
         </div>
     </div>
 </div>
