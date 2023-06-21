@@ -144,3 +144,25 @@
     animation: shimmer 2s infinite;
     content: '';
 }
+
+@media screen and (max-width: 1200px) {
+    .pub-container {
+        gap: 20px;
+    }
+}
+
+    @media screen and (max-width: 900px) {
+    .pub-container {
+        flex-direction: column;
+    }
+    .pub-left-side .pub-actions {
+        flex-direction: row;
+    }
+    .pub-right-side {
+        text-align: center;
+    }
+    .pub-right-side .authors,
+    .pub-right-side .pub-categories-tags {
+        justify-content: center;
+    }
+}
