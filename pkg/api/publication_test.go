@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-playground/validator/v10"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -184,27 +182,4 @@ func TestCreatePublicationHandler(t *testing.T) {
 	assert.Equal(t, publication.Title, result.Title)
 	// assert.Equal(t, publication.UUID, result.UUID)
 	assert.Equal(t, publication.Description, result.Description)
-}
-
-func TestMain(m *testing.M) {
-
-	validate = validator.New()
-
-	s := stor.Init("file::memory:?cache=shared")
-
-	api = &Api{stor: s}
-
-	// Run the tests
-	exitCode := m.Run()
-
-	s.Stop()
-
-	fmt.Println("ExitCode", exitCode)
-	// Exit with the appropriate exit code
-	os.Exit(exitCode)
-}
-
-func TestSuite(t *testing.T) {
-	t.Run("TestCreatePublicationHandler", TestCreatePublicationHandler)
-	t.Run("TestGetPublicationHandler", TestGetPublicationHandler)
 }

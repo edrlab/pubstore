@@ -1,6 +1,8 @@
 package stor
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 )
 
@@ -44,6 +46,21 @@ func (stor *Stor) DeleteUser(user *User) error {
 func (stor *Stor) GetUserBySessionId(sessionId string) (*User, error) {
 	var user User
 	if err := stor.db.Where("session_id = ?", sessionId).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("User not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (stor *Stor) GetUserByEmailAndPass(email string, pass string) (*User, error) {
+	var user User
+	if err := stor.db.Where("email = ?", email).Where("pass = ?", pass).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("User not found")
+		}
 		return nil, err
 	}
 
