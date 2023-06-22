@@ -1,14 +1,16 @@
 package stor
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 )
 
 type Transaction struct {
 	gorm.Model
-	UserID        int
+	UserID        uint
 	User          User
-	PublicationID int
+	PublicationID uint
 	Publication   Publication
 	LicenceId     string
 }
@@ -20,6 +22,28 @@ func (stor *Stor) CreateTransaction(transaction *Transaction) error {
 	}
 
 	return nil
+}
+
+// CreateTransaction creates a new transaction
+func (stor *Stor) CreateTransactionWithUUID(pubUUID, userUUID, licenceUUID string) error {
+
+	publication, err := stor.GetPublicationByUUID(pubUUID)
+	if err != nil {
+		return errors.New("can't get publication")
+	}
+
+	user, err := stor.GetUserByUUID(userUUID)
+	if err != nil {
+		return errors.New("can't get user")
+	}
+
+	transaction := &Transaction{
+		UserID:        user.ID,
+		PublicationID: publication.ID,
+		LicenceId:     licenceUUID,
+	}
+
+	return stor.CreateTransaction(transaction)
 }
 
 // UpdateTransaction updates a transaction

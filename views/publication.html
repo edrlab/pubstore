@@ -28,5 +28,43 @@
 <p>{{.}}</p>
 {{end}}
 
+<hr>
+{{if .errLcp}}
+<div style="background-color: #ffcccc; padding: 10px;">{{.errLcp}}</div>
+{{end}}
+
+<form action="/catalog/publication/{{.uuid}}/buy" method="GET">
+    <label for="copyRights">Number Copy:</label>
+    <input type="number" id="copyRights" name="copyRights" required>
+
+    <label for="printRigths">Number Print:</label>
+    <input type="number" id="printRigths" name="printRigths" required>
+
+    <input type="submit" value="Buy">
+</form>
+<hr>
+
+<form action="/catalog/publication/{{.uuid}}/loan" method="GET">
+
+    <label for="copyRights">Number Copy:</label>
+    <input type="number" id="copyRights" name="copyRights" required>
+
+    <label for="printRigths">Number Print:</label>
+    <input type="number" id="printRigths" name="printRigths" required>
+    
+    <label for="startDate">Start Date:</label>
+    <input type="datetime-local" id="startDate" name="startDate" required>
+
+    <label for="endDate">Start Date:</label>
+    <input type="datetime-local" id="endDate" name="endDate" required>
+
+
+    <input type="submit" value="Loan">
+</form>
+
+
+
+
+<hr>
 
 {{end}}
