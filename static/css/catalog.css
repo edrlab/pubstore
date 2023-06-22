@@ -199,6 +199,7 @@ td {
     box-shadow: 0 5px 20px rgba(0,0,0,0.05);
     padding: 12px 20px;
     border-radius: 10px;
+    width: 200px;
 }
 
 .filter-title input::placeholder {
@@ -222,5 +223,10 @@ td {
 .option li:hover {
     background: #62baea;
     color: white;
+}
+
+.option li a {
+    display: block;
+    width: 250px;
 }
 
