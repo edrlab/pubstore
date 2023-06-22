@@ -1,8 +1,8 @@
 <header>
     <a href="/catalog">catalog</a>
-    <a href="/bookshelf">bookshelf</a>
 
     {{ if .userIsAuthenticated}}
+    <a href="/user/bookshelf">bookshelf</a>
     <a href="/signout">signout</a>
     {{ else }}
     <a href="/signin">signin</a>

@@ -79,7 +79,9 @@ func (web *Web) signout(w http.ResponseWriter, r *http.Request) {
 func signinGoview(w http.ResponseWriter, userNotFound bool) {
 
 	err := goview.Render(w, http.StatusOK, "signin", goview.M{
-		"userNotFound": userNotFound,
+		"pageTitle":           "pubstore - signin",
+		"userIsAuthenticated": false,
+		"userNotFound":        userNotFound,
 	})
 	if err != nil {
 		fmt.Fprintf(w, "Render index error: %v!", err)
@@ -129,24 +131,29 @@ func (web *Web) signinPost(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func signup(w http.ResponseWriter, r *http.Request) {
-	// Implementation for the signup handler
-	// This function will handle the "/signup" route
-}
+// func signup(w http.ResponseWriter, r *http.Request) {
+// 	// Implementation for the signup handler
+// 	// This function will handle the "/signup" route
+// }
 
-func userInfos(w http.ResponseWriter, r *http.Request) {
-	// Implementation for the userInfos handler
-	// This function will handle the "/user/infos" and "/user/bookshelf" routes
-}
+// func userInfos(w http.ResponseWriter, r *http.Request) {
+// 	// Implementation for the userInfos handler
+// 	// This function will handle the "/user/infos" and "/user/bookshelf" routes
+// }
 
-func publicationBuyAction(w http.ResponseWriter, r *http.Request) {
-	// Implementation for the publicationBuyAction handler
-	// This function will handle the "/catalog/publication/{id}/buy" route
-}
+// func publicationBuyAction(w http.ResponseWriter, r *http.Request) {
+// 	// Implementation for the publicationBuyAction handler
+// 	// This function will handle the "/catalog/publication/{id}/buy" route
+// }
 
-func publicationLoanAction(w http.ResponseWriter, r *http.Request) {
-	// Implementation for the publicationLoanAction handler
-	// This function will handle the "/catalog/publication/{id}/loan" route
+// func publicationLoanAction(w http.ResponseWriter, r *http.Request) {
+// 	// Implementation for the publicationLoanAction handler
+// 	// This function will handle the "/catalog/publication/{id}/loan" route
+// }
+
+func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Fprintf(w, "bookshelf")
 }
 
 func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +201,7 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (web *Web) publication(w http.ResponseWriter, r *http.Request) {
+func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 	// Implementation for the publication handler
 	// This function will handle the "/catalog/publication/{id}" route
 
@@ -224,10 +231,10 @@ func (web *Web) publication(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AuthMiddleware(next http.Handler) http.Handler {
+func (web *Web) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if the user is authenticated
-		if !IsUserAuthenticated(r) {
+		if !web.userIsAuthenticated(r) {
 			http.Redirect(w, r, "/signin", http.StatusFound)
 			return
 		}
@@ -235,15 +242,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		// If authenticated, call the next handler
 		next.ServeHTTP(w, r)
 	})
-}
-
-func IsUserAuthenticated(r *http.Request) bool {
-	// Implement your authentication logic here
-	// Check if the user is authenticated based on the session, token, or any other authentication mechanism
-
-	// For the purpose of this example, we assume the user is authenticated if there is a session cookie
-	_, err := r.Cookie("session")
-	return err == nil
 }
 
 func (web *Web) Rooter() *chi.Mux {
@@ -262,10 +260,17 @@ func (web *Web) Rooter() *chi.Mux {
 			http.Redirect(w, r, "/index", http.StatusFound)
 		})
 		r.Get("/index", func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, "static/index.html")
+			goviewModel := goview.M{
+				"pageTitle":           "pubstore",
+				"userIsAuthenticated": web.userIsAuthenticated(r),
+			}
+			err := goview.Render(w, http.StatusOK, "index", goviewModel)
+			if err != nil {
+				fmt.Fprintf(w, "Render index error: %v!", err)
+			}
 		})
 		r.Get("/catalog", web.catalogHangler)
-		r.Get("/catalog/publication/{id}", web.publication)
+		r.Get("/catalog/publication/{id}", web.publicationHandler)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, "static/404.html")
 			w.WriteHeader(http.StatusNotFound)
@@ -277,17 +282,17 @@ func (web *Web) Rooter() *chi.Mux {
 		r.Get("/signin", web.signin)
 		r.Post("/signin", web.signinPost)
 		r.Get("/signout", web.signout)
-		r.Get("/signup", signup)
+		// r.Get("/signup", signup)
 	})
 
 	// Private Routes
 	// Require Authentication
 	r.Group(func(r chi.Router) {
-		r.Use(AuthMiddleware)
-		r.Get("/user/infos", userInfos)
-		r.Get("/user/bookshelf", userInfos)
-		r.Get("/catalog/publication/{id}/buy", publicationBuyAction)
-		r.Post("/catalog/publication/{id}/loan", publicationLoanAction)
+		r.Use(web.AuthMiddleware)
+		// r.Get("/user/infos", userInfos)
+		r.Get("/user/bookshelf", web.bookshelfHandler)
+		// r.Get("/catalog/publication/{id}/buy", publicationBuyAction)
+		// r.Post("/catalog/publication/{id}/loan", publicationLoanAction)
 	})
 
 	return r
