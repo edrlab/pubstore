@@ -1,8 +1,9 @@
 {{define "head"}}
 <link href="/static/css/style.css" rel="stylesheet" />
 <link href="/static/css/catalog.css" rel="stylesheet">
-<link href="/static/css/publication.css" rel="stylesheet"><!--
-<script src="/static/js/purchase-modal.js"></script>-->
+<link href="/static/css/publication.css" rel="stylesheet">
+<link href="/static/css/modal.css" rel="stylesheet">
+<script defer src="/static/js/purchase-modal.js"></script>
 <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
@@ -62,6 +63,7 @@
                         <label for="end-date">End Date</label>
                         <input id="end-date" name="end-date" type="date">
                     </div>
+                    <span>Something went wrong!</span>
                     <div class="modal-loan-buttons">
                         <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
                         <button type="submit"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>

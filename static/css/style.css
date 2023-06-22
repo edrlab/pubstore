@@ -47,13 +47,17 @@ a, a:visited {
 .header-options {
     margin: 20px;
     text-align: end;
+    font-size: 18px;
 }
 
-.header-options button {
+.header-options p {
+    margin: 0;
+}
+
+.header-options a {
     cursor: pointer;
     border: none;
     background: transparent;
-    font-size: 18px;
 }
 
 .header-options_settings {

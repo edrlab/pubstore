@@ -1,7 +1,5 @@
-.modal,
-.modal-login {
+.modal {
     position: absolute;
-    width: 1000px;
     margin: 1.75rem auto;
     pointer-events: none;
     box-sizing: border-box;
@@ -10,8 +8,7 @@
     left: 50%;
 }
 
-#modal-window,
-#modal-window-login {
+#modal-window {
     position: fixed;
     top: 0;
     left: 0;
@@ -30,7 +27,6 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 1000px;
     pointer-events: auto;
     background-color: #fff;
     background-clip: padding-box;
@@ -39,35 +35,10 @@
     outline: 0;
 }
 
-.modal-body-publications,
-.modal-body-purchases {
+.modal-body-publications {
     position: relative;
-    padding: 1rem;
+    padding: 2rem;
     display: flex;
-}
-
-.modal-body-purchases {
-    justify-content: space-evenly;
-    align-items: center;
-}
-
-.modal-img {
-    max-width: 300px;
-    height: auto;
-}
-
-.modal-infos,
-.modal-infos-purchases {
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-    align-items: center;
-    width: 100%;
-}
-
-.modal-infos-purchases {
-    width: 100%;
 }
 
 .hidden {
@@ -83,13 +54,6 @@
     height: 100vh;
     background-color: #000;
     opacity: 0;
-}
-
-.modal-action-buttons {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
 }
 
 .modal-button {
@@ -112,29 +76,18 @@
     scale: 0.9;
 }
 
-.modal-infos-inner {
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    font-size: 24px;
-    padding-bottom: 30px;
-}
-
-.modal-infos-inner select {
-    padding-top: 5px;
-    height: 30px;
-}
-
-.modal-infos-left {
-    display: flex;
-    flex-direction: column;
-}
-
 .modal-form-options {
     display: none;
     flex-direction: column;
     justify-content: space-evenly;
     gap: 50px;
+}
+
+.modal-form-options span {
+    background: #f59595;
+    text-align: center;
+    padding: 5px 0;
+    display: none;
 }
 .select-loan-dates,
 .select-global-options {
@@ -149,24 +102,4 @@
 .modal-loan-buttons {
     display: flex;
     gap: 10px;
-}
-
-.delivered {
-    border-radius: 10px;
-    padding: 5px 10px;
-    color: white;
-
-}
-
-.false {
-    background-color: red;
-}
-
-.true {
-    background-color: green;
-}
-
-.modal-infos h2,
-.modal-infos h3 {
-    margin: 0;
 }
