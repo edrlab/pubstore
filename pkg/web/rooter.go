@@ -23,9 +23,7 @@ func Init(s *stor.Stor) *Web {
 	return &Web{stor: s, view: v}
 }
 
-func (web *Web) signin(w http.ResponseWriter, r *http.Request) {
-	// Implementation for the signin handler
-	// This function will handle the "/signin" route
+func (web *Web) userIsAuthenticated(r *http.Request) bool {
 
 	if cookie, err := r.Cookie("session"); err == nil {
 		sessionId := cookie.Value
@@ -33,8 +31,18 @@ func (web *Web) signin(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(sessionId)
 		if _, err = web.stor.GetUserBySessionId(sessionId); err == nil {
 			// redirect to /index the user is logged
-			http.Redirect(w, r, "/index", http.StatusFound)
+			return true
 		}
+	}
+	return false
+}
+
+func (web *Web) signin(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signin handler
+	// This function will handle the "/signin" route
+
+	if web.userIsAuthenticated(r) {
+		http.Redirect(w, r, "/index", http.StatusFound)
 	}
 
 	err := r.ParseForm()
@@ -171,11 +179,13 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	catalogView := view.GetCatalogView(pubsView, facetsView)
 
 	goviewModel := goview.M{
-		"authors":      (*catalogView).Authors,
-		"publishers":   (*catalogView).Publishers,
-		"languages":    (*catalogView).Languages,
-		"categories":   (*catalogView).Categories,
-		"publications": (*catalogView).Publications,
+		"pageTitle":           "pubstore - catalog",
+		"userIsAuthenticated": web.userIsAuthenticated(r),
+		"authors":             (*catalogView).Authors,
+		"publishers":          (*catalogView).Publishers,
+		"languages":           (*catalogView).Languages,
+		"categories":          (*catalogView).Categories,
+		"publications":        (*catalogView).Publications,
 	}
 
 	err := goview.Render(w, http.StatusOK, "catalog", goviewModel)
@@ -195,15 +205,17 @@ func (web *Web) publication(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		goviewModel := goview.M{
-			"title":           publication.Title,
-			"uuid":            publication.UUID,
-			"datePublication": publication.DatePublication,
-			"description":     publication.Description,
-			"coverUrl":        publication.CoverUrl,
-			"authors":         publication.Author,
-			"publishers":      publication.Publisher,
-			"languages":       publication.Language,
-			"categories":      publication.Category,
+			"pageTitle":           fmt.Sprintf("pubstore - %s", publication.Title),
+			"userIsAuthenticated": web.userIsAuthenticated(r),
+			"title":               publication.Title,
+			"uuid":                publication.UUID,
+			"datePublication":     publication.DatePublication,
+			"description":         publication.Description,
+			"coverUrl":            publication.CoverUrl,
+			"authors":             publication.Author,
+			"publishers":          publication.Publisher,
+			"languages":           publication.Language,
+			"categories":          publication.Category,
 		}
 		err := goview.Render(w, http.StatusOK, "publication", goviewModel)
 		if err != nil {

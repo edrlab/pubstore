@@ -1,4 +1,10 @@
 <header>
     <a href="/catalog">catalog</a>
     <a href="/bookshelf">bookshelf</a>
+
+    {{ if .userIsAuthenticated}}
+    <a href="/signout">signout</a>
+    {{ else }}
+    <a href="/signin">signin</a>
+    {{ end }}
 </header>
