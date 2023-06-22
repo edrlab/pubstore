@@ -40,12 +40,21 @@ a, a:visited {
     justify-content: center;
 }
 
+.header-infos-title > a {
+    height: 75px;
+}
+
+.header-infos-title > h1 {
+    margin: 0;
+    height: 75px;
+    line-height: 75px;
+}
+
 .header-infos img {
     width: 75px;
 }
 
 .header-options {
-    margin: 20px;
     text-align: end;
     font-size: 18px;
 }
@@ -223,6 +232,7 @@ header nav ul li a:hover {
 
 .main-content {
     padding: 0 20px;
+    min-height: 60vh;
 }
 
 .main-content-header {
@@ -283,7 +293,12 @@ footer h5 {
 }
 
 .footer-contact ul li a {
+    color: black;
+    transition: 200ms;
+}
 
+.footer-contact ul li a:hover {
+    color: #3b5998;
 }
 
 .footer-contact ul li a i {
@@ -297,13 +312,18 @@ footer h5 {
 
 .footer-social-logos i {
     font-size: 50px;
+    transition: 200ms;
 }
 
-.footer-social-logos i.fa-facebook {
+.footer-social-logos i {
+    color: rgb(59, 58, 58);
+}
+
+.footer-social-logos i.fa-facebook:hover {
     color: #3b5998;
 }
 
-.footer-social-logos i.fa-twitter {
+.footer-social-logos i.fa-twitter:hover {
     color: #00acee;
 }
 

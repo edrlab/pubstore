@@ -87,7 +87,8 @@
     flex: 2;
 }
 
-.pub-right-side h2 {
+.pub-right-side > h1 {
+    font-size: 40px;
     margin: 0;
 }
 

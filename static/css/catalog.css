@@ -87,6 +87,15 @@
     z-index: 10;
 }
 
+.book-title {
+    font-weight: 900;
+    margin-bottom: 0;
+}
+
+.book-author {
+    margin: 0;
+}
+
 .pages {
     display: flex;
     align-items: center;
@@ -232,6 +241,7 @@ td {
 
 .reset {
     padding: 5px 10px;
+    border: 1px solid black;
     border-radius: 25px;
     cursor: pointer;
     transition: 300ms;
