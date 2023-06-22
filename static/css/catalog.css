@@ -230,3 +230,19 @@ td {
     width: 250px;
 }
 
+.reset {
+    padding: 5px 10px;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: 300ms;
+    text-align: end;
+}
+
+.reset:hover {
+    background: black;
+    color: white!important;
+}
+
+.reset:visited {
+    color: black;
+}

@@ -12,7 +12,7 @@
     flex: 1;
 }
 
-.pub-left-side a {
+.pub-left-side img {
     width: 300px;
     height: 450px;
     display: flex;
@@ -26,7 +26,7 @@
     background-color: #DDDBDD;
 }
 
-.pub-left-side a:after {
+.pub-left-side img:after {
     position: absolute;
     top: 0;
     right: 0;
@@ -55,7 +55,23 @@
     cursor: pointer;
     width: 150px;
     margin: 10px;
+}
 
+.pub-left-side .pub-actions .login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+
+.pub-left-side .pub-actions a {
+    height: 20px;
+    width: 100px;
+    border: 1px solid black;
+    background: none;
+    text-align: center;
+    line-height: 20px;
 }
 
 .pub-left-side .pub-actions button:hover {

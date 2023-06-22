@@ -1,0 +1,26 @@
+{{define "head"}}
+<link href="/static/css/style.css" rel="stylesheet" />
+<link href="/static/css/catalog.css" rel="stylesheet">
+<link href="/static/css/publication.css" rel="stylesheet">
+<script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
+{{end}}
+
+{{define "content"}}
+    <table class="purchasesListContainer">
+        <thead>
+        <tr>
+            <th>Cover</th>
+            <th>Transaction Date</th>
+            <th>Title</th>
+            <th>Copy</th>
+            <th>Print</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Status</th>
+            <th>Download</th>
+        </tr>
+        </thead>
+        <tbody class="purchaseList" id="searchList">
+        </tbody>
+    </table>
+{{end}}

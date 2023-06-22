@@ -1,6 +1,5 @@
 {{define "head"}}
 <link href="/static/css/style.css" rel="stylesheet" />
-<link href="/static/css/catalog.css" rel="stylesheet">
 <link href="/static/css/publication.css" rel="stylesheet">
 <link href="/static/css/modal.css" rel="stylesheet">
 <script defer src="/static/js/purchase-modal.js"></script>
@@ -10,10 +9,18 @@
 {{define "content"}}
 <div class="pub-container">
     <div class="pub-left-side">
-        <a href="#"><img src="{{.coverUrl}}" class="book-cover"/></a>
+        <img src="{{.coverUrl}}" alt="book cover"/>
         <div class="pub-actions">
+            {{ if .userIsAuthenticated}}
             <button id="buy">Buy</button>
             <button id="loan">Borrow</button>
+            {{ else }}
+            <div class="login">
+                <a href="/signin" id="login-button">Sign In</a>
+                <p>or</p>
+                <a href="" id="signup-button">Sign Up</a>
+            </div>
+            {{ end }}
         </div>
     </div>
 
@@ -27,7 +34,7 @@
         </div>
         <div class="pub-categories-tags">
             {{ range .categories}}
-            <p class="tag">{{.}}</p>
+            <a href="/catalog?category={{.}}" class="tag">{{.}}</a>
             {{end}}
         </div>
         <div class="summary">
@@ -50,7 +57,8 @@
     <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">
         <div class="modal-wrapper js-modal-stop">
             <div class="modal-body-publications">
-                <form class="modal-form-options">
+                <span><i class="fa-solid fa-triangle-exclamation"></i> Something went wrong! <i class="fa-solid fa-triangle-exclamation"></i></span>
+                <form class="modal-form-options" action="">
                     <div class="select-global-options">
                         <label for="copy">Number Of Copies</label>
                         <input id="copy" name="copy" type="number">
@@ -63,7 +71,6 @@
                         <label for="end-date">End Date</label>
                         <input id="end-date" name="end-date" type="date">
                     </div>
-                    <span>Something went wrong!</span>
                     <div class="modal-loan-buttons">
                         <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
                         <button type="submit"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
