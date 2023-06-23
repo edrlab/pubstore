@@ -165,7 +165,7 @@ func generateLicence(provider, userID, userEmail, textHint, hexValue string, pri
 	return licence
 }
 
-func generateLicenceToLcpServer(pubUUID, userID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
+func generateLicenceFromLcpServer(pubUUID, userID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
 
 	provider := "https://pubstore.edrlab.org"
 	licence := generateLicence(provider, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
@@ -173,8 +173,6 @@ func generateLicenceToLcpServer(pubUUID, userID, userEmail, textHint, hexValue s
 	url := fmt.Sprintf("https://front-prod.edrlab.org/lcpserver/contents/%s/license", pubUUID)
 	username := "adm_username"
 	password := "adm_password"
-
-	fmt.Println(licence)
 
 	payload, err := json.Marshal(licence)
 	if err != nil {
@@ -213,30 +211,83 @@ func generateLicenceToLcpServer(pubUUID, userID, userEmail, textHint, hexValue s
 	}
 
 	return body, nil
-
-	// err = json.Unmarshal(body, &licence)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// responseString := string(body)
-	// fmt.Println(responseString)
-
-	// licenceId := licence.ID
-	// fmt.Println(licenceId)
-
-	// return licenceId, nil
 }
 
 func LicenceBuy(pubUUID, userID, userEmail, textHint, hexValue string, printRights, copyRights int) ([]byte, error) {
 	start := time.Date(2023, 6, 14, 1, 8, 15, 0, time.FixedZone("CET", 3600))
 	end := time.Date(2100, 1, 1, 0, 0, 0, 0, time.FixedZone("CET", 3600))
 
-	return generateLicenceToLcpServer(pubUUID, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+	return generateLicenceFromLcpServer(pubUUID, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
 
 }
 
 func LicenceLoan(pubUUID, userID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
 
-	return generateLicenceToLcpServer(pubUUID, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+	return generateLicenceFromLcpServer(pubUUID, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+}
+
+func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue string) ([]byte, error) {
+
+	provider := "https://pubstore.edrlab.org"
+	user := User{
+		Email:     email,
+		Encrypted: []string{"email"},
+	}
+
+	userKey := UserKey{
+		TextHint: textHint,
+		HexValue: hexValue,
+	}
+
+	encryption := Encryption{
+		UserKey: userKey,
+	}
+
+	licence := Licence{
+		Provider:   provider,
+		User:       user,
+		Encryption: encryption,
+	}
+
+	payload, err := json.Marshal(licence)
+	if err != nil {
+		return nil, err
+	}
+
+	url := "https://front-prod.edrlab.org/lcpserver/licenses/" + licenceId
+	username := "adm_username"
+	password := "adm_password"
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(username, password)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		fmt.Println("License created successfully.")
+	} else if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
+		return nil, fmt.Errorf("client error occurred. Status code: %d", resp.StatusCode)
+	} else if resp.StatusCode == http.StatusInternalServerError {
+		return nil, fmt.Errorf("server error occurred. Status code: %d", resp.StatusCode)
+	} else {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }

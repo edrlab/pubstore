@@ -1,0 +1,45 @@
+{{define "head"}}
+
+<style>
+table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+td, th {
+  padding: 10px;
+  border: 1px solid black;
+}
+
+</style>
+
+{{end}}
+
+
+{{define "content"}}
+<hr>
+
+<table>
+
+    <tr>
+        <th>ID</th>
+        <th>Publication</th>
+        <th>Publication Title</th>
+        <th>Publication Auteur</th>
+        <th>Download</th>
+    </tr>
+
+    {{range .transactions}}
+    <tr>
+        <td>{{.TransactionID}}</td>
+        <td><a href="/catalog/publication/{{.PublicationUUID}}">Link</a></td>
+        <td>{{.PublicationTitle}}</td>
+        <td>{{.PublicationAuthor}}</td>
+        <td><a href="/catalog/publication/{{.PublicationUUID}}/license">Download</a></td>
+
+    </tr>
+    {{end}}
+</table>
+
+{{end}}

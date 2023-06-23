@@ -67,6 +67,33 @@ func (stor *Stor) DeleteTransaction(transaction *Transaction) error {
 func (stor *Stor) GetTransactionByLicenceId(transactionID string) (*Transaction, error) {
 	var transaction Transaction
 	if err := stor.db.Preload("User").Preload("Publication").Where("licence_id = ?", transactionID).First(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Transaction not found")
+		}
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
+func (stor *Stor) GetTransactionByUserAndPublication(userID, publicationID uint) (*Transaction, error) {
+	var transaction Transaction
+	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Where("publication_id = ?", publicationID).First(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Transaction not found")
+		}
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
+func (stor *Stor) GetTransactionsByUserID(userID uint) (*[]Transaction, error) {
+	var transaction []Transaction
+	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Find(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Transaction not found")
+		}
 		return nil, err
 	}
 

@@ -196,14 +196,29 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 
 	var licenceBytes []byte
 	var errorWasHappend bool = false
+	var publicationTitle string
+
+	defer func() {
+		if errorWasHappend {
+
+			http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
+		w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
+
+		io.Copy(w, bytes.NewReader(licenceBytes))
+	}()
+
 	licenceBytes, err = lcp.LicenceBuy(pubUUID, userId, userEmail, textHint, hexValue, printRights, copyRights)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
 	}
 
-	var licenceId, publicationTitle string
-	licenceId, publicationTitle, err = lcp.ParseLicenceLCPL(licenceBytes)
+	licenceId, publicationTitle, err := lcp.ParseLicenceLCPL(licenceBytes)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -220,14 +235,6 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
 		return
 	}
-
-	w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
-	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
-
-	io.Copy(w, bytes.NewReader(licenceBytes))
-
-	// http.Redirect(w, r, "/user/bookshelf", http.StatusFound)
 }
 
 func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
@@ -286,14 +293,29 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 
 	var licenceBytes []byte
 	var errorWasHappend bool = false
+	var publicationTitle string
+
+	defer func() {
+		if errorWasHappend {
+
+			http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
+		w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
+
+		io.Copy(w, bytes.NewReader(licenceBytes))
+	}()
+
 	licenceBytes, err = lcp.LicenceLoan(pubUUID, userId, userEmail, textHint, hexValue, printRights, copyRights, startDate, endDate)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
 	}
 
-	var licenceId, publicationTitle string
-	licenceId, publicationTitle, err = lcp.ParseLicenceLCPL(licenceBytes)
+	licenceId, publicationTitle, err := lcp.ParseLicenceLCPL(licenceBytes)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -304,25 +326,98 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 		message += err.Error()
 		errorWasHappend = true
 	}
+}
 
-	if errorWasHappend {
+func (web *Web) getLicenceIdTransaction(publication *stor.Publication, user *stor.User) string {
 
-		http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+	if publication == nil || user == nil {
+		return ""
+	}
+
+	userID := user.ID
+	pubID := publication.ID
+	transaction, _ := web.stor.GetTransactionByUserAndPublication(userID, pubID)
+
+	if transaction == nil {
+		return ""
+	}
+
+	licenceUUID := transaction.LicenceId
+	return licenceUUID
+}
+
+func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Request) {
+
+	pubUUID := chi.URLParam(r, "id")
+
+	publication, _ := web.stor.GetPublicationByUUID(pubUUID)
+	user := web.getUserByCookie(r)
+	licenceID := web.getLicenceIdTransaction(publication, user)
+	if len(licenceID) == 0 {
+		http.Redirect(w, r, "/catalog/publication/"+pubUUID, http.StatusFound)
 		return
 	}
 
-	w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
-	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
+	message := "something went wrong to generate a fresh license : "
+	errorWasHappend := false
 
-	io.Copy(w, bytes.NewReader(licenceBytes))
+	var licenceBytes []byte
+	var publicationTitle string
 
-	// http.Redirect(w, r, "/user/bookshelf", http.StatusFound)
+	defer func() {
+		if errorWasHappend {
+
+			http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
+		w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
+
+		io.Copy(w, bytes.NewReader(licenceBytes))
+	}()
+
+	licenceBytes, err := lcp.GenerateFreshLicenceFromLcpServer(licenceID, user.Email, user.LcpHintMsg, user.LcpPassHash)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+
+	_, publicationTitle, err = lcp.ParseLicenceLCPL(licenceBytes)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
 }
 
 func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the bookshelf handler
+	// This function will handle the "/user/bookshelf" route
 
-	fmt.Fprintf(w, "bookshelf")
+	user := web.getUserByCookie(r)
+	transactions, err := web.stor.GetTransactionsByUserID(user.ID)
+	if err != nil {
+
+		fmt.Fprintf(w, "bookshelf error")
+		return
+	}
+
+	var transactionsView []*view.TransactionView = make([]*view.TransactionView, len(*transactions))
+	for i, transactionStor := range *transactions {
+		transactionsView[i] = web.view.GetTransactionViewFromTransactionStor(&transactionStor)
+	}
+
+	goviewModel := goview.M{
+		"pageTitle":           "pubstore - bookshelf",
+		"userIsAuthenticated": true,
+		"transactions":        transactionsView,
+	}
+
+	err = goview.Render(w, http.StatusOK, "bookshelf", goviewModel)
+	if err != nil {
+		fmt.Fprintf(w, "Render index error: %v!", err)
+	}
 }
 
 func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
@@ -350,8 +445,8 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 		value = category
 	}
 
-	facetsView := web.view.GetFacetsView()
-	pubsView := web.view.GetPublicationsView(facet, value)
+	facetsView := web.view.GetCatalogFacetsView()
+	pubsView := web.view.GetCatalogPublicationsView(facet, value)
 	catalogView := view.GetCatalogView(pubsView, facetsView)
 
 	goviewModel := goview.M{
@@ -376,24 +471,31 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 
 	pubUUID := chi.URLParam(r, "id")
 	errLcp := r.URL.Query().Get("err")
+	user := web.getUserByCookie(r)
 
-	if publication, err := web.view.GetPublicationView(pubUUID); err != nil {
+	if publicationStor, err := web.stor.GetPublicationByUUID(pubUUID); err != nil {
 		http.ServeFile(w, r, "static/404.html")
 		w.WriteHeader(http.StatusNotFound)
 	} else {
+		licenceId := web.getLicenceIdTransaction(publicationStor, user)
+		fmt.Println(licenceId)
+		licenceIdFound := len(licenceId) > 0
+
+		publicationView := web.view.GetPublicationViewFromPublicationStor(publicationStor)
 		goviewModel := goview.M{
-			"pageTitle":           fmt.Sprintf("pubstore - %s", publication.Title),
+			"pageTitle":           fmt.Sprintf("pubstore - %s", publicationView.Title),
 			"userIsAuthenticated": web.userIsAuthenticated(r),
 			"errLcp":              errLcp,
-			"title":               publication.Title,
-			"uuid":                publication.UUID,
-			"datePublication":     publication.DatePublication,
-			"description":         publication.Description,
-			"coverUrl":            publication.CoverUrl,
-			"authors":             publication.Author,
-			"publishers":          publication.Publisher,
-			"languages":           publication.Language,
-			"categories":          publication.Category,
+			"licenceIdFound":      licenceIdFound,
+			"title":               publicationView.Title,
+			"uuid":                publicationView.UUID,
+			"datePublication":     publicationView.DatePublication,
+			"description":         publicationView.Description,
+			"coverUrl":            publicationView.CoverUrl,
+			"authors":             publicationView.Author,
+			"publishers":          publicationView.Publisher,
+			"languages":           publicationView.Language,
+			"categories":          publicationView.Category,
 		}
 		err := goview.Render(w, http.StatusOK, "publication", goviewModel)
 		if err != nil {
@@ -464,6 +566,7 @@ func (web *Web) Rooter() *chi.Mux {
 		r.Get("/user/bookshelf", web.bookshelfHandler)
 		r.Get("/catalog/publication/{id}/buy", web.publicationBuyHandler)
 		r.Get("/catalog/publication/{id}/loan", web.publicationLoanHandler)
+		r.Get("/catalog/publication/{id}/license", web.publicationFreshLicenceHandler)
 	})
 
 	return r

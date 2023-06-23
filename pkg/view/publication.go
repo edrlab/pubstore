@@ -18,7 +18,7 @@ type PublicationView struct {
 	Language        []string
 }
 
-func convertPublicationFromStor(originalPublication *stor.Publication) *PublicationView {
+func (view *View) GetPublicationViewFromPublicationStor(originalPublication *stor.Publication) *PublicationView {
 	convertedPublication := PublicationView{
 		Title:           originalPublication.Title,
 		UUID:            originalPublication.UUID,
@@ -48,14 +48,4 @@ func convertPublicationFromStor(originalPublication *stor.Publication) *Publicat
 	}
 
 	return &convertedPublication
-}
-
-func (view *View) GetPublicationView(uuid string) (*PublicationView, error) {
-
-	publication, err := view.stor.GetPublicationByUUID(uuid)
-	if err != nil {
-		return nil, err
-	}
-
-	return convertPublicationFromStor(publication), nil
 }
