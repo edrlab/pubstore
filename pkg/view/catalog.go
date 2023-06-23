@@ -25,7 +25,7 @@ type CatalogView struct {
 	NbPublications string
 }
 
-func (view *View) GetFacetsView() *FacetsView {
+func (view *View) GetCatalogFacetsView() *FacetsView {
 	var facets FacetsView
 
 	if authorArray, err := view.stor.GetAuthors(); err != nil {
@@ -71,7 +71,7 @@ func (view *View) GetFacetsView() *FacetsView {
 	return &facets
 }
 
-func (view *View) GetPublicationsView(facet string, value string) *[]PublicationCatalogView {
+func (view *View) GetCatalogPublicationsView(facet string, value string) *[]PublicationCatalogView {
 
 	var publications []PublicationCatalogView
 	switch facet {

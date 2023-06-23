@@ -4,22 +4,26 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type User struct {
+	UUID        string `json:"uuid" validate:"omitempty,uuid4_rfc4122"`
 	Name        string `json:"name" validate:"omitempty"`
 	Email       string `json:"email" validate:"omitempty,email"`
 	Pass        string `json:"password" validate:"omitempty"`
 	LcpHintMsg  string `json:"lcpHintMsg"`
 	LcpPassHash string `json:"lcpPassHash"`
-	SessionId   string `json:"sessionId" validate:"-"`
+	SessionId   string `json:"-" validate:"-"`
 }
 
 func ConvertUserFromUserStor(u stor.User) *User {
 	return &User{
+		UUID:        u.UUID,
 		Name:        u.Name,
 		Email:       u.Email,
 		Pass:        u.Pass,
@@ -31,6 +35,7 @@ func ConvertUserFromUserStor(u stor.User) *User {
 
 func ConvertUserToUserStor(u User) *stor.User {
 	return &stor.User{
+		UUID:        u.UUID,
 		Name:        u.Name,
 		Email:       u.Email,
 		Pass:        u.Pass,
@@ -83,6 +88,14 @@ func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	viewUser.SessionId = ""
+	viewUser.LcpPassHash = lcp.CreateLcpPassHash(viewUser.LcpPassHash)
+
+	// Generate UUID for the user
+	if len(viewUser.UUID) == 0 {
+		viewUser.UUID = uuid.New().String()
 	}
 
 	// Validate the publication struct using the validator

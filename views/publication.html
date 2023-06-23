@@ -57,7 +57,15 @@
     <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">
         <div class="modal-wrapper js-modal-stop">
             <div class="modal-body-publications">
+                {{if .errLcp}}
+                <div style="background-color: #ffcccc; padding: 10px;">{{.errLcp}}</div>
                 <span><i class="fa-solid fa-triangle-exclamation"></i> Something went wrong! <i class="fa-solid fa-triangle-exclamation"></i></span>
+                {{end}}
+
+                {{if .licenceIdFound}}
+                <a href="/catalog/publication/{{.uuid}}/license">Download</a>
+
+                {{else}}
                 <form class="modal-form-options" action="">
                     <div class="select-global-options">
                         <label for="copy">Number Of Copies</label>
@@ -76,6 +84,7 @@
                         <button type="submit"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
                     </div>
                 </form>
+                {{ end }}
             </div>
         </div>
     </aside>
