@@ -205,6 +205,10 @@ header nav ul li a:hover {
     font-style: italic;
 }
 
+#Banner-Home li > span {
+    font-size: 22px;
+}
+
 #Banner-Home .Banner-infos {
     display: flex;
     justify-content: space-evenly;
