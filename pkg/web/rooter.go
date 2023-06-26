@@ -486,7 +486,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 			"pageTitle":           fmt.Sprintf("pubstore - %s", publicationView.Title),
 			"userIsAuthenticated": web.userIsAuthenticated(r),
 			"errLcp":              errLcp,
-			"licenceIdFound":      licenceIdFound,
+			"licenseIdFound":      licenceIdFound,
 			"title":               publicationView.Title,
 			"uuid":                publicationView.UUID,
 			"datePublication":     publicationView.DatePublication,
