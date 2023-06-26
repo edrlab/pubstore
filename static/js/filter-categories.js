@@ -13,13 +13,15 @@ const url = getCurrentURL();
 const splitUrl = url.split(/[?=]+/);
 
 
-const container = document.querySelector('.filter-display');
+const container = document.querySelector('.main-content-header h3');
 
 if (splitUrl[1] === undefined) {
     container.style.diplay = "none";
+    container.classList.remove("filter-display");
 } else {
     const filter = splitUrl[1];
     const parameter = splitUrl[2].replace(/%20/g, " ");
-    container.innerText = `${filter} : ${parameter}`;
+    container.classList.add("filter-display");
+    container.innerHTML = `${parameter} <i class="fa-solid fa-xmark"></i>`;
 }
 

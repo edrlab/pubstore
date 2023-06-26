@@ -239,7 +239,8 @@ td {
     width: 250px;
 }
 
-.reset {
+.reset,
+.filter-display {
     padding: 5px 10px;
     border: 1px solid black;
     border-radius: 25px;
@@ -248,7 +249,8 @@ td {
     text-align: end;
 }
 
-.reset:hover {
+.reset:hover,
+.filter-display:hover{
     background: black;
     color: white!important;
 }
@@ -256,3 +258,4 @@ td {
 .reset:visited {
     color: black;
 }
+

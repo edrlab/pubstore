@@ -22,18 +22,17 @@
         </thead>
         <tbody class="purchaseList" id="searchList">
         {{range .transactions}}
-        <tr>
-            <td><!--{{.TransactionID}}--></td>
-            <td></td>
-            <td>{{.PublicationTitle}}, {{.PublicationAuthor}}</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td><a href="/catalog/publication/{{.PublicationUUID}}">Link</a></td>
-            <td><a href="/catalog/publication/{{.PublicationUUID}}/license">Download</a></td>
-
-        </tr>
+            <tr>
+                <td><a href="/catalog/publication/{{.PublicationUUID}}"><img src={{.PublicationCover}} class="purchase-cover"></a></td>
+                <td>{{ .Publication}}</td>
+                <td>{{.PublicationTitle}}, {{.PublicationAuthor}}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>Revoke <i class="fa-solid fa-skull-crossbones"></i></td>
+                <td><a href="/catalog/publication/{{.PublicationUUID}}/license" download=""><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
+            </tr>
         {{end}}
         </tbody>
     </table>

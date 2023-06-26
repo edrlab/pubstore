@@ -12,8 +12,12 @@
         <img src="{{.coverUrl}}" alt="book cover"/>
         <div class="pub-actions">
             {{ if .userIsAuthenticated}}
+            {{if .licenceIdFound}}
+            <a href="/catalog/publication/{{.uuid}}/license">Download</a>
+            {{else}}
             <button id="buy">Buy</button>
             <button id="loan">Borrow</button>
+            {{ end }}
             {{ else }}
             <div class="login">
                 <a href="/signin" id="login-button">Sign In</a>
@@ -61,30 +65,36 @@
                 <div style="background-color: #ffcccc; padding: 10px;">{{.errLcp}}</div>
                 <span><i class="fa-solid fa-triangle-exclamation"></i> Something went wrong! <i class="fa-solid fa-triangle-exclamation"></i></span>
                 {{end}}
-
-                {{if .licenceIdFound}}
-                <a href="/catalog/publication/{{.uuid}}/license">Download</a>
-
-                {{else}}
-                <form class="modal-form-options" action="">
+                <form  id="buyForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/buy" method="GET">
                     <div class="select-global-options">
-                        <label for="copy">Number Of Copies</label>
-                        <input id="copy" name="copy" type="number">
-                        <label for="print">Number Of Prints</label>
-                        <input id="print" name="print" type="number">
-                    </div>
-                    <div class="select-loan-dates">
-                        <label for="start-date">Start Date</label>
-                        <input id="start-date" name="start-date" type="date">
-                        <label for="end-date">End Date</label>
-                        <input id="end-date" name="end-date" type="date">
+                        <label for="copyRights">Number Of Copies</label>
+                        <input id="copyRights" name="copy" type="number">
+                        <label for="printRigths">Number Of Prints</label>
+                        <input id="printRigths" name="print" type="number">
                     </div>
                     <div class="modal-loan-buttons">
                         <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
-                        <button type="submit"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
+                        <button type="submit" value="Buy"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
                     </div>
                 </form>
-                {{ end }}
+                <form  id="loanForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/loan" method="GET">
+                    <div class="select-global-options">
+                        <label for="copyRights">Number Of Copies</label>
+                        <input id="copyRights" name="copy" type="number">
+                        <label for="printRigths">Number Of Prints</label>
+                        <input id="printRigths" name="print" type="number">
+                    </div>
+                    <div class="select-loan-dates">
+                        <label for="startDate">Start Date</label>
+                        <input id="startDate" name="start-date" type="date">
+                        <label for="endDate">End Date</label>
+                        <input id="endDate" name="end-date" type="date">
+                    </div>
+                    <div class="modal-loan-buttons">
+                        <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
+                        <button type="submit" value="Loan" class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
+                    </div>
+                </form>
             </div>
         </div>
     </aside>
