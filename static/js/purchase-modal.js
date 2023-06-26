@@ -10,7 +10,7 @@ const purchaseButton = document.querySelector("#buy");
 const loanButton = document.querySelector("#loan");
 const buyForm = document.getElementById("buyForm");
 const loanForm = document.getElementById("loanForm");
-const SubmitButton = document.querySelector(".modal-loan-buttons button[type='submit']");
+const submitButton = document.querySelector(".modal-loan-buttons button[type='submit']");
 const backToPresentationButton = document.querySelector(".back-button");
 const loanOptions = document.querySelector(".select-loan-dates");
 const errorMessage = document.querySelector(".modal-form-options span");
@@ -55,6 +55,10 @@ const createModal = () => {
         buyForm.style.display = "none";
         loanForm.style.display = "flex";
     })
+
+submitButton.addEventListener('click', (e) => {
+    closeModal(e)
+});
 
 
 const closeModal = (e) => {

@@ -7,13 +7,16 @@
 {{end}}
 
 {{define "content"}}
+{{if .errLcp}}
+<div style="background-color: #ffcccc; padding: 10px;">{{.errLcp}}</div>
+{{end}}
 <div class="pub-container">
     <div class="pub-left-side">
         <img src="{{.coverUrl}}" alt="book cover"/>
         <div class="pub-actions">
             {{ if .userIsAuthenticated}}
-            {{if .licenceIdFound}}
-            <a href="/catalog/publication/{{.uuid}}/license">Download</a>
+            {{if .licenseIdFound}}
+            <a href="/catalog/publication/{{.uuid}}/license">Download <i class="fa-solid fa-cloud-arrow-down"></i></a>
             {{else}}
             <button id="buy">Buy</button>
             <button id="loan">Borrow</button>
@@ -60,16 +63,12 @@
     <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">
         <div class="modal-wrapper js-modal-stop">
             <div class="modal-body-publications">
-                {{if .errLcp}}
-                <div style="background-color: #ffcccc; padding: 10px;">{{.errLcp}}</div>
-                <span><i class="fa-solid fa-triangle-exclamation"></i> Something went wrong! <i class="fa-solid fa-triangle-exclamation"></i></span>
-                {{end}}
                 <form  id="buyForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/buy" method="GET">
                     <div class="select-global-options">
                         <label for="copyRights">Number Of Copies</label>
                         <input id="copyRights" name="copy" type="number">
-                        <label for="printRigths">Number Of Prints</label>
-                        <input id="printRigths" name="print" type="number">
+                        <label for="printRights">Number Of Prints</label>
+                        <input id="printRights" name="print" type="number">
                     </div>
                     <div class="modal-loan-buttons">
                         <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
@@ -80,14 +79,14 @@
                     <div class="select-global-options">
                         <label for="copyRights">Number Of Copies</label>
                         <input id="copyRights" name="copy" type="number">
-                        <label for="printRigths">Number Of Prints</label>
-                        <input id="printRigths" name="print" type="number">
+                        <label for="printRights">Number Of Prints</label>
+                        <input id="printRights" name="print" type="number">
                     </div>
                     <div class="select-loan-dates">
                         <label for="startDate">Start Date</label>
-                        <input id="startDate" name="start-date" type="date">
+                        <input id="startDate" name="start-date" type="datetime-local">
                         <label for="endDate">End Date</label>
-                        <input id="endDate" name="end-date" type="date">
+                        <input id="endDate" name="end-date" type="datetime-local">
                     </div>
                     <div class="modal-loan-buttons">
                         <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>

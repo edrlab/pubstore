@@ -22,18 +22,33 @@
         </thead>
         <tbody class="purchaseList" id="searchList">
         {{range .transactions}}
+        <tr>
+            <td><a href="/catalog/publication/{{.PublicationUUID}}"><img src={{.PublicationCoverUrl}} class="purchase-cover"></a></td>
+            <td>2023-06-24</td>
+            <td>{{.PublicationTitle}}, {{.PublicationAuthor}}</td>
+            <td>2000</td>
+            <td>10</td>
+            <td>2023-06-24</td>
+            <td>2023-06-30</td>
+            <td>Active<!--<i class="fa-solid fa-skull-crossbones"></i>--></td>
+            <td><a href="/catalog/publication/{{.PublicationUUID}}/license"><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
+        </tr>
+        {{end}}
+        </tbody>
+<!--        <tbody class="purchaseList" id="searchList">
+        {{range .transactions}}
             <tr>
                 <td><a href="/catalog/publication/{{.PublicationUUID}}"><img src={{.PublicationCover}} class="purchase-cover"></a></td>
-                <td>{{ .Publication}}</td>
+                <td>{{ .PublicationTransactionDate}}</td>
                 <td>{{.PublicationTitle}}, {{.PublicationAuthor}}</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td>Revoke <i class="fa-solid fa-skull-crossbones"></i></td>
+                <td>{{.PublicationCopy}}</td>
+                <td>{{.PublicationPrints}}</td>
+                <td>{{.PublicationStartDate}}</td>
+                <td>{{.PublicationEndDate}}</td>
+                <td>{{.PublicationStatus}}&lt;!&ndash;<i class="fa-solid fa-skull-crossbones"></i>&ndash;&gt;</td>
                 <td><a href="/catalog/publication/{{.PublicationUUID}}/license" download=""><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
             </tr>
         {{end}}
-        </tbody>
+        </tbody>-->
     </table>
 {{end}}
