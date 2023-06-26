@@ -452,6 +452,8 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	goviewModel := goview.M{
 		"pageTitle":           "pubstore - catalog",
 		"userIsAuthenticated": web.userIsAuthenticated(r),
+		"currentFacetType":    facet,
+		"currentFacetValue":   value,
 		"authors":             (*catalogView).Authors,
 		"publishers":          (*catalogView).Publishers,
 		"languages":           (*catalogView).Languages,
