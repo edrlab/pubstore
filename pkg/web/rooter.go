@@ -256,7 +256,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 	// timeString := "2023-06-14T01:08:15+00:00"
 	// layout := "2006-01-02T15:04:05Z07:00"
 	// layout := "YYYY-MM-DDTHH:mm:ss.nnnZ" // ISO 8601 extended
-	layout := "2006-01-02T15:04:05.000Z" // ISO 8601 extended JS
+	layout := time.RFC3339 // JS toISOString
 	startDate, err := time.Parse(layout, startDateString)
 	if err != nil {
 		fmt.Println(err.Error())
