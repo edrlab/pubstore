@@ -250,8 +250,8 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 
 	printRightsString := r.URL.Query().Get("printRights")
 	copyRightsString := r.URL.Query().Get("copyRights")
-	startDateString := r.URL.Query().Get("startDate") + ":00+00:00"
-	endDateString := r.URL.Query().Get("endDate") + ":00+00:00"
+	startDateString := r.URL.Query().Get("startDate")
+	endDateString := r.URL.Query().Get("endDate")
 
 	// timeString := "2023-06-14T01:08:15+00:00"
 	// layout := "2006-01-02T15:04:05Z07:00"

@@ -65,9 +65,9 @@
                 <form  id="buyForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/buy" method="GET">
                     <div class="select-global-options">
                         <label for="copyRights">Number Of Copies</label>
-                        <input id="copyRights" name="copyRights" type="number">
+                        <input id="copyRights" name="copyRights" type="number" value="500">
                         <label for="printRights">Number Of Prints</label>
-                        <input id="printRights" name="printRigths" type="number">
+                        <input id="printRights" name="printRights" type="number" value="10">
                     </div>
                     <div class="modal-loan-buttons">
                         <button class="modal-button back-button" id="backButtonBuy"><i class="fa-solid fa-rotate-left"></i> Back</button>
@@ -77,9 +77,9 @@
                 <form  id="loanForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/loan" method="GET">
                     <div class="select-global-options">
                         <label for="copyRights">Number Of Copies</label>
-                        <input id="copyRights" name="copyRights" type="number">
+                        <input id="copyRights" name="copyRights" type="number" value="500">
                         <label for="printRights">Number Of Prints</label>
-                        <input id="printRights" name="printRights" type="number">
+                        <input id="printRights" name="printRights" type="number" value="10">
                     </div>
                     <div class="select-loan-dates">
                         <label for="startDateLocal">Start Date</label>
