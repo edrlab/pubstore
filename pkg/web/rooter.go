@@ -248,7 +248,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 
 	pubUUID := chi.URLParam(r, "id")
 
-	printRightsString := r.URL.Query().Get("printRigths")
+	printRightsString := r.URL.Query().Get("printRights")
 	copyRightsString := r.URL.Query().Get("copyRights")
 	startDateString := r.URL.Query().Get("startDate") + ":00+00:00"
 	endDateString := r.URL.Query().Get("endDate") + ":00+00:00"
