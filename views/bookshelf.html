@@ -1,7 +1,6 @@
 {{define "head"}}
 <link href="/static/css/style.css" rel="stylesheet" />
-<link href="/static/css/catalog.css" rel="stylesheet">
-<link href="/static/css/publication.css" rel="stylesheet">
+<link href="/static/css/bookshelf.css" rel="stylesheet">
 <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
@@ -25,30 +24,15 @@
         <tr>
             <td><a href="/catalog/publication/{{.PublicationUUID}}"><img src={{.PublicationCoverUrl}} class="purchase-cover"></a></td>
             <td>2023-06-24</td>
-            <td>{{.PublicationTitle}}, {{.PublicationAuthor}}</td>
+            <td>{{.PublicationTitle}} <br> by <br> {{.PublicationAuthor}}</td>
             <td>2000</td>
             <td>10</td>
             <td>2023-06-24</td>
             <td>2023-06-30</td>
-            <td>Active<!--<i class="fa-solid fa-skull-crossbones"></i>--></td>
+            <td><span class="status active">Active</span></td>
             <td><a href="/catalog/publication/{{.PublicationUUID}}/license"><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
         </tr>
         {{end}}
         </tbody>
-<!--        <tbody class="purchaseList" id="searchList">
-        {{range .transactions}}
-            <tr>
-                <td><a href="/catalog/publication/{{.PublicationUUID}}"><img src={{.PublicationCover}} class="purchase-cover"></a></td>
-                <td>{{ .PublicationTransactionDate}}</td>
-                <td>{{.PublicationTitle}}, {{.PublicationAuthor}}</td>
-                <td>{{.PublicationCopy}}</td>
-                <td>{{.PublicationPrints}}</td>
-                <td>{{.PublicationStartDate}}</td>
-                <td>{{.PublicationEndDate}}</td>
-                <td>{{.PublicationStatus}}&lt;!&ndash;<i class="fa-solid fa-skull-crossbones"></i>&ndash;&gt;</td>
-                <td><a href="/catalog/publication/{{.PublicationUUID}}/license" download=""><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
-            </tr>
-        {{end}}
-        </tbody>-->
     </table>
 {{end}}

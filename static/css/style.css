@@ -215,8 +215,7 @@ header nav ul li a:hover {
     align-items: center;
 }
 
-#Banner:after,
-.status:after {
+#Banner:after {
     position: absolute;
     top: 0;
     right: 0;
@@ -245,21 +244,6 @@ header nav ul li a:hover {
     justify-content: space-between;
 }
 
-
-.revoked {
-    border-radius: 10px;
-    padding: 5px 10px;
-    color: white;
-
-}
-
-.false {
-    background-color: grey;
-}
-
-.true {
-    background-color: red;
-}
 
 .latest-publications-infos, .latest-purchases-infos {
     display: flex;
@@ -351,14 +335,6 @@ footer h5 {
     scale: 1.1;
     color: black;
 }
-
-
-.status {
-    font-size: 150px;
-    position: relative;
-    overflow: hidden;
-}
-
 
 @media screen and (max-width: 800px) {
     footer {

@@ -113,27 +113,6 @@
     color: white!important;
 }
 
-
-.userListContainer,
-.purchasesListContainer {
-    text-align: center;
-    width: 100%;
-    padding: 30px;
-    margin: auto;
-}
-
-.userListContainer tr:hover,
-.purchasesListContainer tr:hover {
-    background-color: rgba(167, 198, 248, 0.24);
-}
-
-
-th,
-td {
-    border-bottom: 1px solid;
-    padding: 20px 0;
-}
-
 .purchase-button,
 .see-more {
     padding: 15px;
@@ -154,10 +133,6 @@ td {
 .purchase-button:active,
 .see-more:active{
     scale: 0.9;
-}
-
-.purchase-cover {
-    width: 50px;
 }
 
 .catalog-content {

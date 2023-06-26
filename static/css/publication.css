@@ -76,11 +76,13 @@
     line-height: 20px;
 }
 
-.pub-left-side .pub-actions button:hover {
+.pub-left-side .pub-actions button:hover,
+.pub-left-side .pub-actions > a:hover {
     box-shadow: 5px 5px 5px grey;
 }
 
-.pub-left-side .pub-actions button:active {
+.pub-left-side .pub-actions button:active,
+.pub-left-side .pub-actions > a:active {
     scale: 0.9;
 }
 
