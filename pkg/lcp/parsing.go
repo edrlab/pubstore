@@ -2,6 +2,8 @@ package lcp
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"time"
 )
 
@@ -121,11 +123,11 @@ type rights struct {
 	End   time.Time `json:"end"`
 }
 
-func ParseLicenceLCPL(data []byte) (string, string, error) {
+func ParseLicenceLCPL(data []byte) (string, string, string, int, int, time.Time, time.Time, error) {
 	var lcp LicenceLCPL
 	err := json.Unmarshal(data, &lcp)
 	if err != nil {
-		return "", "", err
+		return "", "", "", 0, 0, time.Now(), time.Now(), err
 	}
 
 	// Extracting ID
@@ -140,10 +142,100 @@ func ParseLicenceLCPL(data []byte) (string, string, error) {
 		}
 	}
 
+	// Extracting status link information
+	var publicationStatus link
+	for _, l := range lcp.Links {
+		if l.Rel == "status" {
+			publicationStatus = l
+			break
+		}
+	}
+
 	// Extracting publication link information
 	// publicationType := publicationLink.Type
 	publicationTitle := publicationLink.Title
+	publicationStatusHref := publicationStatus.Href
+	printRights := lcp.Rights.Print
+	copyRights := lcp.Rights.Copy
+	startDate := lcp.Rights.Start
+	endDate := lcp.Rights.End
 	// publicationLength := publicationLink.Length
 
-	return id, publicationTitle, nil
+	return id, publicationTitle, publicationStatusHref, printRights, copyRights, startDate, endDate, err
+}
+
+/*
+{
+	"id": "aea91a67-b1de-4761-97fa-9d2f038a20ba",
+	"status": "ready",
+	"updated": {
+	  "license": "2023-06-22T12:07:51Z",
+	  "status": "2023-06-22T12:07:51Z"
+	},
+	"message": "ready",
+	"links": [
+	  {
+		"rel": "license",
+		"href": "https://front-prod.edrlab.org/frontend/api/v1/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba",
+		"type": "application/vnd.readium.lcp.license.v1.0+json"
+	  },
+	  {
+		"rel": "register",
+		"href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/register{?id,name}",
+		"type": "application/vnd.readium.license.status.v1.0+json",
+		"templated": true
+	  },
+	  {
+		"rel": "return",
+		"href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/return{?id,name}",
+		"type": "application/vnd.readium.license.status.v1.0+json",
+		"templated": true
+	  },
+	  {
+		"rel": "renew",
+		"href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/renew{?end,id,name}",
+		"type": "application/vnd.readium.license.status.v1.0+json",
+		"templated": true
+	  }
+	],
+	"potential_rights": {
+	  "end": "2099-12-31T23:00:00Z"
+	}
+  }
+*/
+
+type Lsd struct {
+	ID      string `json:"id"`
+	Status  string `json:"status"`
+	Updated struct {
+		License time.Time `json:"license"`
+		Status  time.Time `json:"status"`
+	} `json:"updated"`
+	Message         string `json:"message"`
+	Links           []link `json:"links"`
+	PotentialRights struct {
+		End time.Time `json:"end"`
+	} `json:"potential_rights"`
+}
+
+func getLsdStatusDocument(url string) (Lsd, error) {
+
+	response, err := http.Get(url)
+	if err != nil {
+		return Lsd{}, err
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return Lsd{}, err
+	}
+
+	var data Lsd
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return Lsd{}, err
+	}
+
+	return data, nil
 }

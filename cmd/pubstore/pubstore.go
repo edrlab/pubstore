@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/api"
+	"github.com/edrlab/pubstore/pkg/service"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/web"
 )
@@ -18,7 +19,8 @@ func main() {
 
 	_stor := stor.Init("pub.db")
 	_api := api.Init(_stor)
-	_web := web.Init(_stor)
+	_service := service.Init(_stor)
+	_web := web.Init(_stor, _service)
 
 	handler := _api.Rooter(_web.Rooter())
 

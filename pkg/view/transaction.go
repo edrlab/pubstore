@@ -2,19 +2,25 @@ package view
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
 )
 
 type TransactionView struct {
-	TransactionID       string
-	PublicationUUID     string
-	PublicationTitle    string
-	PublicationAuthor   string
-	PublicationCoverUrl string
-	// StartDate time.Time
-	// EndDate   time.Time
-	// Status    string
+	TransactionID             string
+	TransactionDate           time.Time
+	PublicationUUID           string
+	PublicationTitle          string
+	PublicationAuthor         string
+	PublicationCoverUrl       string
+	PublicationPrintRights    string
+	PublicationCopyRights     string
+	PublicationStartDate      time.Time
+	PublicationEndDate        time.Time
+	LicenseStatusMessage      string
+	LicenseEndPotentialRights time.Time
 }
 
 func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transaction) *TransactionView {
@@ -25,11 +31,20 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 		publicationAuthor = publication.Author[0].Name
 	}
 
+	statusMessage, endPotentialRights, printRights, copyRights, startDate, endDate, err := lcp.GetLsdStatus(transaction.LicenceId, transaction.User.Email, transaction.User.LcpHintMsg, transaction.User.LcpPassHash)
+
 	return &TransactionView{
-		TransactionID:       fmt.Sprintf("%d", transaction.ID),
-		PublicationUUID:     transaction.Publication.UUID,
-		PublicationTitle:    transaction.Publication.Title,
-		PublicationAuthor:   publicationAuthor,
-		PublicationCoverUrl: publication.CoverUrl,
+		TransactionID:             fmt.Sprintf("%d", transaction.ID),
+		TransactionDate:           transaction.CreatedAt,
+		PublicationUUID:           transaction.Publication.UUID,
+		PublicationTitle:          transaction.Publication.Title,
+		PublicationAuthor:         publicationAuthor,
+		PublicationCoverUrl:       publication.CoverUrl,
+		PublicationPrintRights:    fmt.Sprintf("%d", printRights),
+		PublicationCopyRights:     fmt.Sprintf("%d", copyRights),
+		PublicationStartDate:      startDate,
+		PublicationEndDate:        endDate,
+		LicenseStatusMessage:      statusMessage,
+		LicenseEndPotentialRights: endPotentialRights,
 	}
 }

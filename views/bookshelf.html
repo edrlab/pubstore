@@ -24,20 +24,34 @@ td, th {
 
     <tr>
         <th>ID</th>
+        <th>Transaction Date</th>
         <th>Cover</th>
         <th>Publication</th>
         <th>Publication Title</th>
         <th>Publication Auteur</th>
+        <th>Publication Print Rights</th>
+        <th>Publication Copy Rights</th>
+        <th>Publication Start Date</th>
+        <th>Publication End Date</th>
+        <th>License Status Message</th>
+        <th>License End Potential Rights</th>
         <th>Download</th>
     </tr>
 
     {{range .transactions}}
     <tr>
         <td>{{.TransactionID}}</td>
+        <th>{{.TransactionDate}}</th>
         <td><img src="{{.PublicationCoverUrl}}" /></td>
         <td><a href="/catalog/publication/{{.PublicationUUID}}">Link</a></td>
         <td>{{.PublicationTitle}}</td>
         <td>{{.PublicationAuthor}}</td>
+        <td>{{.PublicationPrintRights}}</td>
+        <td>{{.PublicationCopyRights}}</td>
+        <td>{{.PublicationStartDate}}</td>
+        <td>{{.PublicationEndDate}}</td>
+        <td>{{.LicenseStatusMessage}}</td>
+        <td>{{.LicenseEndPotentialRights}}</td>
         <td><a href="/catalog/publication/{{.PublicationUUID}}/license">Download</a></td>
 
     </tr>
