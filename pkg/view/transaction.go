@@ -7,10 +7,11 @@ import (
 )
 
 type TransactionView struct {
-	TransactionID     string
-	PublicationUUID   string
-	PublicationTitle  string
-	PublicationAuthor string
+	TransactionID       string
+	PublicationUUID     string
+	PublicationTitle    string
+	PublicationAuthor   string
+	PublicationCoverUrl string
 	// StartDate time.Time
 	// EndDate   time.Time
 	// Status    string
@@ -25,9 +26,10 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 	}
 
 	return &TransactionView{
-		TransactionID:     fmt.Sprintf("%d", transaction.ID),
-		PublicationUUID:   transaction.Publication.UUID,
-		PublicationTitle:  transaction.Publication.Title,
-		PublicationAuthor: publicationAuthor,
+		TransactionID:       fmt.Sprintf("%d", transaction.ID),
+		PublicationUUID:     transaction.Publication.UUID,
+		PublicationTitle:    transaction.Publication.Title,
+		PublicationAuthor:   publicationAuthor,
+		PublicationCoverUrl: publication.CoverUrl,
 	}
 }

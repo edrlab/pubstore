@@ -24,6 +24,7 @@ td, th {
 
     <tr>
         <th>ID</th>
+        <th>Cover</th>
         <th>Publication</th>
         <th>Publication Title</th>
         <th>Publication Auteur</th>
@@ -33,6 +34,7 @@ td, th {
     {{range .transactions}}
     <tr>
         <td>{{.TransactionID}}</td>
+        <td><img src="{{.PublicationCoverUrl}}" /></td>
         <td><a href="/catalog/publication/{{.PublicationUUID}}">Link</a></td>
         <td>{{.PublicationTitle}}</td>
         <td>{{.PublicationAuthor}}</td>
