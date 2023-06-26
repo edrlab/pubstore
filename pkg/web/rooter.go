@@ -254,7 +254,8 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 	endDateString := r.URL.Query().Get("endDate") + ":00+00:00"
 
 	// timeString := "2023-06-14T01:08:15+00:00"
-	layout := "2006-01-02T15:04:05Z07:00"
+	// layout := "2006-01-02T15:04:05Z07:00"
+	layout := "YYYY-MM-DDTHH:mm:ss.sssZ" // ISO 8601 extended
 	startDate, err := time.Parse(layout, startDateString)
 	if err != nil {
 		startDate = time.Now()
