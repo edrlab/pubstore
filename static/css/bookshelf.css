@@ -30,6 +30,10 @@ td {
     color: white;
 }
 
+.ready {
+    background: #00acee;
+}
+
 .active {
     background: #1c7430;
 }
