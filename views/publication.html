@@ -66,30 +66,32 @@
                 <form  id="buyForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/buy" method="GET">
                     <div class="select-global-options">
                         <label for="copyRights">Number Of Copies</label>
-                        <input id="copyRights" name="copy" type="number">
+                        <input id="copyRights" name="copyRights" type="number">
                         <label for="printRights">Number Of Prints</label>
-                        <input id="printRights" name="print" type="number">
+                        <input id="printRights" name="printRights" type="number">
                     </div>
                     <div class="modal-loan-buttons">
-                        <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
+                        <button class="modal-button back-button" id="backButtonBuy"><i class="fa-solid fa-rotate-left"></i> Back</button>
                         <button type="submit" value="Buy"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
                     </div>
                 </form>
                 <form  id="loanForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/loan" method="GET">
                     <div class="select-global-options">
                         <label for="copyRights">Number Of Copies</label>
-                        <input id="copyRights" name="copy" type="number">
+                        <input id="copyRights" name="copyRights" type="number">
                         <label for="printRights">Number Of Prints</label>
-                        <input id="printRights" name="print" type="number">
+                        <input id="printRights" name="printRights" type="number">
                     </div>
                     <div class="select-loan-dates">
-                        <label for="startDate">Start Date</label>
-                        <input id="startDate" name="start-date" type="datetime-local">
-                        <label for="endDate">End Date</label>
-                        <input id="endDate" name="end-date" type="datetime-local">
+                        <label for="startDateLocal">Start Date</label>
+                        <input id="startDateLocal" name="start-date" type="datetime-local">
+                        <label for="endDateLocal">End Date</label>
+                        <input id="endDateLocal" name="end-date" type="datetime-local">
+                        <input id="startDate" name="startDate" type="text" hidden>
+                        <input id="endDate" name="endDate" type="text" hidden>
                     </div>
                     <div class="modal-loan-buttons">
-                        <button class="modal-button back-button"><i class="fa-solid fa-rotate-left"></i> Back</button>
+                        <button class="modal-button back-button" id="backButtonLoan"><i class="fa-solid fa-rotate-left"></i> Back</button>
                         <button type="submit" value="Loan" class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
                     </div>
                 </form>

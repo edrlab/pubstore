@@ -291,3 +291,28 @@ func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue stri
 
 	return body, nil
 }
+
+func GetLsdStatus(licenceId, email, textHint, hexValue string) (string, time.Time, int, int, time.Time, time.Time, error) {
+
+	licenceBytes, err := GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue)
+	if err != nil {
+		return "", time.Now(), 0, 0, time.Now(), time.Now(), err
+
+	}
+
+	_, _, publicationStatusHref, printRights, copyRights, startDate, endDate, err := ParseLicenceLCPL(licenceBytes)
+	if err != nil {
+		return "", time.Now(), 0, 0, time.Now(), time.Now(), err
+	}
+
+	// make a request on publicationStatusHref
+	lsd, err := getLsdStatusDocument(publicationStatusHref)
+	if err != nil {
+		return "", time.Now(), printRights, copyRights, startDate, endDate, err
+	}
+
+	statusMessage := lsd.Message
+	endPotentialRights := lsd.PotentialRights.End
+
+	return statusMessage, endPotentialRights, printRights, copyRights, startDate, endDate, err
+}

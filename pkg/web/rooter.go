@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/lcp"
+	"github.com/edrlab/pubstore/pkg/service"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/view"
 	"github.com/foolin/goview"
@@ -19,13 +20,14 @@ import (
 )
 
 type Web struct {
-	view *view.View
-	stor *stor.Stor
+	view    *view.View
+	stor    *stor.Stor
+	service *service.Service
 }
 
-func Init(s *stor.Stor) *Web {
+func Init(s *stor.Stor, service *service.Service) *Web {
 	v := view.Init(s)
-	return &Web{stor: s, view: v}
+	return &Web{stor: s, view: v, service: service}
 }
 
 func (web *Web) getUserByCookie(r *http.Request) *stor.User {
@@ -218,7 +220,7 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 		errorWasHappend = true
 	}
 
-	licenceId, publicationTitle, err := lcp.ParseLicenceLCPL(licenceBytes)
+	licenceId, publicationTitle, _, _, _, _, _, err := lcp.ParseLicenceLCPL(licenceBytes)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -315,7 +317,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 		errorWasHappend = true
 	}
 
-	licenceId, publicationTitle, err := lcp.ParseLicenceLCPL(licenceBytes)
+	licenceId, publicationTitle, _, _, _, _, _, err := lcp.ParseLicenceLCPL(licenceBytes)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -328,31 +330,13 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (web *Web) getLicenceIdTransaction(publication *stor.Publication, user *stor.User) string {
-
-	if publication == nil || user == nil {
-		return ""
-	}
-
-	userID := user.ID
-	pubID := publication.ID
-	transaction, _ := web.stor.GetTransactionByUserAndPublication(userID, pubID)
-
-	if transaction == nil {
-		return ""
-	}
-
-	licenceUUID := transaction.LicenceId
-	return licenceUUID
-}
-
 func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Request) {
 
 	pubUUID := chi.URLParam(r, "id")
 
 	publication, _ := web.stor.GetPublicationByUUID(pubUUID)
 	user := web.getUserByCookie(r)
-	licenceID := web.getLicenceIdTransaction(publication, user)
+	licenceID := web.service.GetLicenceIdTransaction(publication, user)
 	if len(licenceID) == 0 {
 		http.Redirect(w, r, "/catalog/publication/"+pubUUID, http.StatusFound)
 		return
@@ -384,7 +368,7 @@ func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Re
 		errorWasHappend = true
 	}
 
-	_, publicationTitle, err = lcp.ParseLicenceLCPL(licenceBytes)
+	_, publicationTitle, _, _, _, _, _, err = lcp.ParseLicenceLCPL(licenceBytes)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -479,7 +463,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/404.html")
 		w.WriteHeader(http.StatusNotFound)
 	} else {
-		licenceId := web.getLicenceIdTransaction(publicationStor, user)
+		licenceId := web.service.GetLicenceIdTransaction(publicationStor, user)
 		fmt.Println(licenceId)
 		licenceIdFound := len(licenceId) > 0
 

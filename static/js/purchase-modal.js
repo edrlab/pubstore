@@ -11,9 +11,15 @@ const buyForm = document.getElementById("buyForm");
 const loanForm = document.getElementById("loanForm");
 
 const submitButton = document.querySelector(".modal-loan-buttons button[type='submit']");
-const backToPresentationButton = document.querySelector(".back-button");
+const backToPresentationButtonBuy = document.querySelector("#backButtonBuy");
+const backToPresentationButtonLoan = document.querySelector("#backButtonLoan");
 
 let form = document.querySelector(".modal-form-options");
+
+let startDateLocal = document.querySelector('#startDateLocal');
+let endDateLocal = document.querySelector('#endDateLocal');
+let startDateISO = document.querySelector('#startDate');
+let endDateISO = document.querySelector('#endDate');
 
 
 const createModal = () => {
@@ -38,13 +44,19 @@ loanButton.addEventListener('click', (e) => {
     loanForm.style.display = "flex";
 })
 
+
 submitButton.addEventListener('click', (e) => {
     closeModal(e)
 });
 
-backToPresentationButton.addEventListener("click", (e) => {
+backToPresentationButtonBuy.addEventListener("click", (e) => {
     e.preventDefault();
-    closeModal(e)
+    closeModal(e);
+})
+
+backToPresentationButtonLoan.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeModal(e);
 })
 
 
@@ -71,4 +83,15 @@ modalWindow.addEventListener('click', function(e) {
 
 modal.addEventListener('click', (e) => {
     e.stopPropagation();
+})
+
+
+startDateLocal.addEventListener('change', (e) => {
+    startDateISO.value = new Date(startDateLocal.value).toISOString();
+    console.log("start date", startDateISO.value);
+})
+
+endDateLocal.addEventListener('change', (e) => {
+    endDateISO.value = new Date(endDateLocal.value).toISOString();
+    console.log("end date", endDateISO.value);
 })

@@ -15,6 +15,7 @@
             <th>Print</th>
             <th>Start Date</th>
             <th>End Date</th>
+            <th>End Potential Rights</th>
             <th>Status</th>
             <th>Download</th>
         </tr>
@@ -23,13 +24,14 @@
         {{range .transactions}}
         <tr>
             <td><a href="/catalog/publication/{{.PublicationUUID}}"><img src={{.PublicationCoverUrl}} class="purchase-cover"></a></td>
-            <td>2023-06-24</td>
+            <td>{{.TransactionDate}}</td>
             <td>{{.PublicationTitle}} <br> by <br> {{.PublicationAuthor}}</td>
-            <td>2000</td>
-            <td>10</td>
-            <td>2023-06-24</td>
-            <td>2023-06-30</td>
-            <td><span class="status active">Active</span></td>
+            <td>{{.PublicationCopyRights}}</td>
+            <td>{{.PublicationPrintRights}}</td>
+            <td>{{.PublicationStartDate}}</td>
+            <td>{{.PublicationEndDate}}</td>
+            <td>{{.LicenseEndPotentialRights}}</td>
+            <td><span class="status {{.LicenseStatusMessage}}">{{.LicenseStatusMessage}}</span></td>
             <td><a href="/catalog/publication/{{.PublicationUUID}}/license"><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
         </tr>
         {{end}}
