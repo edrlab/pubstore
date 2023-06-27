@@ -8,24 +8,20 @@
     <table class="purchasesListContainer">
         <thead>
         <tr>
-            <th>Cover</th>
-            <th>Transaction Date</th>
-            <th>Publication</th>
-            <th>Copy</th>
-            <th>Print</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th>End Potential Rights</th>
-            <th>Status</th>
-            <th>Download</th>
+            <th scope="col">Publication</th>
+            <th scope="col">Copy</th>
+            <th scope="col">Print</th>
+            <th scope="col">Start Date</th>
+            <th scope="col">End Date</th>
+            <th scope="col">End Potential Rights</th>
+            <th scope="col">Status</th>
+            <th scope="col">Download</th>
         </tr>
         </thead>
         <tbody class="purchaseList" id="searchList">
         {{range .transactions}}
         <tr>
-            <td><a href="/catalog/publication/{{.PublicationUUID}}"><img src={{.PublicationCoverUrl}} class="purchase-cover"></a></td>
-            <td>{{.TransactionDate}}</td>
-            <td>{{.PublicationTitle}} <br> by <br> {{.PublicationAuthor}}</td>
+            <td><a href="/catalog/publication/{{.PublicationUUID}}" class="purchase-publication"><img src={{.PublicationCoverUrl}} class="purchase-cover"><span>{{.PublicationTitle}} <br> by <br> {{.PublicationAuthor}}</span></a></td>
             <td>{{.PublicationCopyRights}}</td>
             <td>{{.PublicationPrintRights}}</td>
             <td>{{.PublicationStartDate}}</td>

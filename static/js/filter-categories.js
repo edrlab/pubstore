@@ -13,15 +13,13 @@ const url = getCurrentURL();
 const splitUrl = url.split(/[?=]+/);
 const decodedUrl = decodeURIComponent(splitUrl[2]);
 
-const deleteFilter = document.querySelector('.main-content-header span');
-const container = document.querySelector('.main-content-header h3');
+const container = document.querySelector('.reset');
 
 if (splitUrl[1] === undefined) {
-    container.style.diplay = "none";
-    container.classList.remove("filter-display");
-    deleteFilter.innerHTML = "";
+    container.innerHTML = "";
+    container.classList.remove("reset");
 } else {
-    container.classList.add("filter-display");
-    deleteFilter.innerHTML ='<i class="fa-solid fa-xmark"></i>';
+    container.innerHTML = "Clear Filter";
+    container.classList.add("reset");
 }
 

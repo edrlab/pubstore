@@ -22,7 +22,7 @@
         {{ if .userIsAuthenticated}}
         <li><a href="/user/bookshelf">Bookshelf</a></li>
         {{else }}
-        <li></li>
+        <li><a href="/signin" class="inactive">Bookshelf</a></li>
         {{ end }}
     </ul>
     <form class="header-options_searchbar">

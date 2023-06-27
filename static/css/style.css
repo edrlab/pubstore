@@ -11,7 +11,6 @@ a, a:visited {
 
 .inactive {
     color: #DDDBDD!important;
-    text-decoration-line: line-through;
     font-style: italic;
 }
 

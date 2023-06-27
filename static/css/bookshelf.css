@@ -4,6 +4,7 @@
     width: 100%;
     padding: 30px;
     margin: auto;
+    border-collapse: collapse;
 }
 
 .userListContainer tr:hover,
@@ -49,4 +50,17 @@ td {
 
 .fa-cloud-arrow-down:hover {
     color: #a7c6f8;
+}
+
+.purchase-publication {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px;
+    transition: 300ms;
+}
+
+.purchase-publication:hover {
+    background: rgba(167, 198, 248, 0.76);
 }

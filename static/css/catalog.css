@@ -214,8 +214,7 @@
     width: 250px;
 }
 
-.reset,
-.filter-display {
+.reset {
     padding: 5px 10px;
     border: 1px solid black;
     border-radius: 25px;
@@ -224,8 +223,7 @@
     text-align: end;
 }
 
-.reset:hover,
-.filter-display:hover{
+.reset:hover{
     background: black;
     color: white!important;
 }

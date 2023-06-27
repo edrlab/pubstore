@@ -8,12 +8,7 @@
 {{define "content"}}
     <div class="main-content-header">
         <h2>Catalog</h2>
-        <a href="/catalog">
-            <h3>{{.currentFacetValue}}
-                <span>
-                </span>
-            </h3>
-        </a>
+        <h3>{{.currentFacetValue}}</h3>
         <p>{{len .publications}} results found</p>
     </div>
     <div class="catalog-content">
@@ -60,7 +55,7 @@
                     </ul>
                 </li>
             </ul>
-            <!--<a href="/catalog" class="reset">Clear Filters</a>-->
+            <a href="/catalog" class="reset"></a>
         </aside>
         <ul class="book-list" id="searchList">
             {{range .publications}}
