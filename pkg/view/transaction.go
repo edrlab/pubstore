@@ -20,6 +20,7 @@ type TransactionView struct {
 	PublicationStartDate      time.Time
 	PublicationEndDate        time.Time
 	LicenseStatusMessage      string
+	LicenseStatusCode         string
 	LicenseEndPotentialRights time.Time
 }
 
@@ -31,7 +32,7 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 		publicationAuthor = publication.Author[0].Name
 	}
 
-	statusMessage, endPotentialRights, printRights, copyRights, startDate, endDate, err := lcp.GetLsdStatus(transaction.LicenceId, transaction.User.Email, transaction.User.LcpHintMsg, transaction.User.LcpPassHash)
+	statusMessage, statusCode, endPotentialRights, printRights, copyRights, startDate, endDate, err := lcp.GetLsdStatus(transaction.LicenceId, transaction.User.Email, transaction.User.LcpHintMsg, transaction.User.LcpPassHash)
 
 	return &TransactionView{
 		TransactionID:             fmt.Sprintf("%d", transaction.ID),
@@ -45,6 +46,7 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 		PublicationStartDate:      startDate,
 		PublicationEndDate:        endDate,
 		LicenseStatusMessage:      statusMessage,
+		LicenseStatusCode:         statusCode,
 		LicenseEndPotentialRights: endPotentialRights,
 	}
 }
