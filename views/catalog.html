@@ -12,6 +12,14 @@
 
 <p>CurrentFacetType :  {{.currentFacetType}}</p>
 <p>CurrentFacetValue :  {{.currentFacetValue}}</p>
+<p>Pagination : {{.currentPage}}</p>
+<p>Pagination size : {{.currentPageSize}}</p>
+<p>Publication total count : {{.publicationCount}}</p>
+
+<form action="/catalog" method="get">
+    <input type="text" id="search" name="q">
+    <input type="submit" value="search">
+</form>
 
 <p>Author</p>
 <ul>

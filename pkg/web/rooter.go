@@ -416,10 +416,31 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	language := r.URL.Query().Get("language")
 	publisher := r.URL.Query().Get("publisher")
 	category := r.URL.Query().Get("category")
+	page := r.URL.Query().Get("page")
+	pageSize := r.URL.Query().Get("pageSize")
+
+	q := r.URL.Query().Get("q")
+	query := r.URL.Query().Get("query")
+	queryStr := query
+	if len(query) == 0 {
+		queryStr = q
+	}
+
+	pageInt, _ := strconv.Atoi(page)
+	if pageInt < 1 || pageInt > 1000 {
+		pageInt = 1
+	}
+	pageSizeInt, _ := strconv.Atoi(pageSize)
+	if pageSizeInt < 1 || pageSizeInt > 1000 {
+		pageSizeInt = 10
+	}
 
 	var facet string = ""
 	var value string = ""
-	if len(author) > 0 {
+	if len(queryStr) > 0 {
+		facet = "search"
+		value = queryStr
+	} else if len(author) > 0 {
 		facet = "author"
 		value = author
 	} else if len(publisher) > 0 {
@@ -434,7 +455,7 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	facetsView := web.view.GetCatalogFacetsView()
-	pubsView := web.view.GetCatalogPublicationsView(facet, value)
+	pubsView, count := web.view.GetCatalogPublicationsView(facet, value, pageInt, pageSizeInt)
 	catalogView := view.GetCatalogView(pubsView, facetsView)
 
 	goviewModel := goview.M{
@@ -442,6 +463,9 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 		"userIsAuthenticated": web.userIsAuthenticated(r),
 		"currentFacetType":    facet,
 		"currentFacetValue":   value,
+		"currentPageSize":     pageSizeInt,
+		"currentPage":         pageInt,
+		"publicationCount":    count,
 		"authors":             (*catalogView).Authors,
 		"publishers":          (*catalogView).Publishers,
 		"languages":           (*catalogView).Languages,
