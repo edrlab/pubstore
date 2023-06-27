@@ -2,6 +2,8 @@ package view
 
 import (
 	"fmt"
+
+	"github.com/edrlab/pubstore/pkg/stor"
 )
 
 type PublicationCatalogView struct {
@@ -71,14 +73,17 @@ func (view *View) GetCatalogFacetsView() *FacetsView {
 	return &facets
 }
 
-func (view *View) GetCatalogPublicationsView(facet string, value string) *[]PublicationCatalogView {
+func (view *View) GetCatalogPublicationsView(facet string, value string, page int, pageSize int) (*[]PublicationCatalogView, int64) {
 
 	var publications []PublicationCatalogView
+	var pubs []stor.Publication
+	var count int64
+	var err error
+
 	switch facet {
 
 	case "author":
-		if pubs, err := view.stor.GetPublicationsByAuthor(value); err != nil {
-			fmt.Println(err)
+		if pubs, count, err = view.stor.GetPublicationsByAuthor(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -88,8 +93,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string) *[]Publ
 		}
 
 	case "publisher":
-		if pubs, err := view.stor.GetPublicationsByPublisher(value); err != nil {
-			fmt.Println(err)
+		if pubs, count, err = view.stor.GetPublicationsByPublisher(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -103,8 +107,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string) *[]Publ
 		}
 
 	case "language":
-		if pubs, err := view.stor.GetPublicationsByLanguage(value); err != nil {
-			fmt.Println(err)
+		if pubs, count, err = view.stor.GetPublicationsByLanguage(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -118,8 +121,21 @@ func (view *View) GetCatalogPublicationsView(facet string, value string) *[]Publ
 		}
 
 	case "category":
-		if pubs, err := view.stor.GetPublicationsByCategory(value); err != nil {
-			fmt.Println(err)
+		if pubs, count, err = view.stor.GetPublicationsByCategory(value, page, pageSize); err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+			}
+		}
+
+	case "search":
+		if pubs, count, err = view.stor.GetPublicationsByTitle(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -133,8 +149,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string) *[]Publ
 		}
 
 	default:
-		if pubs, err := view.stor.GetAllPublications(1, 50); err != nil {
-			fmt.Println(err)
+		if pubs, count, err = view.stor.GetAllPublications(page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -148,7 +163,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string) *[]Publ
 		}
 	}
 
-	return &publications
+	return &publications, count
 }
 
 func GetCatalogView(pubs *[]PublicationCatalogView, facets *FacetsView) *CatalogView {

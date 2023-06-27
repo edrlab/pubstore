@@ -91,7 +91,7 @@ func (stor *Stor) DeletePublication(publication *Publication) error {
 }
 
 func (stor *Stor) preloadPublication() *gorm.DB {
-	return stor.db.Preload("Author").Preload("Publisher").Preload("Language").Preload("Category")
+	return stor.db.Model(&Publication{}).Preload("Author").Preload("Publisher").Preload("Language").Preload("Category")
 }
 
 // GetPublicationByID retrieves a publication by ID
@@ -107,89 +107,106 @@ func (stor *Stor) GetPublicationByUUID(uuid string) (*Publication, error) {
 	return &publication, nil
 }
 
-func (stor *Stor) GetAllPublications(page int, pageSize int) ([]Publication, error) {
+func (stor *Stor) GetAllPublications(page int, pageSize int) ([]Publication, int64, error) {
 	var publications []Publication
+	var count int64
 	offset := (page - 1) * pageSize
 
-	if err := stor.preloadPublication().Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
-		return nil, err
+	if err := stor.preloadPublication().Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return publications, nil
+	return publications, count, nil
 }
 
 // GetPublicationByID retrieves a publication by Title
-func (stor *Stor) GetPublicationByTitle(title string) (*Publication, error) {
-	var publication Publication
-	if err := stor.preloadPublication().Where("Title = ?", title).First(&publication).Error; err != nil {
+func (stor *Stor) GetPublicationsByTitle(title string, page int, pageSize int) ([]Publication, int64, error) {
+	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
+	if err := stor.preloadPublication().Where("Title LIKE ?", "%"+title+"%").Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Publication not found")
+			return nil, 0, errors.New("publications not found")
 
 		}
-		return nil, err
+		return nil, 0, err
 	}
 
-	return &publication, nil
+	return publications, count, nil
 }
 
 // GetPublicationByCategory retrieves publications by category
-func (stor *Stor) GetPublicationsByCategory(category string) ([]Publication, error) {
+func (stor *Stor) GetPublicationsByCategory(category string, page int, pageSize int) ([]Publication, int64, error) {
 	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
 	if err := stor.preloadPublication().Joins("JOIN publication_category ON publication_category.publication_id = publications.id").
 		Joins("JOIN categories ON categories.id = publication_category.category_id").
-		Where("categories.name = ?", category).Find(&publications).Error; err != nil {
+		Where("categories.name = ?", category).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Publication not found")
+			return nil, 0, errors.New("publications not found")
 		}
-		return nil, err
+		return nil, 0, err
 	}
 
-	return publications, nil
+	return publications, count, nil
 }
 
 // GetPublicationByAuthor retrieves publications by author
-func (stor *Stor) GetPublicationsByAuthor(author string) ([]Publication, error) {
+func (stor *Stor) GetPublicationsByAuthor(author string, page int, pageSize int) ([]Publication, int64, error) {
 	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
 	if err := stor.preloadPublication().Joins("JOIN publication_author ON publication_author.publication_id = publications.id").
 		Joins("JOIN authors ON authors.id = publication_author.author_id").
-		Where("authors.name = ?", author).Find(&publications).Error; err != nil {
+		Where("authors.name = ?", author).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Publication not found")
+			return nil, 0, errors.New("Publication not found")
 		}
-		return nil, err
+		return nil, 0, err
 	}
+	stor.db.Find(&publications).Count(&count)
 
-	return publications, nil
+	return publications, count, nil
 }
 
 // GetPublicationByAuthor retrieves publications by publisher
-func (stor *Stor) GetPublicationsByPublisher(publisher string) ([]Publication, error) {
+func (stor *Stor) GetPublicationsByPublisher(publisher string, page int, pageSize int) ([]Publication, int64, error) {
 	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
 	if err := stor.preloadPublication().Joins("JOIN publication_publisher ON publication_publisher.publication_id = publications.id").
 		Joins("JOIN publishers ON publishers.id = publication_publisher.publisher_id").
-		Where("publishers.name = ?", publisher).Find(&publications).Error; err != nil {
+		Where("publishers.name = ?", publisher).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Publication not found")
+			return nil, 0, errors.New("publications not found")
 		}
-		return nil, err
+		return nil, 0, err
 	}
 
-	return publications, nil
+	return publications, count, nil
 }
 
 // GetPublicationByAuthor retrieves publications by language
-func (stor *Stor) GetPublicationsByLanguage(code string) ([]Publication, error) {
+func (stor *Stor) GetPublicationsByLanguage(code string, page int, pageSize int) ([]Publication, int64, error) {
 	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
 	if err := stor.preloadPublication().Joins("JOIN publication_language ON publication_language.publication_id = publications.id").
 		Joins("JOIN languages ON languages.id = publication_language.language_id").
-		Where("languages.code = ?", code).Find(&publications).Error; err != nil {
+		Where("languages.code = ?", code).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Publication not found")
+			return nil, 0, errors.New("publications not found")
 		}
-		return nil, err
+		return nil, 0, err
 	}
 
-	return publications, nil
+	return publications, count, nil
 }
 
 func (stor *Stor) GetCategories() ([]Category, error) {

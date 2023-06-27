@@ -15,7 +15,7 @@
         <img src="{{.coverUrl}}" alt="book cover"/>
         <div class="pub-actions">
             {{ if .userIsAuthenticated}}
-            {{if .licenseIdFound}}
+            {{if .licenseFoundAndActive}}
             <a href="/catalog/publication/{{.uuid}}/license">Download <i class="fa-solid fa-cloud-arrow-down"></i></a>
             {{else}}
             <button id="buy">Buy</button>

@@ -416,10 +416,31 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	language := r.URL.Query().Get("language")
 	publisher := r.URL.Query().Get("publisher")
 	category := r.URL.Query().Get("category")
+	page := r.URL.Query().Get("page")
+	pageSize := r.URL.Query().Get("pageSize")
+
+	q := r.URL.Query().Get("q")
+	query := r.URL.Query().Get("query")
+	queryStr := query
+	if len(query) == 0 {
+		queryStr = q
+	}
+
+	pageInt, _ := strconv.Atoi(page)
+	if pageInt < 1 || pageInt > 1000 {
+		pageInt = 1
+	}
+	pageSizeInt, _ := strconv.Atoi(pageSize)
+	if pageSizeInt < 1 || pageSizeInt > 1000 {
+		pageSizeInt = 10
+	}
 
 	var facet string = ""
 	var value string = ""
-	if len(author) > 0 {
+	if len(queryStr) > 0 {
+		facet = "search"
+		value = queryStr
+	} else if len(author) > 0 {
 		facet = "author"
 		value = author
 	} else if len(publisher) > 0 {
@@ -434,14 +455,23 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	facetsView := web.view.GetCatalogFacetsView()
-	pubsView := web.view.GetCatalogPublicationsView(facet, value)
+	pubsView, count := web.view.GetCatalogPublicationsView(facet, value, pageInt, pageSizeInt)
 	catalogView := view.GetCatalogView(pubsView, facetsView)
+
+	var pageRange []string = make([]string, pageInt)
+	for i := 0; i < pageInt; i++ {
+		pageRange[i] = fmt.Sprintf("%d", i+1)
+	}
 
 	goviewModel := goview.M{
 		"pageTitle":           "pubstore - catalog",
 		"userIsAuthenticated": web.userIsAuthenticated(r),
 		"currentFacetType":    facet,
 		"currentFacetValue":   value,
+		"currentPageSize":     pageSizeInt,
+		"currentPage":         pageInt,
+		"pageRange":           pageRange,
+		"publicationCount":    count,
 		"authors":             (*catalogView).Authors,
 		"publishers":          (*catalogView).Publishers,
 		"languages":           (*catalogView).Languages,
@@ -461,33 +491,38 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 
 	pubUUID := chi.URLParam(r, "id")
 	errLcp := r.URL.Query().Get("err")
-	user := web.getUserByCookie(r)
+	userStor := web.getUserByCookie(r)
+	licenseOK := false
 
 	if publicationStor, err := web.stor.GetPublicationByUUID(pubUUID); err != nil {
 		http.ServeFile(w, r, "static/404.html")
 		w.WriteHeader(http.StatusNotFound)
 	} else {
-		licenceId := web.service.GetLicenceIdTransaction(publicationStor, user)
-		fmt.Println(licenceId)
-		licenceIdFound := len(licenceId) > 0
+		transaction, err := web.stor.GetTransactionByUserAndPublication(userStor.ID, publicationStor.ID)
+		if err == nil {
+			transactionView := web.view.GetTransactionViewFromTransactionStor(transaction)
+			if transactionView.LicenseStatusCode == "ready" || transactionView.LicenseStatusCode == "active" {
+				licenseOK = true
+			}
+		}
 
 		publicationView := web.view.GetPublicationViewFromPublicationStor(publicationStor)
 		goviewModel := goview.M{
-			"pageTitle":           fmt.Sprintf("pubstore - %s", publicationView.Title),
-			"userIsAuthenticated": web.userIsAuthenticated(r),
-			"errLcp":              errLcp,
-			"licenseIdFound":      licenceIdFound,
-			"title":               publicationView.Title,
-			"uuid":                publicationView.UUID,
-			"datePublication":     publicationView.DatePublication,
-			"description":         publicationView.Description,
-			"coverUrl":            publicationView.CoverUrl,
-			"authors":             publicationView.Author,
-			"publishers":          publicationView.Publisher,
-			"languages":           publicationView.Language,
-			"categories":          publicationView.Category,
+			"pageTitle":             fmt.Sprintf("pubstore - %s", publicationView.Title),
+			"userIsAuthenticated":   web.userIsAuthenticated(r),
+			"errLcp":                errLcp,
+			"licenseFoundAndActive": licenseOK,
+			"title":                 publicationView.Title,
+			"uuid":                  publicationView.UUID,
+			"datePublication":       publicationView.DatePublication,
+			"description":           publicationView.Description,
+			"coverUrl":              publicationView.CoverUrl,
+			"authors":               publicationView.Author,
+			"publishers":            publicationView.Publisher,
+			"languages":             publicationView.Language,
+			"categories":            publicationView.Category,
 		}
-		err := goview.Render(w, http.StatusOK, "publication", goviewModel)
+		err = goview.Render(w, http.StatusOK, "publication", goviewModel)
 		if err != nil {
 			fmt.Fprintf(w, "Render index error: %v!", err)
 		}
