@@ -458,6 +458,11 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	pubsView, count := web.view.GetCatalogPublicationsView(facet, value, pageInt, pageSizeInt)
 	catalogView := view.GetCatalogView(pubsView, facetsView)
 
+	var pageRange []string = make([]string, pageInt)
+	for i := 0; i < pageInt; i++ {
+		pageRange[i] = fmt.Sprintf("%d", i+1)
+	}
+
 	goviewModel := goview.M{
 		"pageTitle":           "pubstore - catalog",
 		"userIsAuthenticated": web.userIsAuthenticated(r),
@@ -465,6 +470,7 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 		"currentFacetValue":   value,
 		"currentPageSize":     pageSizeInt,
 		"currentPage":         pageInt,
+		"pageRange":           pageRange,
 		"publicationCount":    count,
 		"authors":             (*catalogView).Authors,
 		"publishers":          (*catalogView).Publishers,
