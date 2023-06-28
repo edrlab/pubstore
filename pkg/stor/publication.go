@@ -168,7 +168,6 @@ func (stor *Stor) GetPublicationsByAuthor(author string, page int, pageSize int)
 		}
 		return nil, 0, err
 	}
-	stor.db.Find(&publications).Count(&count)
 
 	return publications, count, nil
 }
