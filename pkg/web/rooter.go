@@ -498,11 +498,13 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/404.html")
 		w.WriteHeader(http.StatusNotFound)
 	} else {
-		transaction, err := web.stor.GetTransactionByUserAndPublication(userStor.ID, publicationStor.ID)
-		if err == nil {
-			transactionView := web.view.GetTransactionViewFromTransactionStor(transaction)
-			if transactionView.LicenseStatusCode == "ready" || transactionView.LicenseStatusCode == "active" {
-				licenseOK = true
+		if userStor != nil {
+			transaction, err := web.stor.GetTransactionByUserAndPublication(userStor.ID, publicationStor.ID)
+			if err == nil {
+				transactionView := web.view.GetTransactionViewFromTransactionStor(transaction)
+				if transactionView.LicenseStatusCode == "ready" || transactionView.LicenseStatusCode == "active" {
+					licenseOK = true
+				}
 			}
 		}
 
