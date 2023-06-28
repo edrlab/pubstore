@@ -9,10 +9,13 @@ require (
 	github.com/foolin/goview v0.3.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-chi/chi/v5 v5.0.8 // indirect
+	github.com/go-chi/cors v1.2.1 // indirect
+	github.com/go-chi/oauth v0.0.0-20210913085627-d937e221b3ef // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/go-playground/validator/v10 v10.14.1 // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

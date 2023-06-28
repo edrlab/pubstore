@@ -9,6 +9,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+var api *Api
+
 func TestMain(m *testing.M) {
 
 	validate = validator.New()
@@ -28,7 +30,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestSuite(t *testing.T) {
-	t.Run("TestCreatePublicationHandler", TestCreatePublicationHandler)
-	t.Run("TestGetPublicationHandler", TestGetPublicationHandler)
+	t.Run("TestPublicationHandler", TestPublicationHandler)
 	t.Run("TestUserHandler", TestUserHandler)
 }

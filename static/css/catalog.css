@@ -198,6 +198,7 @@
 
 .dropdown.active .option {
     display: block;
+    padding: 0 20px;
 }
 
 .option li {

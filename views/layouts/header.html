@@ -6,7 +6,7 @@
     <div class="header-options">
         <div class="header-options_settings">
             {{ if .userIsAuthenticated}}
-            <p id="user-options">Hello User</p>
+            <p id="user-options">Hello {{.userName}}</p>
             <p>|</p>
             <a href="/signout">Sign Out</a>
             {{ else }}
