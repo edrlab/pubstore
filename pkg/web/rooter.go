@@ -15,7 +15,6 @@ import (
 	"github.com/edrlab/pubstore/pkg/view"
 	"github.com/foolin/goview"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 )
 
@@ -544,12 +543,7 @@ func (web *Web) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (web *Web) Rooter() *chi.Mux {
-
-	r := chi.NewRouter()
-	r.Use(middleware.CleanPath)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+func (web *Web) Rooter(r chi.Router) {
 
 	// Serve static files from the "static" directory
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -595,6 +589,4 @@ func (web *Web) Rooter() *chi.Mux {
 		r.Get("/catalog/publication/{id}/loan", web.publicationLoanHandler)
 		r.Get("/catalog/publication/{id}/license", web.publicationFreshLicenceHandler)
 	})
-
-	return r
 }

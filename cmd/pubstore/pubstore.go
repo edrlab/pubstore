@@ -13,6 +13,8 @@ import (
 	"github.com/edrlab/pubstore/pkg/service"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/web"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
@@ -22,10 +24,16 @@ func main() {
 	_service := service.Init(_stor)
 	_web := web.Init(_stor, _service)
 
-	handler := _api.Rooter(_web.Rooter())
+	r := chi.NewRouter()
+	r.Use(middleware.CleanPath)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Group(_api.Rooter)
+	r.Group(_web.Rooter)
 
 	// The HTTP Server
-	server := &http.Server{Addr: "0.0.0.0:8080", Handler: handler}
+	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
 
 	// Server run context
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
