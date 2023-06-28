@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/oauth"
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var validate *validator.Validate
@@ -30,8 +31,8 @@ type UserVerifier struct {
 
 // ValidateUser validates username and password returning an error if the user credentials are wrong
 func (u *UserVerifier) ValidateUser(username, password, scope string, r *http.Request) error {
-	user, _ := u.stor.GetUserByEmailAndPass(username, password)
-	if username == user.Email && password == user.Pass {
+	user, err := u.stor.GetUserByEmail(username)
+	if err == nil && bcrypt.CompareHashAndPassword([]byte(user.Pass), []byte(password)) == nil {
 		return nil
 	}
 

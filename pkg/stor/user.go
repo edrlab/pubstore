@@ -3,6 +3,8 @@ package stor
 import (
 	"errors"
 
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +16,22 @@ type User struct {
 	Pass        string
 	LcpHintMsg  string
 	LcpPassHash string
-	SessionId   string `gorm:"uniqueIndex:idx_name_not_empty,where:name IS NOT NULL"`
+	SessionId   string // does not works : `gorm:"uniqueIndex:idx_name_not_empty,where:name IS NOT NULL"`
+	// sessionId is empty at first and then filed with a unique UUID v4 when the user is connecting
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.UUID == "" {
+		u.UUID = uuid.New().String()
+	}
+
+	HashedPass, err := bcrypt.GenerateFromPassword([]byte(u.Pass), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("user before create Password Hashing error " + err.Error())
+	}
+	u.Pass = string(HashedPass)
+
+	return
 }
 
 // CreateUser creates a new user
@@ -56,9 +73,9 @@ func (stor *Stor) GetUserBySessionId(sessionId string) (*User, error) {
 	return &user, nil
 }
 
-func (stor *Stor) GetUserByEmailAndPass(email string, pass string) (*User, error) {
+func (stor *Stor) GetUserByEmail(email string) (*User, error) {
 	var user User
-	if err := stor.db.Where("email = ?", email).Where("pass = ?", pass).First(&user).Error; err != nil {
+	if err := stor.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("User not found")
 		}

@@ -84,7 +84,7 @@ func TestPublicationHandler(t *testing.T) {
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {createdUser.Email},
-		"password":   {createdUser.Pass},
+		"password":   {"password123"},
 	}
 	tokenReq, err := http.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
 	assert.NoError(t, err)
@@ -93,6 +93,7 @@ func TestPublicationHandler(t *testing.T) {
 	tokenRecorder := httptest.NewRecorder()
 	r.ServeHTTP(tokenRecorder, tokenReq)
 	assert.Equal(t, http.StatusOK, tokenRecorder.Code)
+	fmt.Println(tokenRecorder.Body.String())
 
 	// Retrieve the access token from the response
 	var tokenResp struct {

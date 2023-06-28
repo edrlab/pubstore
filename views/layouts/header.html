@@ -4,6 +4,7 @@
     {{ if .userIsAuthenticated}}
     <a href="/user/bookshelf">bookshelf</a>
     <a href="/signout">signout</a>
+    <p>Hello {{.userName}}</p>
     {{ else }}
     <a href="/signin">signin</a>
     {{ end }}

@@ -16,6 +16,7 @@ import (
 	"github.com/foolin/goview"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Web struct {
@@ -58,18 +59,6 @@ func (web *Web) signin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/index", http.StatusFound)
 	}
 
-	err := r.ParseForm()
-	if err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
-		return
-	}
-
-	email := r.Form.Get("email")
-	password := r.Form.Get("password")
-
-	fmt.Println(email)
-	fmt.Println(password)
-
 	signinGoview(w, false)
 }
 
@@ -94,6 +83,7 @@ func signinGoview(w http.ResponseWriter, userNotFound bool) {
 	err := goview.Render(w, http.StatusOK, "signin", goview.M{
 		"pageTitle":           "pubstore - signin",
 		"userIsAuthenticated": false,
+		"userName":            "",
 		"userNotFound":        userNotFound,
 	})
 	if err != nil {
@@ -113,12 +103,8 @@ func (web *Web) signinPost(w http.ResponseWriter, r *http.Request) {
 	email := r.Form.Get("email")
 	password := r.Form.Get("password")
 
-	fmt.Println(email)
-	fmt.Println(password)
-
-	var err error
-	user, err := web.stor.GetUserByEmailAndPass(email, password)
-	if err != nil {
+	user, err := web.stor.GetUserByEmail(email)
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Pass), []byte(password)) != nil {
 		signinGoview(w, true)
 		return
 	}
@@ -383,9 +369,12 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	// This function will handle the "/user/bookshelf" route
 
 	user := web.getUserByCookie(r)
+	if user == nil {
+		fmt.Fprintf(w, "bookshelf error")
+		return
+	}
 	transactions, err := web.stor.GetTransactionsByUserID(user.ID)
 	if err != nil {
-
 		fmt.Fprintf(w, "bookshelf error")
 		return
 	}
@@ -398,6 +387,7 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	goviewModel := goview.M{
 		"pageTitle":           "pubstore - bookshelf",
 		"userIsAuthenticated": true,
+		"userName":            user.Name,
 		"transactions":        transactionsView,
 	}
 
@@ -461,10 +451,16 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < pageInt; i++ {
 		pageRange[i] = fmt.Sprintf("%d", i+1)
 	}
+	userStor := web.getUserByCookie(r)
+	userName := ""
+	if userStor != nil {
+		userName = userStor.Name
+	}
 
 	goviewModel := goview.M{
 		"pageTitle":           "pubstore - catalog",
 		"userIsAuthenticated": web.userIsAuthenticated(r),
+		"userName":            userName,
 		"currentFacetType":    facet,
 		"currentFacetValue":   value,
 		"currentPageSize":     pageSizeInt,
@@ -497,7 +493,9 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/404.html")
 		w.WriteHeader(http.StatusNotFound)
 	} else {
+		userName := ""
 		if userStor != nil {
+			userName = userStor.Name
 			transaction, err := web.stor.GetTransactionByUserAndPublication(userStor.ID, publicationStor.ID)
 			if err == nil {
 				transactionView := web.view.GetTransactionViewFromTransactionStor(transaction)
@@ -511,6 +509,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		goviewModel := goview.M{
 			"pageTitle":             fmt.Sprintf("pubstore - %s", publicationView.Title),
 			"userIsAuthenticated":   web.userIsAuthenticated(r),
+			"userName":              userName,
 			"errLcp":                errLcp,
 			"licenseFoundAndActive": licenseOK,
 			"title":                 publicationView.Title,
@@ -554,9 +553,15 @@ func (web *Web) Rooter(r chi.Router) {
 			http.Redirect(w, r, "/index", http.StatusFound)
 		})
 		r.Get("/index", func(w http.ResponseWriter, r *http.Request) {
+			userStor := web.getUserByCookie(r)
+			userName := ""
+			if userStor != nil {
+				userName = userStor.Name
+			}
 			goviewModel := goview.M{
 				"pageTitle":           "pubstore",
 				"userIsAuthenticated": web.userIsAuthenticated(r),
+				"userName":            userName,
 			}
 			err := goview.Render(w, http.StatusOK, "index", goviewModel)
 			if err != nil {

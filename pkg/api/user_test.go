@@ -42,7 +42,7 @@ func TestUserHandler(t *testing.T) {
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {createdUser.Email},
-		"password":   {createdUser.Pass},
+		"password":   {"password123"},
 	}
 	tokenReq, err := http.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
 	assert.NoError(t, err)

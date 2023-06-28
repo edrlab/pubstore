@@ -25,7 +25,7 @@ func TestUserCRUD(t *testing.T) {
 	assert.NotEmpty(t, user.ID)
 
 	// Retrieve user by email and validate
-	readUser, err := stor.GetUserByEmailAndPass(user.Email, user.Pass)
+	readUser, err := stor.GetUserByEmail(user.Email)
 	assert.NoError(t, err)
 	assert.Equal(t, user.ID, readUser.ID)
 	assert.Equal(t, user.Name, readUser.Name)
