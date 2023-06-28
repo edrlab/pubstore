@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -103,23 +104,60 @@ func (api *Api) Rooter(r chi.Router) {
 	*/
 	r.Post("/api/v1/token", s.UserCredentials)
 
-	// api Routes CRUD Publication
-	// Require Authentication
-	r.Group(func(r chi.Router) {
-		r.Use(oauth.Authorize("Edrlab-Rocks", nil))
-		r.Get("/api/v1/publication/{id}", api.getPublicationHandler)
-		r.Post("/api/v1/publication", api.createPublicationHandler)
-		// r.Put("/api/v1/publication/{id}", apiV1PublicationPut)
-		// r.Delete("/api/v1/publication/{id}", apiV1PublicationDelete)
+	r.Route("/api/v1/publication", func(publicationRouter chi.Router) {
+		publicationRouter.Group(func(postRouter chi.Router) {
+			postRouter.Use(oauth.Authorize("Edrlab-Rocks", nil))
+			postRouter.Post("/", api.createPublicationHandler)
+		})
+		publicationRouter.Route("/{id}", func(idRouter chi.Router) {
+			idRouter.Use(api.publicationCtx)
+			idRouter.Get("/", api.getPublicationHandler)
+			idRouter.Group(func(idRouterGroup chi.Router) {
+				idRouterGroup.Use(oauth.Authorize("Edrlab-Rocks", nil))
+				idRouterGroup.Put("/", api.updatePublicationHandler)
+				idRouterGroup.Delete("/", api.deletePublicationHandler)
+			})
+		})
 	})
+	r.Route("/api/v1/user", func(userRouter chi.Router) {
+		userRouter.Group(func(postRouter chi.Router) {
+			postRouter.Use(oauth.Authorize("Edrlab-Rocks", nil))
+			postRouter.Post("/", api.createUserHandler)
+		})
+		userRouter.Route("/{id}", func(idRouter chi.Router) {
+			idRouter.Use(api.userCtx)
+			idRouter.Get("/", api.getUserHandler)
+			idRouter.Group(func(idRouterGroup chi.Router) {
+				idRouterGroup.Use(oauth.Authorize("Edrlab-Rocks", nil))
+				idRouterGroup.Put("/", api.updateUserHandler)
+				idRouterGroup.Delete("/", api.deleteUserHandler)
+			})
+		})
+	})
+}
 
-	// api Routes CRUD User
-	// Require Authentication
-	r.Group(func(r chi.Router) {
-		r.Use(oauth.Authorize("Edrlab-Rocks", nil))
-		r.Get("/api/v1/user/{id}", api.getUserHandler)
-		r.Post("/api/v1/user", api.createUserHandler)
-		// r.Put("/api/v1/user/{id}", apiV1UserPut)
-		// r.Delete("/api/v1/user/{id}", apiV1UserDelete)
+func (api *Api) userCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := chi.URLParam(r, "id")
+		user, err := api.stor.GetUserByUUID(userID)
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "user", user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (api *Api) publicationCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pubID := chi.URLParam(r, "id")
+		pub, err := api.stor.GetPublicationByUUID(pubID)
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "publication", pub)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

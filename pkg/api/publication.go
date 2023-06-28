@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/stor"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -71,33 +70,53 @@ func convertPublicationFromStor(originalPublication stor.Publication) Publicatio
 	return convertedPublication
 }
 
-func convertPublicationToStor(convertedPublication Publication) stor.Publication {
-	originalPublication := stor.Publication{
-		Title:           convertedPublication.Title,
-		UUID:            convertedPublication.UUID,
-		DatePublication: convertedPublication.DatePublication,
-		Description:     convertedPublication.Description,
-		CoverUrl:        convertedPublication.CoverUrl,
+func convertPublicationToStor(convertedPublication Publication, originalPublication *stor.Publication) *stor.Publication {
+	if originalPublication == nil {
+		originalPublication = &stor.Publication{}
+	}
+
+	if convertedPublication.Title != "" {
+		originalPublication.Title = convertedPublication.Title
+	}
+	if convertedPublication.UUID != "" {
+		originalPublication.UUID = convertedPublication.UUID
+	}
+	if convertedPublication.DatePublication.IsZero() {
+		originalPublication.DatePublication = convertedPublication.DatePublication
+	}
+	if convertedPublication.Description != "" {
+		originalPublication.Description = convertedPublication.Description
+	}
+	if convertedPublication.CoverUrl != "" {
+		originalPublication.CoverUrl = convertedPublication.CoverUrl
 	}
 
 	// Convert Language slice
 	for _, language := range convertedPublication.Language {
-		originalPublication.Language = append(originalPublication.Language, stor.Language{Code: language.Code})
+		if language.Code != "" {
+			originalPublication.Language = append(originalPublication.Language, stor.Language{Code: language.Code})
+		}
 	}
 
 	// Convert Publisher slice
 	for _, publisher := range convertedPublication.Publisher {
-		originalPublication.Publisher = append(originalPublication.Publisher, stor.Publisher{Name: publisher.Name})
+		if publisher.Name != "" {
+			originalPublication.Publisher = append(originalPublication.Publisher, stor.Publisher{Name: publisher.Name})
+		}
 	}
 
 	// Convert Author slice
 	for _, author := range convertedPublication.Author {
-		originalPublication.Author = append(originalPublication.Author, stor.Author{Name: author.Name})
+		if author.Name != "" {
+			originalPublication.Author = append(originalPublication.Author, stor.Author{Name: author.Name})
+		}
 	}
 
 	// Convert Category slice
 	for _, category := range convertedPublication.Category {
-		originalPublication.Category = append(originalPublication.Category, stor.Category{Name: category.Name})
+		if category.Name != "" {
+			originalPublication.Category = append(originalPublication.Category, stor.Category{Name: category.Name})
+		}
 	}
 
 	return originalPublication
@@ -151,13 +170,13 @@ func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Generate UUID for the publication
-	if len(publication.UUID) == 0 {
+	if publication.UUID == "" {
 		publication.UUID = uuid.New().String()
 	}
 
-	publicationStor := convertPublicationToStor(publication)
+	publicationStor := convertPublicationToStor(publication, &stor.Publication{})
 
-	err = api.stor.CreatePublication(&publicationStor)
+	err = api.stor.CreatePublication(publicationStor)
 	if err != nil {
 		http.Error(w, "Failed to create publication", http.StatusInternalServerError)
 		return
@@ -177,17 +196,60 @@ func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
-	// Get the publication ID from the URL parameters
-	publicationID := chi.URLParam(r, "id")
-
-	// Retrieve the publication from the database
-	publicationStor, err := api.stor.GetPublicationByUUID(publicationID)
-	if err != nil {
-		http.Error(w, "Publication not found", http.StatusNotFound)
+	ctx := r.Context()
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
-	publication := convertPublicationFromStor(*publicationStor)
+	publication := convertPublicationFromStor(*storPublication)
+
+	// Set the response content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the publication as JSON and write it to the response
+	err := json.NewEncoder(w).Encode(publication)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) updatePublicationHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	// Parse and validate the request body
+	var publication Publication
+	err := json.NewDecoder(r.Body).Decode(&publication)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the publication struct using the validator
+	err = validate.Struct(publication)
+	if err != nil {
+		// If validation fails, return the validation errors
+		validationErrors := err.(validator.ValidationErrors)
+		http.Error(w, validationErrors.Error(), http.StatusBadRequest)
+		return
+	}
+
+	storPublicationConverted := convertPublicationToStor(publication, storPublication)
+
+	err = api.stor.UpdatePublication(storPublicationConverted)
+	if err != nil {
+		http.Error(w, "Failed to update publication", http.StatusInternalServerError)
+		return
+	}
+
+	publication = convertPublicationFromStor(*storPublicationConverted)
 
 	// Set the response content type to JSON
 	w.Header().Set("Content-Type", "application/json")
@@ -198,4 +260,21 @@ func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (api *Api) deletePublicationHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	err := api.stor.DeletePublication(storPublication)
+	if err != nil {
+		http.Error(w, "Failed to delete publication", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

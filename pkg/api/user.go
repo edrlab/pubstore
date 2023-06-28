@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -33,40 +33,34 @@ func ConvertUserFromUserStor(u stor.User) *User {
 	}
 }
 
-func ConvertUserToUserStor(u User) *stor.User {
-	return &stor.User{
-		UUID:        u.UUID,
-		Name:        u.Name,
-		Email:       u.Email,
-		Pass:        u.Pass,
-		LcpHintMsg:  u.LcpHintMsg,
-		LcpPassHash: u.LcpPassHash,
-		SessionId:   u.SessionId,
-	}
-}
-
-func (api *Api) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	sessionID := chi.URLParam(r, "id")
-
-	// Call your storage function to get the user by session ID
-	storUser, err := api.stor.GetUserBySessionId(sessionID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+func ConvertUserToUserStor(u User, originalUser *stor.User) *stor.User {
+	if originalUser == nil {
+		originalUser = &stor.User{}
 	}
 
-	// Convert the storage user to the view model user
-	viewUser := ConvertUserFromUserStor(*storUser)
-
-	// Set the content type header and write the response
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode the user as JSON and write it to the response
-	err = json.NewEncoder(w).Encode(viewUser)
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
+	if u.UUID != "" {
+		originalUser.UUID = u.UUID
 	}
+	if u.Name != "" {
+		originalUser.Name = u.Name
+	}
+	if u.Email != "" {
+		originalUser.Email = u.Email
+	}
+	if u.Pass != "" {
+		originalUser.Pass = u.Pass
+	}
+	if u.LcpHintMsg != "" {
+		originalUser.LcpHintMsg = u.LcpHintMsg
+	}
+	if u.LcpPassHash != "" {
+		originalUser.LcpPassHash = u.LcpPassHash
+	}
+	if u.SessionId != "" {
+		originalUser.SessionId = u.SessionId
+	}
+
+	return originalUser
 }
 
 /*
@@ -108,7 +102,7 @@ func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert the view model user to the storage user
-	storUser := ConvertUserToUserStor(viewUser)
+	storUser := ConvertUserToUserStor(viewUser, &stor.User{})
 
 	// Call your storage function to create the user
 	err = api.stor.CreateUser(storUser)
@@ -127,4 +121,93 @@ func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (api *Api) getUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storUser, ok := ctx.Value("user").(*stor.User)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	// Convert the storage user to the view model user
+	viewUser := ConvertUserFromUserStor(*storUser)
+
+	// Set the content type header and write the response
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the user as JSON and write it to the response
+	err := json.NewEncoder(w).Encode(viewUser)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storUser, ok := ctx.Value("user").(*stor.User)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	// Parse and validate the request body
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the user struct using the validator
+	err = validate.Struct(user)
+	if err != nil {
+		// If validation fails, return the validation errors
+		validationErrors := err.(validator.ValidationErrors)
+		http.Error(w, validationErrors.Error(), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(user)
+
+	storUserConverted := ConvertUserToUserStor(user, storUser)
+
+	fmt.Println(storUserConverted)
+
+	err = api.stor.UpdateUser(storUserConverted)
+	if err != nil {
+		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		return
+	}
+
+	user = *ConvertUserFromUserStor(*storUserConverted)
+
+	// Set the response content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the user as JSON and write it to the response
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storUser, ok := ctx.Value("user").(*stor.User)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	err := api.stor.DeleteUser(storUser)
+	if err != nil {
+		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
