@@ -187,6 +187,7 @@ func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 
 	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(publication)
 	if err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
@@ -209,6 +210,7 @@ func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(publication)
 	if err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
@@ -255,6 +257,7 @@ func (api *Api) updatePublicationHandler(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 
 	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(publication)
 	if err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
