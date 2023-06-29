@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/api"
+	"github.com/edrlab/pubstore/pkg/opds"
 	"github.com/edrlab/pubstore/pkg/service"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/web"
@@ -23,6 +24,7 @@ func main() {
 	_api := api.Init(_stor)
 	_service := service.Init(_stor)
 	_web := web.Init(_stor, _service)
+	_opds := opds.Init(_stor)
 
 	r := chi.NewRouter()
 	r.Use(middleware.CleanPath)
@@ -31,6 +33,7 @@ func main() {
 
 	r.Group(_api.Rooter)
 	r.Group(_web.Rooter)
+	r.Group(_opds.Router)
 
 	// The HTTP Server
 	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
