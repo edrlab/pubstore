@@ -1,6 +1,9 @@
 package stor
 
 import (
+	"fmt"
+
+	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -27,6 +30,26 @@ func Init(sqliteDsn string) *Stor {
 
 	// Migrate the schema
 	db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{}, &User{}, &Transaction{})
+
+	// Check if the table is empty
+	var count int64
+	db.Model(&User{}).Count(&count)
+	if count == 0 {
+		// Insert initial record
+		createdUser := &User{
+			UUID:        uuid.New().String(),
+			Name:        "admin",
+			Email:       "admin@edrlab.org",
+			Pass:        "admin",
+			LcpHintMsg:  "Do not used it",
+			LcpPassHash: "edrlab",
+			SessionId:   uuid.New().String(),
+		}
+		result := db.Create(createdUser)
+		if result.Error != nil {
+			panic(fmt.Errorf("failed to insert initial record: %w", result.Error))
+		}
+	}
 
 	return &Stor{db: db}
 
