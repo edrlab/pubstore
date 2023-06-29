@@ -130,10 +130,69 @@ func (web *Web) signinPost(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// func signup(w http.ResponseWriter, r *http.Request) {
-// 	// Implementation for the signup handler
-// 	// This function will handle the "/signup" route
-// }
+func (web *Web) signup(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signin handler
+	// This function will handle the "/signin" route
+
+	if web.userIsAuthenticated(r) {
+		http.Redirect(w, r, "/index", http.StatusFound)
+	}
+
+	signupGoview(w, false)
+}
+
+func signupGoview(w http.ResponseWriter, userCreationFailed bool) {
+
+	err := goview.Render(w, http.StatusOK, "signup", goview.M{
+		"pageTitle":           "pubstore - signin",
+		"userIsAuthenticated": false,
+		"userName":            "",
+		"userCreationFailed":  userCreationFailed,
+	})
+	if err != nil {
+		fmt.Fprintf(w, "Render index error: %v!", err)
+	}
+}
+
+func (web *Web) signupPostHandler(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signup handler
+	// This function will handle the "/signup" route
+	// Parse form data
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
+	}
+
+	// Extract form values
+	name := r.Form.Get("name")
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+	lcpPass := r.Form.Get("lcpPass")
+	lcpHint := r.Form.Get("lcpHint")
+
+	// Create a new User instance
+	newUser := stor.User{
+		UUID:        uuid.New().String(),
+		Name:        name,
+		Email:       email,
+		Pass:        password,
+		LcpPassHash: lcp.CreateLcpPassHash(lcpPass),
+		LcpHintMsg:  lcpHint,
+		SessionId:   "",
+	}
+
+	// Perform validation on newUser if required
+
+	// Save newUser to the database using your storage function
+	err = web.stor.CreateUser(&newUser)
+	if err != nil {
+		signupGoview(w, true)
+		// http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/signin", http.StatusFound)
+}
 
 // func userInfos(w http.ResponseWriter, r *http.Request) {
 // 	// Implementation for the userInfos handler
@@ -581,7 +640,8 @@ func (web *Web) Rooter(r chi.Router) {
 		r.Get("/signin", web.signin)
 		r.Post("/signin", web.signinPost)
 		r.Get("/signout", web.signout)
-		// r.Get("/signup", signup)
+		r.Get("/signup", web.signup)
+		r.Post("/signup", web.signupPostHandler)
 	})
 
 	// Private Routes

@@ -116,6 +116,7 @@ func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(viewUser)
 	if err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
@@ -138,6 +139,7 @@ func (api *Api) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Encode the user as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(viewUser)
 	if err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
@@ -188,6 +190,7 @@ func (api *Api) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Encode the user as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(user)
 	if err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
