@@ -15,12 +15,12 @@ type MetadataFeed struct {
 }
 
 type Metadata struct {
-	Type       string `json:"@type"`
-	Title      string `json:"title"`
-	Author     string `json:"author,omitempty"`
-	Identifier string `json:"identifier,omitempty"`
-	Language   string `json:"language,omitempty"`
-	Modified   string `json:"modified,omitempty"`
+	Type       string     `json:"@type"`
+	Title      string     `json:"title"`
+	Author     string     `json:"author,omitempty"`
+	Identifier string     `json:"identifier,omitempty"`
+	Language   string     `json:"language,omitempty"`
+	Modified   *time.Time `json:"modified,omitempty"`
 }
 
 type Link struct {
@@ -62,11 +62,12 @@ type Root struct {
 	Publications []Publication `json:"publications"`
 }
 
-func publicationAcquisitionLinkChoice(borrowLink bool, pubUUID, statusCode, lcpHashedPassphrase string, startDate, endDate time.Time) Link {
+// "authentified" || "notAuthentified" || "authentifiedAndBorrowed"
+func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHashedPassphrase string, startDate, endDate time.Time) Link {
 
-	if borrowLink {
+	if choice == "authentified" {
 		return Link{
-			Type: "application/opds-publication+json",
+			Type: "application/vnd.readium.lcp.license.v1.0+json",
 			Rel:  "http://opds-spec.org/acquisition/borrow",
 			Href: "http://localhost:8080/opds/v1/publication/" + pubUUID + "/loan",
 			Properties: &Properties{
@@ -86,9 +87,31 @@ func publicationAcquisitionLinkChoice(borrowLink bool, pubUUID, statusCode, lcpH
 			},
 		}
 
+	} else if choice == "notAuthentified" {
+		return Link{
+			Type: "application/opds-publication+json",
+			Rel:  "http://opds-spec.org/acquisition/borrow",
+			Href: "http://localhost:8080/opds/v1/publication/" + pubUUID + "/borrow",
+			Properties: &Properties{
+				Availability: &Availability{
+					Status: "available",
+				},
+				IndirectAcquisition: []Link{
+					{
+						Type: "application/vnd.readium.lcp.license.v1.0+json",
+						Child: []Link{
+							{
+								Type: "application/epub+zip",
+							},
+						},
+					},
+				},
+			},
+		}
+
 	}
 	return Link{
-		Type: "application/opds-publication+json",
+		Type: "application/vnd.readium.lcp.license.v1.0+json",
 		Rel:  "http://opds-spec.org/acquisition",
 		Href: "http://localhost:8080/opds/v1/publication/" + pubUUID + "/license",
 		Properties: &Properties{
@@ -125,7 +148,7 @@ func convertToPublication(storPublication *stor.Publication) (Publication, error
 			Author:     getAuthorNames(storPublication.Author),
 			Identifier: storPublication.UUID,
 			Language:   getLanguageCode(storPublication.Language),
-			Modified:   storPublication.DatePublication.Format(time.RFC3339),
+			Modified:   &storPublication.DatePublication,
 		},
 		Links: []Link{
 			{
@@ -273,7 +296,7 @@ func (opds *Opds) GenerateBookshelfFeed(credential string) (Root, error) {
 	}
 
 	for i, status := range lsdStatus {
-		root.Publications[i].Links = append(root.Publications[i].Links, publicationAcquisitionLinkChoice(false, root.Publications[i].Metadata.Identifier, status.StatusCode, user.LcpPassHash, status.StartDate, status.EndDate))
+		root.Publications[i].Links = append(root.Publications[i].Links, publicationAcquisitionLinkChoice("authentified", root.Publications[i].Metadata.Identifier, status.StatusCode, user.LcpPassHash, status.StartDate, status.EndDate))
 	}
 
 	return root, nil

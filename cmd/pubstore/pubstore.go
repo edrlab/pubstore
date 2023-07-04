@@ -11,7 +11,6 @@ import (
 
 	"github.com/edrlab/pubstore/pkg/api"
 	"github.com/edrlab/pubstore/pkg/opds"
-	"github.com/edrlab/pubstore/pkg/service"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/view"
 	"github.com/edrlab/pubstore/pkg/web"
@@ -23,9 +22,8 @@ func main() {
 
 	_stor := stor.Init("pub.db")
 	_api := api.Init(_stor)
-	_service := service.Init(_stor)
 	_view := view.Init(_stor)
-	_web := web.Init(_stor, _service, _view)
+	_web := web.Init(_stor, _view)
 	_opds := opds.Init(_stor)
 
 	r := chi.NewRouter()

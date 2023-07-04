@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/lcp"
-	"github.com/edrlab/pubstore/pkg/service"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/view"
 	"github.com/foolin/goview"
@@ -20,13 +19,12 @@ import (
 )
 
 type Web struct {
-	view    *view.View
-	stor    *stor.Stor
-	service *service.Service
+	view *view.View
+	stor *stor.Stor
 }
 
-func Init(s *stor.Stor, service *service.Service, v *view.View) *Web {
-	return &Web{stor: s, view: v, service: service}
+func Init(s *stor.Stor, v *view.View) *Web {
+	return &Web{stor: s, view: v}
 }
 
 func (web *Web) getUserByCookie(r *http.Request) *stor.User {
@@ -232,7 +230,7 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	storUser := web.getUserByCookie(r)
-	userId := storUser.UUID
+	userUUID := storUser.UUID
 	userEmail := storUser.Email
 	textHint := storUser.LcpHintMsg
 	hexValue := storUser.LcpPassHash
@@ -257,7 +255,7 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 		io.Copy(w, bytes.NewReader(licenceBytes))
 	}()
 
-	licenceBytes, err = lcp.LicenceBuy(pubUUID, userId, userEmail, textHint, hexValue, printRights, copyRights)
+	licenceBytes, err = lcp.LicenceBuy(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -269,7 +267,7 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 		errorWasHappend = true
 	}
 
-	err = web.stor.CreateTransactionWithUUID(pubUUID, userId, licenceId)
+	err = web.stor.CreateTransactionWithUUID(pubUUID, userUUID, licenceId)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -333,7 +331,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	storUser := web.getUserByCookie(r)
-	userId := storUser.UUID
+	userUUID := storUser.UUID
 	userEmail := storUser.Email
 	textHint := storUser.LcpHintMsg
 	hexValue := storUser.LcpPassHash
@@ -358,7 +356,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 		io.Copy(w, bytes.NewReader(licenceBytes))
 	}()
 
-	licenceBytes, err = lcp.LicenceLoan(pubUUID, userId, userEmail, textHint, hexValue, printRights, copyRights, startDate, endDate)
+	licenceBytes, err = lcp.LicenceLoan(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, startDate, endDate)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -370,7 +368,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 		errorWasHappend = true
 	}
 
-	err = web.stor.CreateTransactionWithUUID(pubUUID, userId, licenceId)
+	err = web.stor.CreateTransactionWithUUID(pubUUID, userUUID, licenceId)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true
@@ -383,8 +381,8 @@ func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Re
 
 	publication, _ := web.stor.GetPublicationByUUID(pubUUID)
 	user := web.getUserByCookie(r)
-	licenceID := web.service.GetLicenceIdTransaction(publication, user)
-	if len(licenceID) == 0 {
+	transaction, err := web.stor.GetTransactionByUserAndPublication(user.ID, publication.ID)
+	if err != nil {
 		http.Redirect(w, r, "/catalog/publication/"+pubUUID, http.StatusFound)
 		return
 	}
@@ -409,7 +407,7 @@ func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Re
 		io.Copy(w, bytes.NewReader(licenceBytes))
 	}()
 
-	licenceBytes, err := lcp.GenerateFreshLicenceFromLcpServer(licenceID, user.Email, user.LcpHintMsg, user.LcpPassHash)
+	licenceBytes, err = lcp.GenerateFreshLicenceFromLcpServer(transaction.LicenceId, user.Email, user.LcpHintMsg, user.LcpPassHash)
 	if err != nil {
 		message += err.Error()
 		errorWasHappend = true

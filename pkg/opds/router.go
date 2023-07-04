@@ -1,10 +1,12 @@
 package opds
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -93,7 +95,7 @@ func (opds *Opds) publicationHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	credential, ok := ctx.Value(CredentialContext).(string)
 	authentified := false
-	if !ok {
+	if ok {
 		authentified = true
 	}
 
@@ -108,18 +110,30 @@ func (opds *Opds) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer func() {
+		// Encode the publication as JSON and write it to the response
+		w.Header().Set("Content-Type", "application/opds+json")
+		err = json.NewEncoder(w).Encode(pub)
+		if err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
+	}()
+
 	if authentified {
 		// add authentified acquisition link
 
 		user, err := opds.stor.GetUserByEmail(credential)
 		if err != nil {
-			http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+			// http.Error(w, "Failed to get user", http.StatusInternalServerError)
+			fmt.Println("Failed to get user : " + credential)
+			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
 			return
 		}
 
 		transactions, err := opds.getTransactionFromUserAndPubUUID(user, storPublication.UUID)
 		if err != nil {
-			http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
 			return
 		}
 
@@ -127,20 +141,94 @@ func (opds *Opds) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			lsdStatus = &lcp.LsdStatus{}
 		}
-		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice(false, storPublication.UUID, lsdStatus.StatusCode, user.LcpPassHash, lsdStatus.StartDate, lsdStatus.EndDate))
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentifiedAndBorrowed", storPublication.UUID, lsdStatus.StatusCode, user.LcpPassHash, lsdStatus.StartDate, lsdStatus.EndDate))
 
 	} else {
 		// add borrow link
-		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice(true, "", "", "", time.Time{}, time.Time{}))
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
 	}
+}
 
-	// Encode the publication as JSON and write it to the response
-	w.Header().Set("Content-Type", "application/opds+json")
-	err = json.NewEncoder(w).Encode(pub)
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+func (opds *Opds) publicationBorrowHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	_, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		opdsAuthenticationHandler(w, r)
 		return
 	}
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	http.Redirect(w, r, "/opds/v1/publication/"+storPublication.UUID, http.StatusFound)
+}
+
+func (opds *Opds) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		opdsAuthenticationHandler(w, r)
+		return
+	}
+	user, err := opds.stor.GetUserByEmail(credential)
+	if err != nil {
+		http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+		return
+	}
+
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	licenceBytes, err := lcp.LicenceLoan(storPublication.UUID, user.UUID, user.Email, user.LcpHintMsg, user.LcpPassHash, 100, 2000, time.Now(), time.Now().AddDate(0, 0, 7))
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+	io.Copy(w, bytes.NewReader(licenceBytes))
+}
+
+func (opds *Opds) publicationFreshLicenseHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		opdsAuthenticationHandler(w, r)
+		return
+	}
+	user, err := opds.stor.GetUserByEmail(credential)
+	if err != nil {
+		http.Error(w, "Failed to get user", http.StatusInternalServerError)
+		return
+	}
+
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+		return
+	}
+
+	transaction, err := opds.stor.GetTransactionByUserAndPublication(user.ID, storPublication.ID)
+	if err != nil {
+		http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+		return
+	}
+
+	licenceBytes, err := lcp.GenerateFreshLicenceFromLcpServer(transaction.LicenceId, user.Email, user.LcpHintMsg, user.LcpPassHash)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+	io.Copy(w, bytes.NewReader(licenceBytes))
 }
 
 func (opds *Opds) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
@@ -196,12 +284,16 @@ func (opds *Opds) Router(r chi.Router) {
 			grant_type=refresh_token&refresh_token={the refresh_token obtained in the previous response}
 	*/
 	r.Post("/opds/v1/token", s.UserCredentials)
+	r.Get("/401", opdsAuthenticationHandler)
 	r.Route("/opds/v1", func(opdsRouter chi.Router) {
 		opdsRouter.Get("/catalog", opds.catalogHandler)
 		opdsRouter.Route("/publication/{id}", func(idRouter chi.Router) {
 			idRouter.Use(authorizePassthrough(config.OauthSeed, nil))
 			idRouter.Use(opds.publicationCtx)
 			idRouter.Get("/", opds.publicationHandler)
+			idRouter.Get("/loan", opds.publicationLoanHandler)
+			idRouter.Get("/borrow", opds.publicationBorrowHandler)
+			idRouter.Get("/license", opds.publicationFreshLicenseHandler)
 		})
 		opdsRouter.Group(func(opdsRouterAuth chi.Router) {
 			opdsRouterAuth.Use(authorize(config.OauthSeed, nil))
@@ -222,6 +314,30 @@ func (opds *Opds) publicationCtx(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), "publication", pub)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func opdsAuthenticationHandler(w http.ResponseWriter, _ *http.Request) {
+	jsonData := `
+	{
+		"id": "org.edrlab.pubstore",
+		"title": "LOGIN",
+		"description": "PUBSTORE LOGIN",
+		"links": [
+		  {"rel": "logo", "href": "http://localhost:8080/static/images/edrlab-logo.jpeg", "type": "image/jpeg", "width": 90, "height": 90}
+		],
+		"authentication": [
+		  {
+			"type": "http://opds-spec.org/auth/oauth/password",
+			"links": [
+			  {"rel": "authenticate", "href": "http://localhost:8080/opds/v1/token", "type": "application/json"}
+			]
+		  }
+		]
+	  }`
+
+	w.Header().Set("Content-Type", "application/opds-authentication+json")
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte(jsonData))
 }
 
 type contextKey string
@@ -264,28 +380,7 @@ func (ba *BearerAuthentication) Authorize(next http.Handler) http.Handler {
 		auth := r.Header.Get("Authorization")
 		token, err := ba.checkAuthorizationHeader(auth)
 		if err != nil {
-
-			jsonData := `
-			{
-				"id": "org.edrlab.pubstore",
-				"title": "LOGIN",
-				"description": "PUBSTORE LOGIN",
-				"links": [
-				  {"rel": "logo", "href": "http://example.com/logo.jpg", "type": "image/jpeg", "width": 90, "height": 90}
-				],
-				"authentication": [
-				  {
-					"type": "http://opds-spec.org/auth/oauth/password",
-					"links": [
-					  {"rel": "authenticate", "href": "http://localhost:8080/opds/v1/token", "type": "application/json"}
-					]
-				  }
-				]
-			  }`
-
-			w.Header().Set("Content-Type", "application/opds-authentication+json")
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(jsonData))
+			opdsAuthenticationHandler(w, r)
 			return
 		}
 
@@ -325,8 +420,8 @@ type BearerAuthenticationPassthrough struct {
 }
 
 // NewBearerAuthentication create a BearerAuthentication middleware
-func newBearerAuthenticationPassthrough(secretKey string, formatter oauth.TokenSecureFormatter) *BearerAuthentication {
-	ba := &BearerAuthentication{secretKey: secretKey}
+func newBearerAuthenticationPassthrough(secretKey string, formatter oauth.TokenSecureFormatter) *BearerAuthenticationPassthrough {
+	ba := &BearerAuthenticationPassthrough{secretKey: secretKey}
 	if formatter == nil {
 		formatter = oauth.NewSHA256RC4TokenSecurityProvider([]byte(secretKey))
 	}
@@ -337,7 +432,7 @@ func newBearerAuthenticationPassthrough(secretKey string, formatter oauth.TokenS
 // Authorize is the OAuth 2.0 middleware for go-chi resource server.
 // Authorize creates a BearerAuthentication middleware and return the Authorize method.
 func authorizePassthrough(secretKey string, formatter oauth.TokenSecureFormatter) func(next http.Handler) http.Handler {
-	return newBearerAuthentication(secretKey, formatter).Authorize
+	return newBearerAuthenticationPassthrough(secretKey, formatter).AuthorizePassthrough
 }
 
 // Authorize verifies the bearer token authorizing or not the request.
