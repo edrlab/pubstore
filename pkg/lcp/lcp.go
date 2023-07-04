@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/edrlab/pubstore/pkg/config"
 )
 
 /**
@@ -170,9 +172,9 @@ func generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexVal
 	provider := "https://pubstore.edrlab.org"
 	licence := generateLicence(provider, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
 
-	url := fmt.Sprintf("https://front-prod.edrlab.org/lcpserver/contents/%s/license", pubUUID)
-	username := "adm_username"
-	password := "adm_password"
+	url := fmt.Sprintf(config.LCP_SERVER_URL+"/contents/%s/license", pubUUID)
+	username := config.LCP_SERVER_USERNAME
+	password := config.LCP_SERVER_PASSWORD
 
 	payload, err := json.Marshal(licence)
 	if err != nil {
@@ -252,9 +254,9 @@ func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue stri
 		return nil, err
 	}
 
-	url := "https://front-prod.edrlab.org/lcpserver/licenses/" + licenceId
-	username := "adm_username"
-	password := "adm_password"
+	url := config.LCP_SERVER_URL + "/licenses/" + licenceId
+	username := config.LCP_SERVER_USERNAME
+	password := config.LCP_SERVER_PASSWORD
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {

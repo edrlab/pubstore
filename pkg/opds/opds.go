@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edrlab/pubstore/pkg/config"
 	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
 )
@@ -69,7 +70,7 @@ func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHas
 		return Link{
 			Type: "application/vnd.readium.lcp.license.v1.0+json",
 			Rel:  "http://opds-spec.org/acquisition/borrow",
-			Href: "http://localhost:8080/opds/v1/publication/" + pubUUID + "/loan",
+			Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/loan",
 			Properties: &Properties{
 				Availability: &Availability{
 					Status: "available",
@@ -91,7 +92,7 @@ func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHas
 		return Link{
 			Type: "application/opds-publication+json",
 			Rel:  "http://opds-spec.org/acquisition/borrow",
-			Href: "http://localhost:8080/opds/v1/publication/" + pubUUID + "/borrow",
+			Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/borrow",
 			Properties: &Properties{
 				Availability: &Availability{
 					Status: "available",
@@ -113,7 +114,7 @@ func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHas
 	return Link{
 		Type: "application/vnd.readium.lcp.license.v1.0+json",
 		Rel:  "http://opds-spec.org/acquisition",
-		Href: "http://localhost:8080/opds/v1/publication/" + pubUUID + "/license",
+		Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/license",
 		Properties: &Properties{
 			Availability: &Availability{
 				Status:    statusCode,
@@ -153,7 +154,7 @@ func convertToPublication(storPublication *stor.Publication) (Publication, error
 		Links: []Link{
 			{
 				Rel:  "self",
-				Href: "http://localhost:8080/opds/v1/publication/" + storPublication.UUID,
+				Href: config.BASE_URL + "/opds/v1/publication/" + storPublication.UUID,
 				Type: "application/opds+json",
 			},
 		},
@@ -205,17 +206,17 @@ func (opds *Opds) GenerateOpdsFeed(page, pageSize int) (Root, error) {
 
 	root := Root{
 		Metadata: MetadataFeed{
-			Title: "Example listing publications",
+			Title: "Pubstore OPDS Feed",
 		},
 		Links: []Link{
 			{
 				Rel:  "self",
-				Href: "http://localhost:8080/opds/v1/catalog",
+				Href: config.BASE_URL + "/opds/v1/catalog",
 				Type: "application/opds+json",
 			},
 			{
 				Rel:  "http://opds-spec.org/shelf",
-				Href: "http://localhost:8080/opds/v1/bookshelf",
+				Href: config.BASE_URL + "/opds/v1/bookshelf",
 				Type: "application/opds+json",
 			},
 		},
@@ -283,12 +284,12 @@ func (opds *Opds) GenerateBookshelfFeed(credential string) (Root, error) {
 		Links: []Link{
 			{
 				Rel:  "self",
-				Href: "http://localhost:8080/opds/v1/bookshelf",
+				Href: config.BASE_URL + "/opds/v1/bookshelf",
 				Type: "application/opds+json",
 			},
 			{
 				Rel:  "http://opds-spec.org/shelf",
-				Href: "http://localhost:8080/opds/v1/bookshelf",
+				Href: config.BASE_URL + "/opds/v1/bookshelf",
 				Type: "application/opds+json",
 			},
 		},

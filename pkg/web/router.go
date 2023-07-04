@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edrlab/pubstore/pkg/config"
 	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/view"
@@ -209,7 +210,7 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 	copyRightsString := r.URL.Query().Get("copyRights")
 
 	if printRights, err = strconv.Atoi(printRightsString); err != nil {
-		printRights = 10
+		printRights = config.PrintRights
 	} else {
 		if printRights < 0 {
 			printRights = 0
@@ -219,7 +220,7 @@ func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if copyRights, err = strconv.Atoi(copyRightsString); err != nil {
-		copyRights = 10
+		copyRights = config.CopyRights
 	} else {
 		if copyRights < 0 {
 			copyRights = 0
@@ -310,7 +311,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if printRights, err = strconv.Atoi(printRightsString); err != nil {
-		printRights = 10
+		printRights = config.PrintRights
 	} else {
 		if printRights < 0 {
 			printRights = 0
@@ -320,7 +321,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if copyRights, err = strconv.Atoi(copyRightsString); err != nil {
-		copyRights = 10
+		copyRights = config.CopyRights
 	} else {
 		if copyRights < 0 {
 			copyRights = 0
@@ -477,7 +478,7 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 	}
 	pageSizeInt, _ := strconv.Atoi(pageSize)
 	if pageSizeInt < 1 || pageSizeInt > 1000 {
-		pageSizeInt = 10
+		pageSizeInt = config.NumberOfPublicationsPerPage
 	}
 
 	var facet string = ""

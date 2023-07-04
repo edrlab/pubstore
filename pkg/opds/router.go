@@ -77,6 +77,7 @@ func (*UserVerifier) StoreTokenID(tokenType oauth.TokenType, credential, tokenID
 
 func (opds *Opds) catalogHandler(w http.ResponseWriter, r *http.Request) {
 
+	// TODO add pagination in opds feed
 	opdsFeed, err := opds.GenerateOpdsFeed(1, 50)
 	if err != nil {
 		fmt.Fprintf(w, "opds feed : %v!", err)
@@ -323,13 +324,13 @@ func opdsAuthenticationHandler(w http.ResponseWriter, _ *http.Request) {
 		"title": "LOGIN",
 		"description": "PUBSTORE LOGIN",
 		"links": [
-		  {"rel": "logo", "href": "http://localhost:8080/static/images/edrlab-logo.jpeg", "type": "image/jpeg", "width": 90, "height": 90}
+		  {"rel": "logo", "href": "` + config.BASE_URL + `/static/images/edrlab-logo.jpeg", "type": "image/jpeg", "width": 90, "height": 90}
 		],
 		"authentication": [
 		  {
 			"type": "http://opds-spec.org/auth/oauth/password",
 			"links": [
-			  {"rel": "authenticate", "href": "http://localhost:8080/opds/v1/token", "type": "application/json"}
+			  {"rel": "authenticate", "href": "` + config.BASE_URL + `/opds/v1/token", "type": "application/json"}
 			]
 		  }
 		]
