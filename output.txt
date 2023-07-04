@@ -1,0 +1,4713 @@
+File: pkg/api
+
+File: pkg/config
+
+File: pkg/lcp
+
+File: pkg/opds
+
+File: pkg/stor
+
+File: pkg/view
+
+File: pkg/web
+
+File: pkg/api
+
+File: pkg/api/api_test.go
+package api
+
+import (
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/go-playground/validator/v10"
+)
+
+var api *Api
+
+func TestMain(m *testing.M) {
+
+	validate = validator.New()
+
+	s := stor.Init("file::memory:?cache=shared")
+
+	api = &Api{stor: s}
+
+	// Run the tests
+	exitCode := m.Run()
+
+	s.Stop()
+
+	fmt.Println("ExitCode", exitCode)
+	// Exit with the appropriate exit code
+	os.Exit(exitCode)
+}
+
+func TestSuite(t *testing.T) {
+	t.Run("TestPublicationHandler", TestPublicationHandler)
+	t.Run("TestUserHandler", TestUserHandler)
+}
+
+File: pkg/api/publication.go
+package api
+
+import (
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
+)
+
+type Language struct {
+	Code string `json:"code"`
+}
+
+type Publisher struct {
+	Name string `json:"name"`
+}
+
+type Author struct {
+	Name string `json:"name"`
+}
+
+type Category struct {
+	Name string `json:"name"`
+}
+
+type Publication struct {
+	Title           string      `json:"title"`
+	UUID            string      `json:"uuid" validate:"omitempty,uuid4_rfc4122"`
+	DatePublication time.Time   `json:"datePublication"`
+	Description     string      `json:"description"`
+	CoverUrl        string      `json:"coverUrl"`
+	Language        []Language  `json:"language"`
+	Publisher       []Publisher `json:"publisher"`
+	Author          []Author    `json:"author"`
+	Category        []Category  `json:"category"`
+}
+
+func convertPublicationFromStor(originalPublication stor.Publication) Publication {
+	convertedPublication := Publication{
+		Title:           originalPublication.Title,
+		UUID:            originalPublication.UUID,
+		DatePublication: originalPublication.DatePublication,
+		Description:     originalPublication.Description,
+		CoverUrl:        originalPublication.CoverUrl,
+	}
+
+	// Convert Language slice
+	for _, language := range originalPublication.Language {
+		convertedPublication.Language = append(convertedPublication.Language, Language{Code: language.Code})
+	}
+
+	// Convert Publisher slice
+	for _, publisher := range originalPublication.Publisher {
+		convertedPublication.Publisher = append(convertedPublication.Publisher, Publisher{Name: publisher.Name})
+	}
+
+	// Convert Author slice
+	for _, author := range originalPublication.Author {
+		convertedPublication.Author = append(convertedPublication.Author, Author{Name: author.Name})
+	}
+
+	// Convert Category slice
+	for _, category := range originalPublication.Category {
+		convertedPublication.Category = append(convertedPublication.Category, Category{Name: category.Name})
+	}
+
+	return convertedPublication
+}
+
+func convertPublicationToStor(convertedPublication Publication, originalPublication *stor.Publication) *stor.Publication {
+	if originalPublication == nil {
+		originalPublication = &stor.Publication{}
+	}
+
+	if convertedPublication.Title != "" {
+		originalPublication.Title = convertedPublication.Title
+	}
+	if convertedPublication.UUID != "" {
+		originalPublication.UUID = convertedPublication.UUID
+	}
+	if convertedPublication.DatePublication.IsZero() {
+		originalPublication.DatePublication = convertedPublication.DatePublication
+	}
+	if convertedPublication.Description != "" {
+		originalPublication.Description = convertedPublication.Description
+	}
+	if convertedPublication.CoverUrl != "" {
+		originalPublication.CoverUrl = convertedPublication.CoverUrl
+	}
+
+	// Convert Language slice
+	for _, language := range convertedPublication.Language {
+		if language.Code != "" {
+			originalPublication.Language = append(originalPublication.Language, stor.Language{Code: language.Code})
+		}
+	}
+
+	// Convert Publisher slice
+	for _, publisher := range convertedPublication.Publisher {
+		if publisher.Name != "" {
+			originalPublication.Publisher = append(originalPublication.Publisher, stor.Publisher{Name: publisher.Name})
+		}
+	}
+
+	// Convert Author slice
+	for _, author := range convertedPublication.Author {
+		if author.Name != "" {
+			originalPublication.Author = append(originalPublication.Author, stor.Author{Name: author.Name})
+		}
+	}
+
+	// Convert Category slice
+	for _, category := range convertedPublication.Category {
+		if category.Name != "" {
+			originalPublication.Category = append(originalPublication.Category, stor.Category{Name: category.Name})
+		}
+	}
+
+	return originalPublication
+}
+
+/*
+*
+
+	curl -X POST \
+	  -H "Content-Type: application/json" \
+	  -d '{
+	    "title": "Test Publication",
+	    "datePublication": "2023-06-16T12:00:00Z",
+	    "description": "Test description",
+	    "coverUrl": "http://example.com/cover.jpg",
+	    "language": [
+	      {"code": "en"},
+	      {"code": "fr"}
+	    ],
+	    "publisher": [
+	      {"name": "Test Publisher A"},
+	      {"name": "Test Publisher B"}
+	    ],
+	    "author": [
+	      {"name": "Test Author A"},
+	      {"name": "Test Author B"}
+	    ],
+	    "category": [
+	      {"name": "Test Category A"},
+	      {"name": "Test Category B"}
+	    ]
+	  }' \
+	  http://localhost:8080/api/v1/publication
+*/
+func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse and validate the request body
+	var publication Publication
+	err := json.NewDecoder(r.Body).Decode(&publication)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the publication struct using the validator
+	err = validate.Struct(publication)
+	if err != nil {
+		// If validation fails, return the validation errors
+		validationErrors := err.(validator.ValidationErrors)
+		http.Error(w, validationErrors.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Generate UUID for the publication
+	if publication.UUID == "" {
+		publication.UUID = uuid.New().String()
+	}
+
+	publicationStor := convertPublicationToStor(publication, &stor.Publication{})
+
+	err = api.stor.CreatePublication(publicationStor)
+	if err != nil {
+		http.Error(w, "Failed to create publication", http.StatusInternalServerError)
+		return
+	}
+	// Return success response
+	w.WriteHeader(http.StatusCreated)
+	// Set the response content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(publication)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	// fmt.Fprint(w, "Publication created successfully")
+}
+
+func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	publication := convertPublicationFromStor(*storPublication)
+
+	// Set the response content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(publication)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) updatePublicationHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	// Parse and validate the request body
+	var publication Publication
+	err := json.NewDecoder(r.Body).Decode(&publication)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the publication struct using the validator
+	err = validate.Struct(publication)
+	if err != nil {
+		// If validation fails, return the validation errors
+		validationErrors := err.(validator.ValidationErrors)
+		http.Error(w, validationErrors.Error(), http.StatusBadRequest)
+		return
+	}
+
+	storPublicationConverted := convertPublicationToStor(publication, storPublication)
+
+	err = api.stor.UpdatePublication(storPublicationConverted)
+	if err != nil {
+		http.Error(w, "Failed to update publication", http.StatusInternalServerError)
+		return
+	}
+
+	publication = convertPublicationFromStor(*storPublicationConverted)
+
+	// Set the response content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(publication)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) deletePublicationHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	err := api.stor.DeletePublication(storPublication)
+	if err != nil {
+		http.Error(w, "Failed to delete publication", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+File: pkg/api/publication_test.go
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPublicationHandler(t *testing.T) {
+	// Initialize router
+	r := chi.NewRouter()
+	r.Group(api.Rooter)
+
+	jsonData := `
+	{
+	    "title": "Test Publication",
+	    "datePublication": "2023-06-16T12:00:00Z",
+	    "description": "Test description",
+	    "coverUrl": "http://example.com/cover.jpg",
+	    "language": [
+	        {
+	            "code": "en"
+	        },
+	        {
+	            "code": "fr"
+	        }
+	    ],
+	    "publisher": [
+	        {
+	            "name": "Test Publisher A"
+	        },
+	        {
+	            "name": "Test Publisher B"
+	        }
+	    ],
+	    "author": [
+	        {
+	            "name": "Test Author A"
+	        },
+	        {
+	            "name": "Test Author B"
+	        }
+	    ],
+	    "category": [
+	        {
+	            "name": "Test Category A"
+	        },
+	        {
+	            "name": "Test Category B"
+	        }
+	    ]
+	}
+	`
+
+	sessionId := uuid.New().String()
+	// Create a new user for testing
+	createdUser := &stor.User{
+		UUID:        gofakeit.UUID(),
+		Name:        "Pierre ler",
+		Email:       gofakeit.Email(),
+		Pass:        "password123",
+		LcpHintMsg:  "Hint",
+		LcpPassHash: "hash123",
+		SessionId:   sessionId,
+	}
+	// Create the user in the storage
+	err := api.stor.CreateUser(createdUser)
+	assert.NoError(t, err)
+
+	// Generate the bearer token by making a POST request to /api/v1/token
+	tokenURL := "/api/v1/token"
+	tokenData := url.Values{
+		"grant_type": {"password"},
+		"username":   {createdUser.Email},
+		"password":   {"password123"},
+	}
+	tokenReq, err := http.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
+	assert.NoError(t, err)
+	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	tokenRecorder := httptest.NewRecorder()
+	r.ServeHTTP(tokenRecorder, tokenReq)
+	assert.Equal(t, http.StatusOK, tokenRecorder.Code)
+	fmt.Println(tokenRecorder.Body.String())
+
+	// Retrieve the access token from the response
+	var tokenResp struct {
+		Token string `json:"access_token"`
+	}
+	err = json.Unmarshal(tokenRecorder.Body.Bytes(), &tokenResp)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, tokenResp.Token)
+	fmt.Println(tokenResp.Token)
+
+	req, err := http.NewRequest("POST", "/api/v1/publication", bytes.NewBuffer([]byte(jsonData)))
+	assert.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+
+	assert.NoError(t, err)
+	req, err = http.NewRequest("POST", "/api/v1/publication", bytes.NewBuffer([]byte(jsonData)))
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusCreated, recorder.Code)
+
+	// Unmarshal the response to get the created user
+	var createPublicationStor stor.Publication
+	err = json.Unmarshal(recorder.Body.Bytes(), &createPublicationStor)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, createPublicationStor.UUID)
+	assert.Equal(t, "Test Publication", createPublicationStor.Title)
+	assert.Equal(t, "Test description", createPublicationStor.Description)
+
+	// Test GET /api/v1/publication/{id}
+	getUserURL := "/api/v1/publication/" + createPublicationStor.UUID
+	req, err = http.NewRequest("GET", getUserURL, nil)
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	var retrievedPub stor.Publication
+	err = json.Unmarshal(recorder.Body.Bytes(), &retrievedPub)
+	assert.NoError(t, err)
+	// Check the retrieved user details
+
+	// Test PUT /api/v1/user/{id}
+	updateUserURL := "/api/v1/publication/" + createPublicationStor.UUID
+	updateUserData := map[string]interface{}{
+		"title": "Jane Doe",
+	}
+	updateUserDataBytes, err := json.Marshal(updateUserData)
+	assert.NoError(t, err)
+	req, err = http.NewRequest("PUT", updateUserURL, bytes.NewBuffer(updateUserDataBytes))
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// Retrieve publication by ID and validate updated name
+	pubGetFromStor, err := api.stor.GetPublicationByUUID(createPublicationStor.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, "Jane Doe", pubGetFromStor.Title)
+
+	// Test DELETE /api/v1/publication/{id}
+	deleteUserURL := "/api/v1/publication/" + createPublicationStor.UUID
+	req, err = http.NewRequest("DELETE", deleteUserURL, nil)
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// Retrieve user by ID and ensure it's not found
+	pubDeleteFromStor, err := api.stor.GetPublicationByUUID(createdUser.UUID)
+	assert.Error(t, err)
+	assert.Nil(t, pubDeleteFromStor)
+}
+
+File: pkg/api/router.go
+package api
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"time"
+
+	"github.com/edrlab/pubstore/pkg/config"
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/oauth"
+	"github.com/go-playground/validator/v10"
+	"golang.org/x/crypto/bcrypt"
+)
+
+var validate *validator.Validate
+
+type Api struct {
+	stor *stor.Stor
+}
+
+func Init(s *stor.Stor) *Api {
+	return &Api{stor: s}
+}
+
+// TestUserVerifier provides user credentials verifier for testing.
+type UserVerifier struct {
+	stor *stor.Stor
+}
+
+// ValidateUser validates username and password returning an error if the user credentials are wrong
+func (u *UserVerifier) ValidateUser(username, password, scope string, r *http.Request) error {
+	user, err := u.stor.GetUserByEmail(username)
+	if err == nil && bcrypt.CompareHashAndPassword([]byte(user.Pass), []byte(password)) == nil {
+		return nil
+	}
+
+	return errors.New("wrong user")
+}
+
+// ValidateClient validates clientID and secret returning an error if the client credentials are wrong
+func (*UserVerifier) ValidateClient(clientID, clientSecret, scope string, r *http.Request) error {
+	return errors.New("wrong client")
+}
+
+// ValidateCode validates token ID
+func (*UserVerifier) ValidateCode(clientID, clientSecret, code, redirectURI string, r *http.Request) (string, error) {
+	return "", nil
+}
+
+// AddClaims provides additional claims to the token
+func (*UserVerifier) AddClaims(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
+	claims := make(map[string]string)
+	return claims, nil
+}
+
+// AddProperties provides additional information to the token response
+func (*UserVerifier) AddProperties(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
+	props := make(map[string]string)
+	return props, nil
+}
+
+// ValidateTokenID validates token ID
+func (*UserVerifier) ValidateTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
+	return nil
+}
+
+// StoreTokenID saves the token id generated for the user
+func (*UserVerifier) StoreTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
+	return nil
+}
+
+func (api *Api) Rooter(r chi.Router) {
+
+	validate = validator.New()
+
+	// https://github.com/go-chi/oauth/blob/master/example/authserver/main.go
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "HEAD", "OPTION"},
+		AllowedHeaders:   []string{"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection", "DNT", "Host", "Origin", "Pragma", "Referer"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
+
+	s := oauth.NewBearerServer(
+		config.OauthSeed,
+		time.Second*120,
+		&UserVerifier{stor: api.stor},
+		nil)
+
+	/*
+		 Generate Token using username & password
+			    	POST http://localhost:8080/token
+					Content-Type: application/x-www-form-urlencoded
+					grant_type=password&username=user01&password=12345
+	*/
+	/*
+		RefreshTokenGrant Token
+			POST http://localhost:8080/token
+			Content-Type: application/x-www-form-urlencoded
+			grant_type=refresh_token&refresh_token={the refresh_token obtained in the previous response}
+	*/
+	r.Post("/api/v1/token", s.UserCredentials)
+
+	r.Route("/api/v1/publication", func(publicationRouter chi.Router) {
+		publicationRouter.Group(func(postRouter chi.Router) {
+			postRouter.Use(oauth.Authorize(config.OauthSeed, nil))
+			postRouter.Post("/", api.createPublicationHandler)
+		})
+		publicationRouter.Route("/{id}", func(idRouter chi.Router) {
+			idRouter.Use(api.publicationCtx)
+			idRouter.Get("/", api.getPublicationHandler)
+			idRouter.Group(func(idRouterGroup chi.Router) {
+				idRouterGroup.Use(oauth.Authorize(config.OauthSeed, nil))
+				idRouterGroup.Put("/", api.updatePublicationHandler)
+				idRouterGroup.Delete("/", api.deletePublicationHandler)
+			})
+		})
+	})
+	r.Route("/api/v1/user", func(userRouter chi.Router) {
+		userRouter.Group(func(postRouter chi.Router) {
+			postRouter.Use(oauth.Authorize(config.OauthSeed, nil))
+			postRouter.Post("/", api.createUserHandler)
+		})
+		userRouter.Route("/{id}", func(idRouter chi.Router) {
+			idRouter.Use(api.userCtx)
+			idRouter.Get("/", api.getUserHandler)
+			idRouter.Group(func(idRouterGroup chi.Router) {
+				idRouterGroup.Use(oauth.Authorize(config.OauthSeed, nil))
+				idRouterGroup.Put("/", api.updateUserHandler)
+				idRouterGroup.Delete("/", api.deleteUserHandler)
+			})
+		})
+	})
+}
+
+func (api *Api) userCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := chi.URLParam(r, "id")
+		user, err := api.stor.GetUserByUUID(userID)
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "user", user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (api *Api) publicationCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pubID := chi.URLParam(r, "id")
+		pub, err := api.stor.GetPublicationByUUID(pubID)
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "publication", pub)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+File: pkg/api/user.go
+package api
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/edrlab/pubstore/pkg/lcp"
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
+)
+
+type User struct {
+	UUID        string `json:"uuid" validate:"omitempty,uuid4_rfc4122"`
+	Name        string `json:"name" validate:"omitempty"`
+	Email       string `json:"email" validate:"omitempty,email"`
+	Pass        string `json:"password" validate:"omitempty"`
+	LcpHintMsg  string `json:"lcpHintMsg"`
+	LcpPassHash string `json:"lcpPassHash"`
+	SessionId   string `json:"-" validate:"-"`
+}
+
+func ConvertUserFromUserStor(u stor.User) *User {
+	return &User{
+		UUID:        u.UUID,
+		Name:        u.Name,
+		Email:       u.Email,
+		Pass:        u.Pass,
+		LcpHintMsg:  u.LcpHintMsg,
+		LcpPassHash: u.LcpPassHash,
+		SessionId:   u.SessionId,
+	}
+}
+
+func ConvertUserToUserStor(u User, originalUser *stor.User) *stor.User {
+	if originalUser == nil {
+		originalUser = &stor.User{}
+	}
+
+	if u.UUID != "" {
+		originalUser.UUID = u.UUID
+	}
+	if u.Name != "" {
+		originalUser.Name = u.Name
+	}
+	if u.Email != "" {
+		originalUser.Email = u.Email
+	}
+	if u.Pass != "" {
+		originalUser.Pass = u.Pass
+	}
+	if u.LcpHintMsg != "" {
+		originalUser.LcpHintMsg = u.LcpHintMsg
+	}
+	if u.LcpPassHash != "" {
+		originalUser.LcpPassHash = u.LcpPassHash
+	}
+	if u.SessionId != "" {
+		originalUser.SessionId = u.SessionId
+	}
+
+	return originalUser
+}
+
+/*
+*
+
+	curl -X POST -H "Content-Type: application/json" -d '{
+	  "name": "John Doe",
+	  "email": "johndoe@example.com",
+	  "password": "password123",
+	  "lcpHintMsg": "Hint",
+	  "lcpPassHash": "hash123"
+	}' http://localhost:8080/api/v1/user
+*/
+func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	var viewUser User
+	// Parse the JSON request body into the view model user
+	err := json.NewDecoder(r.Body).Decode(&viewUser)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	viewUser.SessionId = ""
+	viewUser.LcpPassHash = lcp.CreateLcpPassHash(viewUser.LcpPassHash)
+
+	// Generate UUID for the user
+	if len(viewUser.UUID) == 0 {
+		viewUser.UUID = uuid.New().String()
+	}
+
+	// Validate the publication struct using the validator
+	err = validate.Struct(viewUser)
+	if err != nil {
+		// If validation fails, return the validation errors
+		validationErrors := err.(validator.ValidationErrors)
+		http.Error(w, validationErrors.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Convert the view model user to the storage user
+	storUser := ConvertUserToUserStor(viewUser, &stor.User{})
+
+	// Call your storage function to create the user
+	err = api.stor.CreateUser(storUser)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Return success response
+	w.WriteHeader(http.StatusCreated)
+	// Set the response content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(viewUser)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) getUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storUser, ok := ctx.Value("user").(*stor.User)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	// Convert the storage user to the view model user
+	viewUser := ConvertUserFromUserStor(*storUser)
+
+	// Set the content type header and write the response
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the user as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(viewUser)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storUser, ok := ctx.Value("user").(*stor.User)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	// Parse and validate the request body
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the user struct using the validator
+	err = validate.Struct(user)
+	if err != nil {
+		// If validation fails, return the validation errors
+		validationErrors := err.(validator.ValidationErrors)
+		http.Error(w, validationErrors.Error(), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(user)
+
+	storUserConverted := ConvertUserToUserStor(user, storUser)
+
+	fmt.Println(storUserConverted)
+
+	err = api.stor.UpdateUser(storUserConverted)
+	if err != nil {
+		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		return
+	}
+
+	user = *ConvertUserFromUserStor(*storUserConverted)
+
+	// Set the response content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the user as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *Api) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	storUser, ok := ctx.Value("user").(*stor.User)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	err := api.stor.DeleteUser(storUser)
+	if err != nil {
+		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+File: pkg/api/user_test.go
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestUserHandler(t *testing.T) {
+	// Initialize router
+	r := chi.NewRouter()
+	r.Group(api.Rooter)
+
+	// Create a new user for testing
+	createdUser := &stor.User{
+		UUID:        gofakeit.UUID(),
+		Name:        "Pierre ler",
+		Email:       gofakeit.Email(),
+		Pass:        "password123",
+		LcpHintMsg:  "Hint",
+		LcpPassHash: "hash123",
+		SessionId:   uuid.New().String(),
+	}
+
+	// Create the user in the storage
+	err := api.stor.CreateUser(createdUser)
+	assert.NoError(t, err)
+
+	// Generate the bearer token by making a POST request to /api/v1/token
+	tokenURL := "/api/v1/token"
+	tokenData := url.Values{
+		"grant_type": {"password"},
+		"username":   {createdUser.Email},
+		"password":   {"password123"},
+	}
+	tokenReq, err := http.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
+	assert.NoError(t, err)
+	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	tokenRecorder := httptest.NewRecorder()
+	r.ServeHTTP(tokenRecorder, tokenReq)
+	assert.Equal(t, http.StatusOK, tokenRecorder.Code)
+
+	// Retrieve the access token from the response
+	var tokenResp struct {
+		Token string `json:"access_token"`
+	}
+	err = json.Unmarshal(tokenRecorder.Body.Bytes(), &tokenResp)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, tokenResp.Token)
+	fmt.Println(tokenResp.Token)
+
+	newUser := &stor.User{
+		Name:        "dupont et",
+		Email:       gofakeit.Email(),
+		Pass:        "password123",
+		LcpHintMsg:  "Hint",
+		LcpPassHash: "hash123",
+		SessionId:   uuid.New().String(),
+	}
+
+	newUserBytes, err := json.Marshal(newUser)
+	assert.NoError(t, err)
+	req, err := http.NewRequest("POST", "/api/v1/user", bytes.NewBuffer(newUserBytes))
+	assert.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+
+	assert.NoError(t, err)
+	req, err = http.NewRequest("POST", "/api/v1/user", bytes.NewBuffer(newUserBytes))
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusCreated, recorder.Code)
+	fmt.Println(recorder.Body.String())
+
+	// Unmarshal the response to get the created user
+	var createdUserFromPostRequest stor.User
+	err = json.Unmarshal(recorder.Body.Bytes(), &createdUserFromPostRequest)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, createdUserFromPostRequest.UUID)
+
+	// Test GET /api/v1/user/{id}
+	getUserURL := "/api/v1/user/" + createdUser.UUID
+	req, err = http.NewRequest("GET", getUserURL, nil)
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	var retrievedUser stor.User
+	err = json.Unmarshal(recorder.Body.Bytes(), &retrievedUser)
+	assert.NoError(t, err)
+	// Check the retrieved user details
+	assert.Equal(t, createdUser.Name, retrievedUser.Name)
+	assert.Equal(t, createdUser.Email, retrievedUser.Email)
+	assert.Equal(t, "", retrievedUser.Pass)
+	assert.Equal(t, createdUser.LcpHintMsg, retrievedUser.LcpHintMsg)
+	assert.Equal(t, createdUser.LcpPassHash, retrievedUser.LcpPassHash)
+	assert.Equal(t, "", retrievedUser.SessionId)
+
+	// Test PUT /api/v1/user/{id}
+	updateUserURL := "/api/v1/user/" + createdUser.UUID
+	updateUserData := map[string]interface{}{
+		"name": "Jane Doe",
+	}
+	updateUserDataBytes, err := json.Marshal(updateUserData)
+	assert.NoError(t, err)
+	req, err = http.NewRequest("PUT", updateUserURL, bytes.NewBuffer(updateUserDataBytes))
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// Retrieve user by ID and validate updated name
+	userGetFromStor, err := api.stor.GetUserByUUID(createdUser.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, "Jane Doe", userGetFromStor.Name)
+
+	// Test DELETE /api/v1/user/{id}
+	deleteUserURL := "/api/v1/user/" + createdUser.UUID
+	req, err = http.NewRequest("DELETE", deleteUserURL, nil)
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	assert.NoError(t, err)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// Retrieve user by ID and ensure it's not found
+	userDeleteFromStor, err := api.stor.GetUserByUUID(createdUser.UUID)
+	assert.Error(t, err)
+	assert.Nil(t, userDeleteFromStor)
+}
+
+File: pkg/config
+
+File: pkg/config/config.go
+package config
+
+import (
+	"os"
+	"strconv"
+)
+
+const OauthSeed = "Edrlab-Rocks"
+const PrintRights = 20
+const CopyRights = 2000
+const NumberOfPublicationsPerPage = 50
+
+var BASE_URL = "http://localhost:8080"
+
+var PORT = 8080
+
+var LCP_SERVER_URL = "https://front-prod.edrlab.org/lcpserver"
+
+var LCP_SERVER_USERNAME = "adm_username"
+var LCP_SERVER_PASSWORD = "adm_password"
+
+func Init() {
+
+	var portEnv = os.Getenv("PORT")
+
+	if portEnv != "" {
+		portInt, err := strconv.Atoi(portEnv)
+		if err != nil {
+			if portInt >= 80 && portInt <= 9999 {
+				PORT = portInt
+			}
+		}
+	}
+
+	var baseUrlEnv = os.Getenv("BASE_URL")
+	if baseUrlEnv != "" {
+		BASE_URL = baseUrlEnv
+	}
+
+	var lcpServerUrlEnv = os.Getenv("LCP_SERVER_URL")
+	if lcpServerUrlEnv != "" {
+		LCP_SERVER_URL = lcpServerUrlEnv
+	}
+
+	var lcpServerPassword = os.Getenv("LCP_SERVER_PASSWORD")
+	if lcpServerPassword != "" {
+		LCP_SERVER_PASSWORD = lcpServerPassword
+	}
+
+	var lcpServerUsername = os.Getenv("LCP_SERVER_USERNAME")
+	if lcpServerUsername != "" {
+		LCP_SERVER_USERNAME = lcpServerUsername
+	}
+
+}
+
+File: pkg/lcp
+
+File: pkg/lcp/lcp.go
+package lcp
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
+
+	"github.com/edrlab/pubstore/pkg/config"
+)
+
+/**
+
+`{
+	  "provider": "http://www.imaginaryebookretailer.com",
+	  "user": {
+	    "id": "d9f298a7-7f34-49e7-8aae-4378ecb1d597",
+	    "email": "user@mymail.com",
+	    "encrypted": ["email"]
+	  },
+	  "encryption": {
+	    "user_key": {
+	      "text_hint": "The title of the first book you ever read",
+	      "hex_value": "4981AA0A50D563040519E9032B5D74367B1D129E239A1BA82667A57333866494"
+	    }
+	  },
+	  "rights": {
+	    "print": 10,
+	    "copy": 2048,
+	    "start": "2023-06-14T01:08:15+01:00",
+	    "end": "2024-11-25T01:08:15+01:00"
+	  }
+	}`
+*/
+
+type Licence struct {
+	Provider   string     `json:"provider"`
+	ID         string     `json:"id"`
+	User       User       `json:"user"`
+	Encryption Encryption `json:"encryption"`
+	Rights     Rights     `json:"rights"`
+}
+
+type User struct {
+	ID        string   `json:"id"`
+	Email     string   `json:"email"`
+	Encrypted []string `json:"encrypted"`
+}
+
+type Encryption struct {
+	UserKey UserKey `json:"user_key"`
+}
+
+type UserKey struct {
+	TextHint string `json:"text_hint"`
+	HexValue string `json:"hex_value"`
+}
+
+type Rights struct {
+	Print int       `json:"print"`
+	Copy  int       `json:"copy"`
+	Start time.Time `json:"start"`
+	End   time.Time `json:"end"`
+}
+
+/**
+
+	{
+  "provider": "https://pubstore.edrlab.org",
+  "id": "aea91a67-b1de-4761-97fa-9d2f038a20ba",
+  "issued": "2023-06-22T12:07:51Z",
+  "encryption": {
+    "profile": "http://readium.org/lcp/profile-1.0",
+    "content_key": {
+      "algorithm": "http://www.w3.org/2001/04/xmlenc#aes256-cbc",
+      "encrypted_value": "AqbaQUVuhI1VehuBsJ5uGjtDJLCOiuhhP/WvjKFi7BlBV/0mZNo+x5BX/3jAuMsmv+6+YT01pmJ7Pr+rQIbBDw=="
+    },
+    "user_key": {
+      "algorithm": "http://www.w3.org/2001/04/xmlenc#sha256",
+      "text_hint": "Hint",
+      "key_check": "N0pZvdznClFwMfdsFimjYZehUum7tRtd0jVnuSH8rlasBmivCBQ/QlhIoZfNG9qb5UZQbYhM07g9g7yNYqUBdQ=="
+    }
+  },
+  "links": [
+    {
+      "rel": "hint",
+      "href": "https://front-prod.edrlab.org/frontend/static/hint.html",
+      "type": "text/html"
+    },
+    {
+      "rel": "publication",
+      "href": "https://front-prod.edrlab.org/lcpserver/contents/6b4b7eb4-7630-4819-a813-e8276a83f78f",
+      "type": "application/epub+zip",
+      "title": "1342.encrypted.epub",
+      "length": 24850367,
+      "hash": "2b76a1fd895f05883db9da1e16d25f712af57d8d1a98ba8586cc645c3808f1d8"
+    },
+    {
+      "rel": "status",
+      "href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/status",
+      "type": "application/vnd.readium.license.status.v1.0+json"
+    }
+  ],
+  "user": {
+    "id": "7e1ac2b9-ed71-4180-bfb2-4a07bce46477",
+    "email": "Qpz++L4gjQ0UolZcDnSg9vG5bKfX+rhLakGo+9JsvALrY1r+N3znlyLSPksgC9Wg",
+    "encrypted": [
+      "email"
+    ]
+  },
+  "rights": {
+    "print": 43,
+    "copy": 12,
+    "start": "2023-06-14T00:08:15Z",
+    "end": "2099-12-31T23:00:00Z"
+  },
+  "signature": {
+    "certificate": "MIIDKTCCAhGgAwIBAgIIEjZ5lJEfgf8wDQYJKoZIhvcNAQELBQAwQjETMBEGA1UEChMKZWRybGFiLm9yZzEXMBUGA1UECxMOZWRybGFiLm9yZyBMQ1AxEjAQBgNVBAMTCUVEUkxhYiBDQTAeFw0yMjA3MDgxNDMzMDFaFw0yNDA3MDcyMzU5NTlaME4xEzARBgNVBAoTCmVkcmxhYi5vcmcxJjAkBgNVBAsTHVJlYWRpdW0gTENQIExpY2Vuc2UgUHJvdmlkZXJzMQ8wDQYDVQQDEwZFRFJMYWIwgZswEAYHKoZIzj0CAQYFK4EEACMDgYYABAEU5BNfVLta4fz4MtmfHROMkLLThwyuKIKFeysg4cHjxBx0GAU+hGD3+rNTj7cDHa9FMQlE+sFNdbGfd2s4c3D8fAFErQI6QQ52MDuFSClaN0aWdVpjznc5V6Y6qvWTgh4P4V4gv40ot+QiVzwTevBWtsSbrw8nltCySIRGs66D7BEiU6OBnjCBmzAfBgNVHSMEGDAWgBTcXPyT5B+f7rC66lILK8pSXODJhzAdBgNVHQ4EFgQUCc2GhhgYvSOYvXkdYOxNqxs4FywwDgYDVR0PAQH/BAQDAgeAMAkGA1UdEwQCMAAwPgYDVR0fBDcwNTAzoDGgL4YtaHR0cDovL2NybC5lZHJsYWIudGVsZXNlYy5kZS9ybC9FRFJMYWJfQ0EuY3JsMA0GCSqGSIb3DQEBCwUAA4IBAQBxCl511aMdpIl56NKI0VW2tTM3FvhN717kNWsdr6Mj4xm2HXZ+BLfhGqFkm1iYwkM45o2unuVqe8zkIfEE24ghBd37aXrmS8IxY9t6gVFZKUGP/Q7NeA0EzUKru086mDDAuOgC05EAMlL6hgk+8IXw/BiD3hROAaop781UAkG3usU46n8w3meDqjjseLFfLTlGCU4njTGWZe3U8bOM0iz52LPcJGGT+fOPm2wGMdLL7aicxF166qWD05xC4UpdARwjopBGj7qkw6LVrM0E2mGpF0SyCyM4tdQH4PkHTtZ06vjipbzvE6TlFJP9/9M4HTUDDUevH4rPUip+de8wKvGF",
+    "value": "AHaPyrqHzS+S2CGQrLZvyUVIsA8wabf+P4rnovY8PZHhtW3vhH/QdCXSN/r1ptF9W66NwMV3PFZySSFe56ihRhkvAK8Htk7zOY7UJrPqTj7KqmrTnJPVipJizeoW/p/1AKfiQ39tzybrj3oWO71whpLX1YCNBRO4GIOOUNXqRSdLkjYR",
+    "algorithm": "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"
+  }
+}
+*/
+
+func CreateLcpPassHash(passphrase string) string {
+
+	hash := sha256.Sum256([]byte(passphrase))
+	hashString := hex.EncodeToString(hash[:])
+
+	return hashString
+}
+
+func generateLicence(provider, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) Licence {
+	user := User{
+		ID:        userUUID,
+		Email:     userEmail,
+		Encrypted: []string{"email"},
+	}
+
+	userKey := UserKey{
+		TextHint: textHint,
+		HexValue: hexValue,
+	}
+
+	encryption := Encryption{
+		UserKey: userKey,
+	}
+
+	rights := Rights{
+		Print: printRights,
+		Copy:  copyRights,
+		Start: start,
+		End:   end,
+	}
+
+	licence := Licence{
+		Provider:   provider,
+		User:       user,
+		Encryption: encryption,
+		Rights:     rights,
+	}
+
+	return licence
+}
+
+func generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
+
+	provider := "https://pubstore.edrlab.org"
+	licence := generateLicence(provider, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+
+	url := fmt.Sprintf(config.LCP_SERVER_URL+"/contents/%s/license", pubUUID)
+	username := config.LCP_SERVER_USERNAME
+	password := config.LCP_SERVER_PASSWORD
+
+	payload, err := json.Marshal(licence)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(username, password)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusCreated {
+		fmt.Println("License created successfully.")
+	} else if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
+		return nil, fmt.Errorf("client error occurred. Status code: %d", resp.StatusCode)
+	} else if resp.StatusCode == http.StatusInternalServerError {
+		return nil, fmt.Errorf("server error occurred. Status code: %d", resp.StatusCode)
+	} else {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+func LicenceBuy(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int) ([]byte, error) {
+	start := time.Now()
+	end := time.Now().AddDate(100, 0, 0)
+	return generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+}
+
+func LicenceLoan(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
+
+	return generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+}
+
+func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue string) ([]byte, error) {
+
+	provider := "https://pubstore.edrlab.org"
+	user := User{
+		Email:     email,
+		Encrypted: []string{"email"},
+	}
+
+	userKey := UserKey{
+		TextHint: textHint,
+		HexValue: hexValue,
+	}
+
+	encryption := Encryption{
+		UserKey: userKey,
+	}
+
+	licence := Licence{
+		Provider:   provider,
+		User:       user,
+		Encryption: encryption,
+	}
+
+	payload, err := json.Marshal(licence)
+	if err != nil {
+		return nil, err
+	}
+
+	url := config.LCP_SERVER_URL + "/licenses/" + licenceId
+	username := config.LCP_SERVER_USERNAME
+	password := config.LCP_SERVER_PASSWORD
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(username, password)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		fmt.Println("License created successfully.")
+	} else if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
+		return nil, fmt.Errorf("client error occurred. Status code: %d", resp.StatusCode)
+	} else if resp.StatusCode == http.StatusInternalServerError {
+		return nil, fmt.Errorf("server error occurred. Status code: %d", resp.StatusCode)
+	} else {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}
+
+type LsdStatus struct {
+	StatusMessage      string
+	StatusCode         string
+	EndPotentialRights time.Time
+	PrintRights        int
+	CopyRights         int
+	StartDate          time.Time
+	EndDate            time.Time
+}
+
+func GetLsdStatus(licenceId, email, textHint, hexValue string) (*LsdStatus, error) {
+
+	licenceBytes, err := GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue)
+	if err != nil {
+		return nil, err
+
+	}
+
+	_, _, publicationStatusHref, printRights, copyRights, startDate, endDate, err := ParseLicenceLCPL(licenceBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// make a request on publicationStatusHref
+	lsd, err := getLsdStatusDocument(publicationStatusHref)
+	if err != nil {
+		return nil, err
+	}
+
+	statusMessage := lsd.Message
+	endPotentialRights := lsd.PotentialRights.End
+	statusCode := lsd.Status
+
+	return &LsdStatus{
+		StatusMessage:      statusMessage,
+		StatusCode:         statusCode,
+		EndPotentialRights: endPotentialRights,
+		PrintRights:        printRights,
+		CopyRights:         copyRights,
+		StartDate:          startDate,
+		EndDate:            endDate,
+	}, nil
+}
+
+File: pkg/lcp/parsing.go
+package lcp
+
+import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"time"
+)
+
+/**
+
+	{
+  "provider": "https://pubstore.edrlab.org",
+  "id": "aea91a67-b1de-4761-97fa-9d2f038a20ba",
+  "issued": "2023-06-22T12:07:51Z",
+  "encryption": {
+    "profile": "http://readium.org/lcp/profile-1.0",
+    "content_key": {
+      "algorithm": "http://www.w3.org/2001/04/xmlenc#aes256-cbc",
+      "encrypted_value": "AqbaQUVuhI1VehuBsJ5uGjtDJLCOiuhhP/WvjKFi7BlBV/0mZNo+x5BX/3jAuMsmv+6+YT01pmJ7Pr+rQIbBDw=="
+    },
+    "user_key": {
+      "algorithm": "http://www.w3.org/2001/04/xmlenc#sha256",
+      "text_hint": "Hint",
+      "key_check": "N0pZvdznClFwMfdsFimjYZehUum7tRtd0jVnuSH8rlasBmivCBQ/QlhIoZfNG9qb5UZQbYhM07g9g7yNYqUBdQ=="
+    }
+  },
+  "links": [
+    {
+      "rel": "hint",
+      "href": "https://front-prod.edrlab.org/frontend/static/hint.html",
+      "type": "text/html"
+    },
+    {
+      "rel": "publication",
+      "href": "https://front-prod.edrlab.org/lcpserver/contents/6b4b7eb4-7630-4819-a813-e8276a83f78f",
+      "type": "application/epub+zip",
+      "title": "1342.encrypted.epub",
+      "length": 24850367,
+      "hash": "2b76a1fd895f05883db9da1e16d25f712af57d8d1a98ba8586cc645c3808f1d8"
+    },
+    {
+      "rel": "status",
+      "href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/status",
+      "type": "application/vnd.readium.license.status.v1.0+json"
+    }
+  ],
+  "user": {
+    "id": "7e1ac2b9-ed71-4180-bfb2-4a07bce46477",
+    "email": "Qpz++L4gjQ0UolZcDnSg9vG5bKfX+rhLakGo+9JsvALrY1r+N3znlyLSPksgC9Wg",
+    "encrypted": [
+      "email"
+    ]
+  },
+  "rights": {
+    "print": 43,
+    "copy": 12,
+    "start": "2023-06-14T00:08:15Z",
+    "end": "2099-12-31T23:00:00Z"
+  },
+  "signature": {
+    "certificate": "MIIDKTCCAhGgAwIBAgIIEjZ5lJEfgf8wDQYJKoZIhvcNAQELBQAwQjETMBEGA1UEChMKZWRybGFiLm9yZzEXMBUGA1UECxMOZWRybGFiLm9yZyBMQ1AxEjAQBgNVBAMTCUVEUkxhYiBDQTAeFw0yMjA3MDgxNDMzMDFaFw0yNDA3MDcyMzU5NTlaME4xEzARBgNVBAoTCmVkcmxhYi5vcmcxJjAkBgNVBAsTHVJlYWRpdW0gTENQIExpY2Vuc2UgUHJvdmlkZXJzMQ8wDQYDVQQDEwZFRFJMYWIwgZswEAYHKoZIzj0CAQYFK4EEACMDgYYABAEU5BNfVLta4fz4MtmfHROMkLLThwyuKIKFeysg4cHjxBx0GAU+hGD3+rNTj7cDHa9FMQlE+sFNdbGfd2s4c3D8fAFErQI6QQ52MDuFSClaN0aWdVpjznc5V6Y6qvWTgh4P4V4gv40ot+QiVzwTevBWtsSbrw8nltCySIRGs66D7BEiU6OBnjCBmzAfBgNVHSMEGDAWgBTcXPyT5B+f7rC66lILK8pSXODJhzAdBgNVHQ4EFgQUCc2GhhgYvSOYvXkdYOxNqxs4FywwDgYDVR0PAQH/BAQDAgeAMAkGA1UdEwQCMAAwPgYDVR0fBDcwNTAzoDGgL4YtaHR0cDovL2NybC5lZHJsYWIudGVsZXNlYy5kZS9ybC9FRFJMYWJfQ0EuY3JsMA0GCSqGSIb3DQEBCwUAA4IBAQBxCl511aMdpIl56NKI0VW2tTM3FvhN717kNWsdr6Mj4xm2HXZ+BLfhGqFkm1iYwkM45o2unuVqe8zkIfEE24ghBd37aXrmS8IxY9t6gVFZKUGP/Q7NeA0EzUKru086mDDAuOgC05EAMlL6hgk+8IXw/BiD3hROAaop781UAkG3usU46n8w3meDqjjseLFfLTlGCU4njTGWZe3U8bOM0iz52LPcJGGT+fOPm2wGMdLL7aicxF166qWD05xC4UpdARwjopBGj7qkw6LVrM0E2mGpF0SyCyM4tdQH4PkHTtZ06vjipbzvE6TlFJP9/9M4HTUDDUevH4rPUip+de8wKvGF",
+    "value": "AHaPyrqHzS+S2CGQrLZvyUVIsA8wabf+P4rnovY8PZHhtW3vhH/QdCXSN/r1ptF9W66NwMV3PFZySSFe56ihRhkvAK8Htk7zOY7UJrPqTj7KqmrTnJPVipJizeoW/p/1AKfiQ39tzybrj3oWO71whpLX1YCNBRO4GIOOUNXqRSdLkjYR",
+    "algorithm": "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"
+  }
+}
+*/
+
+type contentKey struct {
+	Algorithm      string `json:"algorithm"`
+	EncryptedValue string `json:"encrypted_value"`
+}
+
+type userKey struct {
+	Algorithm string `json:"algorithm"`
+	TextHint  string `json:"text_hint"`
+	KeyCheck  string `json:"key_check"`
+	HexValue  string `json:"hex_value"`
+}
+
+type encryption struct {
+	Profile    string     `json:"profile"`
+	ContentKey contentKey `json:"content_key"`
+	UserKey    userKey    `json:"user_key"`
+}
+
+type link struct {
+	Rel    string `json:"rel"`
+	Href   string `json:"href"`
+	Type   string `json:"type"`
+	Title  string `json:"title,omitempty"`
+	Length int    `json:"length,omitempty"`
+	Hash   string `json:"hash,omitempty"`
+}
+
+type signature struct {
+	Certificate string `json:"certificate"`
+	Value       string `json:"value"`
+	Algorithm   string `json:"algorithm"`
+}
+
+type LicenceLCPL struct {
+	Provider   string     `json:"provider"`
+	ID         string     `json:"id"`
+	Issued     string     `json:"issued"`
+	Encryption encryption `json:"encryption"`
+	Links      []link     `json:"links"`
+	User       user       `json:"user"`
+	Rights     rights     `json:"rights"`
+	Signature  signature  `json:"signature"`
+}
+
+type user struct {
+	ID        string   `json:"id"`
+	Email     string   `json:"email"`
+	Encrypted []string `json:"encrypted"`
+}
+
+type rights struct {
+	Print int       `json:"print"`
+	Copy  int       `json:"copy"`
+	Start time.Time `json:"start"`
+	End   time.Time `json:"end"`
+}
+
+func ParseLicenceLCPL(data []byte) (string, string, string, int, int, time.Time, time.Time, error) {
+	var lcp LicenceLCPL
+	err := json.Unmarshal(data, &lcp)
+	if err != nil {
+		return "", "", "", 0, 0, time.Now(), time.Now(), err
+	}
+
+	// Extracting ID
+	id := lcp.ID
+
+	// Extracting link information
+	var publicationLink link
+	for _, l := range lcp.Links {
+		if l.Rel == "publication" {
+			publicationLink = l
+			break
+		}
+	}
+
+	// Extracting status link information
+	var publicationStatus link
+	for _, l := range lcp.Links {
+		if l.Rel == "status" {
+			publicationStatus = l
+			break
+		}
+	}
+
+	// Extracting publication link information
+	// publicationType := publicationLink.Type
+	publicationTitle := publicationLink.Title
+	publicationStatusHref := publicationStatus.Href
+	printRights := lcp.Rights.Print
+	copyRights := lcp.Rights.Copy
+	startDate := lcp.Rights.Start
+	endDate := lcp.Rights.End
+	// publicationLength := publicationLink.Length
+
+	return id, publicationTitle, publicationStatusHref, printRights, copyRights, startDate, endDate, err
+}
+
+/*
+{
+	"id": "aea91a67-b1de-4761-97fa-9d2f038a20ba",
+	"status": "ready",
+	"updated": {
+	  "license": "2023-06-22T12:07:51Z",
+	  "status": "2023-06-22T12:07:51Z"
+	},
+	"message": "ready",
+	"links": [
+	  {
+		"rel": "license",
+		"href": "https://front-prod.edrlab.org/frontend/api/v1/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba",
+		"type": "application/vnd.readium.lcp.license.v1.0+json"
+	  },
+	  {
+		"rel": "register",
+		"href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/register{?id,name}",
+		"type": "application/vnd.readium.license.status.v1.0+json",
+		"templated": true
+	  },
+	  {
+		"rel": "return",
+		"href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/return{?id,name}",
+		"type": "application/vnd.readium.license.status.v1.0+json",
+		"templated": true
+	  },
+	  {
+		"rel": "renew",
+		"href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/renew{?end,id,name}",
+		"type": "application/vnd.readium.license.status.v1.0+json",
+		"templated": true
+	  }
+	],
+	"potential_rights": {
+	  "end": "2099-12-31T23:00:00Z"
+	}
+  }
+*/
+
+type Lsd struct {
+	ID      string `json:"id"`
+	Status  string `json:"status"`
+	Updated struct {
+		License time.Time `json:"license"`
+		Status  time.Time `json:"status"`
+	} `json:"updated"`
+	Message         string `json:"message"`
+	Links           []link `json:"links"`
+	PotentialRights struct {
+		End time.Time `json:"end"`
+	} `json:"potential_rights"`
+}
+
+func getLsdStatusDocument(url string) (Lsd, error) {
+
+	response, err := http.Get(url)
+	if err != nil {
+		return Lsd{}, err
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return Lsd{}, err
+	}
+
+	var data Lsd
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return Lsd{}, err
+	}
+
+	return data, nil
+}
+
+File: pkg/opds
+
+File: pkg/opds/opds.go
+package opds
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/edrlab/pubstore/pkg/config"
+	"github.com/edrlab/pubstore/pkg/lcp"
+	"github.com/edrlab/pubstore/pkg/stor"
+)
+
+type MetadataFeed struct {
+	Title string `json:"title"`
+}
+
+type Metadata struct {
+	Type       string     `json:"@type"`
+	Title      string     `json:"title"`
+	Author     string     `json:"author,omitempty"`
+	Identifier string     `json:"identifier,omitempty"`
+	Language   string     `json:"language,omitempty"`
+	Modified   *time.Time `json:"modified,omitempty"`
+}
+
+type Link struct {
+	Rel        string      `json:"rel,omitempty"`
+	Href       string      `json:"href,omitempty"`
+	Type       string      `json:"type,omitempty"`
+	Child      []Link      `json:"child,omitempty"`
+	Properties *Properties `json:"properties,omitempty"`
+}
+
+type Publication struct {
+	Metadata Metadata `json:"metadata"`
+	Links    []Link   `json:"links,omitempty"`
+	Images   []Image  `json:"images,omitempty"`
+}
+
+type Image struct {
+	Href   string `json:"href"`
+	Type   string `json:"type,omitempty"`
+	Height int    `json:"height,omitempty"`
+	Width  int    `json:"width,omitempty"`
+}
+
+type Availability struct {
+	Status    string     `json:"state,omitempty"`
+	StartDate *time.Time `json:"since,omitempty"`
+	EndDate   *time.Time `json:"until,omitempty"`
+}
+
+type Properties struct {
+	Availability        *Availability `json:"availability,omitempty"`
+	IndirectAcquisition []Link        `json:"indirectAcquisition,omitempty"`
+	LcpHashedPassphrase string        `json:"lcp_hashed_passphrase,omitempty"`
+}
+
+type Root struct {
+	Metadata     MetadataFeed  `json:"metadata"`
+	Links        []Link        `json:"links"`
+	Publications []Publication `json:"publications"`
+}
+
+// "authentified" || "notAuthentified" || "authentifiedAndBorrowed"
+func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHashedPassphrase string, startDate, endDate time.Time) Link {
+
+	if choice == "authentified" {
+		return Link{
+			Type: "application/vnd.readium.lcp.license.v1.0+json",
+			Rel:  "http://opds-spec.org/acquisition/borrow",
+			Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/loan",
+			Properties: &Properties{
+				Availability: &Availability{
+					Status: "available",
+				},
+				IndirectAcquisition: []Link{
+					{
+						Type: "application/vnd.readium.lcp.license.v1.0+json",
+						Child: []Link{
+							{
+								Type: "application/epub+zip",
+							},
+						},
+					},
+				},
+			},
+		}
+
+	} else if choice == "notAuthentified" {
+		return Link{
+			Type: "application/opds-publication+json",
+			Rel:  "http://opds-spec.org/acquisition/borrow",
+			Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/borrow",
+			Properties: &Properties{
+				Availability: &Availability{
+					Status: "available",
+				},
+				IndirectAcquisition: []Link{
+					{
+						Type: "application/vnd.readium.lcp.license.v1.0+json",
+						Child: []Link{
+							{
+								Type: "application/epub+zip",
+							},
+						},
+					},
+				},
+			},
+		}
+
+	}
+	return Link{
+		Type: "application/vnd.readium.lcp.license.v1.0+json",
+		Rel:  "http://opds-spec.org/acquisition",
+		Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/license",
+		Properties: &Properties{
+			Availability: &Availability{
+				Status:    statusCode,
+				StartDate: &startDate,
+				EndDate:   &endDate,
+			},
+			LcpHashedPassphrase: lcpHashedPassphrase,
+			IndirectAcquisition: []Link{
+				{
+					Type: "application/vnd.readium.lcp.license.v1.0+json",
+					Child: []Link{
+						{
+							Type: "application/epub+zip",
+						},
+					},
+				},
+			},
+		},
+	}
+
+}
+
+func convertToPublication(storPublication *stor.Publication) (Publication, error) {
+	if storPublication == nil {
+		return Publication{}, errors.New("invalid stor.Publication")
+	}
+
+	publication := Publication{
+		Metadata: Metadata{
+			Type:       "http://schema.org/Book",
+			Title:      storPublication.Title,
+			Author:     getAuthorNames(storPublication.Author),
+			Identifier: storPublication.UUID,
+			Language:   getLanguageCode(storPublication.Language),
+			Modified:   &storPublication.DatePublication,
+		},
+		Links: []Link{
+			{
+				Rel:  "self",
+				Href: config.BASE_URL + "/opds/v1/publication/" + storPublication.UUID,
+				Type: "application/opds+json",
+			},
+		},
+		Images: getImages(storPublication.CoverUrl),
+	}
+
+	return publication, nil
+}
+
+func getAuthorNames(authors []stor.Author) string {
+	var names []string
+	for _, author := range authors {
+		names = append(names, author.Name)
+	}
+	return strings.Join(names, ", ")
+}
+
+func getLanguageCode(languages []stor.Language) string {
+	var codes []string
+	for _, language := range languages {
+		codes = append(codes, language.Code)
+	}
+	if len(codes) > 0 {
+		return codes[0]
+	}
+	return ""
+}
+
+func getImages(coverURL string) []Image {
+	if coverURL == "" {
+		return nil
+	}
+
+	images := []Image{
+		{
+			Href: coverURL,
+			Type: "image/jpeg",
+		},
+	}
+	return images
+}
+
+func (opds *Opds) GenerateOpdsFeed(page, pageSize int) (Root, error) {
+
+	publications, _, err := opds.stor.GetAllPublications(page, pageSize)
+	if err != nil {
+		return Root{}, errors.New("Error fetching publications:" + err.Error())
+	}
+
+	root := Root{
+		Metadata: MetadataFeed{
+			Title: "Pubstore OPDS Feed",
+		},
+		Links: []Link{
+			{
+				Rel:  "self",
+				Href: config.BASE_URL + "/opds/v1/catalog",
+				Type: "application/opds+json",
+			},
+			{
+				Rel:  "http://opds-spec.org/shelf",
+				Href: config.BASE_URL + "/opds/v1/bookshelf",
+				Type: "application/opds+json",
+			},
+		},
+		Publications: make([]Publication, len(publications)),
+	}
+
+	for i, storPub := range publications {
+		root.Publications[i], err = convertToPublication(&storPub)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	fmt.Println(root.Links)
+
+	return root, nil
+}
+
+func (opds *Opds) getTransactionFromUserAndPubUUID(user *stor.User, pubUUID string) (*stor.Transaction, error) {
+	if user == nil {
+		return nil, errors.New("no user")
+	}
+
+	pub, err := opds.stor.GetPublicationByUUID(pubUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	transactions, err := opds.stor.GetTransactionByUserAndPublication(user.ID, pub.ID)
+	if err != nil {
+		return nil, err
+
+	}
+	return transactions, nil
+}
+
+func (opds *Opds) GenerateBookshelfFeed(credential string) (Root, error) {
+
+	user, err := opds.stor.GetUserByEmail(credential)
+	if err != nil {
+		return Root{}, err
+	}
+	transactions, err := opds.stor.GetTransactionsByUserID(user.ID)
+	if err != nil {
+		return Root{}, err
+	}
+
+	var publicationOpdsView []Publication = make([]Publication, len(*transactions))
+	var lsdStatus []*lcp.LsdStatus = make([]*lcp.LsdStatus, len(*transactions))
+	for i, transactionStor := range *transactions {
+		lsdStatus[i], err = lcp.GetLsdStatus(transactionStor.LicenceId, transactionStor.User.Email, transactionStor.User.LcpHintMsg, transactionStor.User.LcpPassHash)
+		if err != nil {
+			lsdStatus[i] = &lcp.LsdStatus{}
+		}
+		publicationOpdsView[i], err = convertToPublication(&transactionStor.Publication)
+		if err != nil {
+			publicationOpdsView[i] = Publication{}
+		}
+	}
+
+	root := Root{
+		Metadata: MetadataFeed{
+			Title: "bookshelf",
+		},
+		Links: []Link{
+			{
+				Rel:  "self",
+				Href: config.BASE_URL + "/opds/v1/bookshelf",
+				Type: "application/opds+json",
+			},
+			{
+				Rel:  "http://opds-spec.org/shelf",
+				Href: config.BASE_URL + "/opds/v1/bookshelf",
+				Type: "application/opds+json",
+			},
+		},
+		Publications: publicationOpdsView,
+	}
+
+	for i, status := range lsdStatus {
+		root.Publications[i].Links = append(root.Publications[i].Links, publicationAcquisitionLinkChoice("authentified", root.Publications[i].Metadata.Identifier, status.StatusCode, user.LcpPassHash, status.StartDate, status.EndDate))
+	}
+
+	return root, nil
+}
+
+File: pkg/opds/router.go
+package opds
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/edrlab/pubstore/pkg/config"
+	"github.com/edrlab/pubstore/pkg/lcp"
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/oauth"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type Opds struct {
+	stor *stor.Stor
+}
+
+func Init(s *stor.Stor) *Opds {
+	return &Opds{stor: s}
+}
+
+// TestUserVerifier provides user credentials verifier for testing.
+type UserVerifier struct {
+	stor *stor.Stor
+}
+
+// ValidateUser validates username and password returning an error if the user credentials are wrong
+func (u *UserVerifier) ValidateUser(username, password, scope string, r *http.Request) error {
+	user, err := u.stor.GetUserByEmail(username)
+	if err == nil && bcrypt.CompareHashAndPassword([]byte(user.Pass), []byte(password)) == nil {
+		return nil
+	}
+
+	return errors.New("wrong user")
+}
+
+// ValidateClient validates clientID and secret returning an error if the client credentials are wrong
+func (*UserVerifier) ValidateClient(clientID, clientSecret, scope string, r *http.Request) error {
+	return errors.New("wrong client")
+}
+
+// ValidateCode validates token ID
+func (*UserVerifier) ValidateCode(clientID, clientSecret, code, redirectURI string, r *http.Request) (string, error) {
+	return "", nil
+}
+
+// AddClaims provides additional claims to the token
+func (*UserVerifier) AddClaims(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
+	claims := make(map[string]string)
+	return claims, nil
+}
+
+// AddProperties provides additional information to the token response
+func (*UserVerifier) AddProperties(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
+	props := make(map[string]string)
+	return props, nil
+}
+
+// ValidateTokenID validates token ID
+func (*UserVerifier) ValidateTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
+	return nil
+}
+
+// StoreTokenID saves the token id generated for the user
+func (*UserVerifier) StoreTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
+	return nil
+}
+
+func (opds *Opds) catalogHandler(w http.ResponseWriter, r *http.Request) {
+
+	// TODO add pagination in opds feed
+	opdsFeed, err := opds.GenerateOpdsFeed(1, 50)
+	if err != nil {
+		fmt.Fprintf(w, "opds feed : %v!", err)
+	}
+	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/opds+json")
+	err = json.NewEncoder(w).Encode(opdsFeed)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (opds *Opds) publicationHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	authentified := false
+	if ok {
+		authentified = true
+	}
+
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	pub, err := convertToPublication(storPublication)
+	if err != nil {
+		http.Error(w, "Failed to convert publication", http.StatusInternalServerError)
+		return
+	}
+
+	defer func() {
+		// Encode the publication as JSON and write it to the response
+		w.Header().Set("Content-Type", "application/opds+json")
+		err = json.NewEncoder(w).Encode(pub)
+		if err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
+	}()
+
+	if authentified {
+		// add authentified acquisition link
+
+		user, err := opds.stor.GetUserByEmail(credential)
+		if err != nil {
+			// http.Error(w, "Failed to get user", http.StatusInternalServerError)
+			fmt.Println("Failed to get user : " + credential)
+			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
+			return
+		}
+
+		transactions, err := opds.getTransactionFromUserAndPubUUID(user, storPublication.UUID)
+		if err != nil {
+			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
+			return
+		}
+
+		lsdStatus, err := lcp.GetLsdStatus(transactions.LicenceId, user.Email, user.LcpHintMsg, user.LcpPassHash)
+		if err != nil {
+			lsdStatus = &lcp.LsdStatus{}
+		}
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentifiedAndBorrowed", storPublication.UUID, lsdStatus.StatusCode, user.LcpPassHash, lsdStatus.StartDate, lsdStatus.EndDate))
+
+	} else {
+		// add borrow link
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
+	}
+}
+
+func (opds *Opds) publicationBorrowHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	_, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		opdsAuthenticationHandler(w, r)
+		return
+	}
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	http.Redirect(w, r, "/opds/v1/publication/"+storPublication.UUID, http.StatusFound)
+}
+
+func (opds *Opds) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		opdsAuthenticationHandler(w, r)
+		return
+	}
+	user, err := opds.stor.GetUserByEmail(credential)
+	if err != nil {
+		http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+		return
+	}
+
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	licenceBytes, err := lcp.LicenceLoan(storPublication.UUID, user.UUID, user.Email, user.LcpHintMsg, user.LcpPassHash, 100, 2000, time.Now(), time.Now().AddDate(0, 0, 7))
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+	io.Copy(w, bytes.NewReader(licenceBytes))
+}
+
+func (opds *Opds) publicationFreshLicenseHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		opdsAuthenticationHandler(w, r)
+		return
+	}
+	user, err := opds.stor.GetUserByEmail(credential)
+	if err != nil {
+		http.Error(w, "Failed to get user", http.StatusInternalServerError)
+		return
+	}
+
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+		return
+	}
+
+	transaction, err := opds.stor.GetTransactionByUserAndPublication(user.ID, storPublication.ID)
+	if err != nil {
+		http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+		return
+	}
+
+	licenceBytes, err := lcp.GenerateFreshLicenceFromLcpServer(transaction.LicenceId, user.Email, user.LcpHintMsg, user.LcpPassHash)
+	if err != nil {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+	io.Copy(w, bytes.NewReader(licenceBytes))
+}
+
+func (opds *Opds) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	opdsFeed, err := opds.GenerateBookshelfFeed(credential)
+	if err != nil {
+		fmt.Println("Bookshelf : " + err.Error())
+	}
+
+	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/opds+json")
+	err = json.NewEncoder(w).Encode(opdsFeed)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (opds *Opds) Router(r chi.Router) {
+
+	// https://github.com/go-chi/oauth/blob/master/example/authserver/main.go
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "HEAD", "OPTION"},
+		AllowedHeaders:   []string{"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection", "DNT", "Host", "Origin", "Pragma", "Referer"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
+
+	s := oauth.NewBearerServer(
+		config.OauthSeed,
+		time.Second*3600,
+		&UserVerifier{stor: opds.stor},
+		nil)
+
+	/*
+		 Generate Token using username & password
+			    	POST http://localhost:8080/token
+					Content-Type: application/x-www-form-urlencoded
+					grant_type=password&username=user01&password=12345
+	*/
+	/*
+		RefreshTokenGrant Token
+			POST http://localhost:8080/token
+			Content-Type: application/x-www-form-urlencoded
+			grant_type=refresh_token&refresh_token={the refresh_token obtained in the previous response}
+	*/
+	r.Post("/opds/v1/token", s.UserCredentials)
+	r.Get("/401", opdsAuthenticationHandler)
+	r.Route("/opds/v1", func(opdsRouter chi.Router) {
+		opdsRouter.Get("/catalog", opds.catalogHandler)
+		opdsRouter.Route("/publication/{id}", func(idRouter chi.Router) {
+			idRouter.Use(authorizePassthrough(config.OauthSeed, nil))
+			idRouter.Use(opds.publicationCtx)
+			idRouter.Get("/", opds.publicationHandler)
+			idRouter.Get("/loan", opds.publicationLoanHandler)
+			idRouter.Get("/borrow", opds.publicationBorrowHandler)
+			idRouter.Get("/license", opds.publicationFreshLicenseHandler)
+		})
+		opdsRouter.Group(func(opdsRouterAuth chi.Router) {
+			opdsRouterAuth.Use(authorize(config.OauthSeed, nil))
+			opdsRouterAuth.Get("/bookshelf", opds.bookshelfHandler)
+		})
+	})
+
+}
+
+func (opds *Opds) publicationCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pubID := chi.URLParam(r, "id")
+		pub, err := opds.stor.GetPublicationByUUID(pubID)
+		if err != nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "publication", pub)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func opdsAuthenticationHandler(w http.ResponseWriter, _ *http.Request) {
+	jsonData := `
+	{
+		"id": "org.edrlab.pubstore",
+		"title": "LOGIN",
+		"description": "PUBSTORE LOGIN",
+		"links": [
+		  {"rel": "logo", "href": "` + config.BASE_URL + `/static/images/edrlab-logo.jpeg", "type": "image/jpeg", "width": 90, "height": 90}
+		],
+		"authentication": [
+		  {
+			"type": "http://opds-spec.org/auth/oauth/password",
+			"links": [
+			  {"rel": "authenticate", "href": "` + config.BASE_URL + `/opds/v1/token", "type": "application/json"}
+			]
+		  }
+		]
+	  }`
+
+	w.Header().Set("Content-Type", "application/opds-authentication+json")
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte(jsonData))
+}
+
+type contextKey string
+
+const (
+	CredentialContext  contextKey = "oauth.credential"
+	ClaimsContext      contextKey = "oauth.claims"
+	ScopeContext       contextKey = "oauth.scope"
+	TokenTypeContext   contextKey = "oauth.tokentype"
+	AccessTokenContext contextKey = "oauth.accesstoken"
+)
+
+// BearerAuthentication middleware for go-chi
+type BearerAuthentication struct {
+	secretKey string
+	provider  *oauth.TokenProvider
+}
+
+// NewBearerAuthentication create a BearerAuthentication middleware
+func newBearerAuthentication(secretKey string, formatter oauth.TokenSecureFormatter) *BearerAuthentication {
+	ba := &BearerAuthentication{secretKey: secretKey}
+	if formatter == nil {
+		formatter = oauth.NewSHA256RC4TokenSecurityProvider([]byte(secretKey))
+	}
+	ba.provider = oauth.NewTokenProvider(formatter)
+	return ba
+}
+
+// Authorize is the OAuth 2.0 middleware for go-chi resource server.
+// Authorize creates a BearerAuthentication middleware and return the Authorize method.
+func authorize(secretKey string, formatter oauth.TokenSecureFormatter) func(next http.Handler) http.Handler {
+	return newBearerAuthentication(secretKey, formatter).Authorize
+}
+
+// Authorize verifies the bearer token authorizing or not the request.
+// Token is retrieved from the Authorization HTTP header that respects the format
+// Authorization: Bearer {access_token}
+func (ba *BearerAuthentication) Authorize(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		token, err := ba.checkAuthorizationHeader(auth)
+		if err != nil {
+			opdsAuthenticationHandler(w, r)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, CredentialContext, token.Credential)
+		ctx = context.WithValue(ctx, ClaimsContext, token.Claims)
+		ctx = context.WithValue(ctx, ScopeContext, token.Scope)
+		ctx = context.WithValue(ctx, TokenTypeContext, token.TokenType)
+		ctx = context.WithValue(ctx, AccessTokenContext, auth[7:])
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// Check header and token.
+func (ba *BearerAuthentication) checkAuthorizationHeader(auth string) (t *oauth.Token, err error) {
+	if len(auth) < 7 {
+		return nil, errors.New("Invalid bearer authorization header")
+	}
+	authType := strings.ToLower(auth[:6])
+	if authType != "bearer" {
+		return nil, errors.New("Invalid bearer authorization header")
+	}
+	token, err := ba.provider.DecryptToken(auth[7:])
+	if err != nil {
+		return nil, errors.New("Invalid token")
+	}
+	if time.Now().UTC().After(token.CreationDate.Add(token.ExpiresIn)) {
+		return nil, errors.New("Token expired")
+	}
+	return token, nil
+}
+
+// BearerAuthentication middleware for go-chi
+type BearerAuthenticationPassthrough struct {
+	secretKey string
+	provider  *oauth.TokenProvider
+}
+
+// NewBearerAuthentication create a BearerAuthentication middleware
+func newBearerAuthenticationPassthrough(secretKey string, formatter oauth.TokenSecureFormatter) *BearerAuthenticationPassthrough {
+	ba := &BearerAuthenticationPassthrough{secretKey: secretKey}
+	if formatter == nil {
+		formatter = oauth.NewSHA256RC4TokenSecurityProvider([]byte(secretKey))
+	}
+	ba.provider = oauth.NewTokenProvider(formatter)
+	return ba
+}
+
+// Authorize is the OAuth 2.0 middleware for go-chi resource server.
+// Authorize creates a BearerAuthentication middleware and return the Authorize method.
+func authorizePassthrough(secretKey string, formatter oauth.TokenSecureFormatter) func(next http.Handler) http.Handler {
+	return newBearerAuthenticationPassthrough(secretKey, formatter).AuthorizePassthrough
+}
+
+// Authorize verifies the bearer token authorizing or not the request.
+// Token is retrieved from the Authorization HTTP header that respects the format
+// Authorization: Bearer {access_token}
+func (ba *BearerAuthenticationPassthrough) AuthorizePassthrough(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		token, err := ba.checkAuthorizationHeaderPassthrough(auth)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, CredentialContext, token.Credential)
+		ctx = context.WithValue(ctx, ClaimsContext, token.Claims)
+		ctx = context.WithValue(ctx, ScopeContext, token.Scope)
+		ctx = context.WithValue(ctx, TokenTypeContext, token.TokenType)
+		ctx = context.WithValue(ctx, AccessTokenContext, auth[7:])
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// Check header and token.
+func (ba *BearerAuthenticationPassthrough) checkAuthorizationHeaderPassthrough(auth string) (t *oauth.Token, err error) {
+	if len(auth) < 7 {
+		return nil, errors.New("Invalid bearer authorization header")
+	}
+	authType := strings.ToLower(auth[:6])
+	if authType != "bearer" {
+		return nil, errors.New("Invalid bearer authorization header")
+	}
+	token, err := ba.provider.DecryptToken(auth[7:])
+	if err != nil {
+		return nil, errors.New("Invalid token")
+	}
+	if time.Now().UTC().After(token.CreationDate.Add(token.ExpiresIn)) {
+		return nil, errors.New("Token expired")
+	}
+	return token, nil
+}
+
+File: pkg/stor
+
+File: pkg/stor/publication.go
+package stor
+
+import (
+	"errors"
+	"time"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
+
+type Language struct {
+	gorm.Model
+	Code string `gorm:"size:2;index:idx_code;unique"`
+}
+
+func (l *Language) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	return
+}
+
+type Publisher struct {
+	gorm.Model
+	Name string `gorm:"unique"`
+}
+
+func (l *Publisher) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	return
+}
+
+type Author struct {
+	gorm.Model
+	Name string `gorm:"unique"`
+}
+
+func (l *Author) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	return
+}
+
+type Category struct {
+	gorm.Model
+	Name string `gorm:"unique"`
+}
+
+func (l *Category) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	return
+}
+
+type Publication struct {
+	gorm.Model
+	Title           string
+	UUID            string `gorm:"uniqueIndex"`
+	DatePublication time.Time
+	Description     string
+	CoverUrl        string
+	Language        []Language  `gorm:"many2many:publication_language;save_association:false"`
+	Publisher       []Publisher `gorm:"many2many:publication_publisher;"`
+	Author          []Author    `gorm:"many2many:publication_author;"`
+	Category        []Category  `gorm:"many2many:publication_category;"`
+}
+
+// CreatePublication creates a new publicatio
+func (stor *Stor) CreatePublication(publication *Publication) error {
+	if err := stor.db.Create(publication).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdatePublication updates a publication
+func (stor *Stor) UpdatePublication(publication *Publication) error {
+	if err := stor.db.Save(publication).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeletePublication deletes a publication
+// TODO: delete many2many link if empty
+// category,publisher,... items are not deleted if is only linked with this deleted publication
+func (stor *Stor) DeletePublication(publication *Publication) error {
+	if err := stor.db.Delete(publication).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (stor *Stor) preloadPublication() *gorm.DB {
+	return stor.db.Model(&Publication{}).Preload("Author").Preload("Publisher").Preload("Language").Preload("Category")
+}
+
+// GetPublicationByID retrieves a publication by ID
+func (stor *Stor) GetPublicationByUUID(uuid string) (*Publication, error) {
+	var publication Publication
+	if err := stor.preloadPublication().Where("UUID = ?", uuid).First(&publication).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Publication not found")
+		}
+		return nil, err
+	}
+
+	return &publication, nil
+}
+
+func (stor *Stor) GetAllPublications(page int, pageSize int) ([]Publication, int64, error) {
+	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
+	if err := stor.preloadPublication().Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return publications, count, nil
+}
+
+// GetPublicationByID retrieves a publication by Title
+func (stor *Stor) GetPublicationsByTitle(title string, page int, pageSize int) ([]Publication, int64, error) {
+	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
+	if err := stor.preloadPublication().Where("Title LIKE ?", "%"+title+"%").Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, 0, errors.New("publications not found")
+
+		}
+		return nil, 0, err
+	}
+
+	return publications, count, nil
+}
+
+// GetPublicationByCategory retrieves publications by category
+func (stor *Stor) GetPublicationsByCategory(category string, page int, pageSize int) ([]Publication, int64, error) {
+	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
+	if err := stor.preloadPublication().Joins("JOIN publication_category ON publication_category.publication_id = publications.id").
+		Joins("JOIN categories ON categories.id = publication_category.category_id").
+		Where("categories.name = ?", category).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, 0, errors.New("publications not found")
+		}
+		return nil, 0, err
+	}
+
+	return publications, count, nil
+}
+
+// GetPublicationByAuthor retrieves publications by author
+func (stor *Stor) GetPublicationsByAuthor(author string, page int, pageSize int) ([]Publication, int64, error) {
+	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
+	if err := stor.preloadPublication().Joins("JOIN publication_author ON publication_author.publication_id = publications.id").
+		Joins("JOIN authors ON authors.id = publication_author.author_id").
+		Where("authors.name = ?", author).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, 0, errors.New("Publication not found")
+		}
+		return nil, 0, err
+	}
+
+	return publications, count, nil
+}
+
+// GetPublicationByAuthor retrieves publications by publisher
+func (stor *Stor) GetPublicationsByPublisher(publisher string, page int, pageSize int) ([]Publication, int64, error) {
+	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
+	if err := stor.preloadPublication().Joins("JOIN publication_publisher ON publication_publisher.publication_id = publications.id").
+		Joins("JOIN publishers ON publishers.id = publication_publisher.publisher_id").
+		Where("publishers.name = ?", publisher).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, 0, errors.New("publications not found")
+		}
+		return nil, 0, err
+	}
+
+	return publications, count, nil
+}
+
+// GetPublicationByAuthor retrieves publications by language
+func (stor *Stor) GetPublicationsByLanguage(code string, page int, pageSize int) ([]Publication, int64, error) {
+	var publications []Publication
+	var count int64
+	offset := (page - 1) * pageSize
+
+	if err := stor.preloadPublication().Joins("JOIN publication_language ON publication_language.publication_id = publications.id").
+		Joins("JOIN languages ON languages.id = publication_language.language_id").
+		Where("languages.code = ?", code).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, 0, errors.New("publications not found")
+		}
+		return nil, 0, err
+	}
+
+	return publications, count, nil
+}
+
+func (stor *Stor) GetCategories() ([]Category, error) {
+	var categories []Category
+	if err := stor.db.Find(&categories).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("no categories found")
+		}
+		return nil, err
+	}
+
+	return categories, nil
+}
+
+func (stor *Stor) GetAuthors() ([]Author, error) {
+	var authors []Author
+	if err := stor.db.Find(&authors).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("no authors found")
+		}
+		return nil, err
+	}
+
+	return authors, nil
+}
+
+func (stor *Stor) GetPublishers() ([]Publisher, error) {
+	var publishers []Publisher
+	if err := stor.db.Find(&publishers).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("no publishers found")
+		}
+		return nil, err
+	}
+
+	return publishers, nil
+}
+
+func (stor *Stor) GetLanguages() ([]Language, error) {
+	var languages []Language
+	if err := stor.db.Find(&languages).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("no languages found")
+		}
+		return nil, err
+	}
+
+	return languages, nil
+}
+
+File: pkg/stor/publication_test.go
+package stor
+
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+func checkLanguageEquality(a, b []Language) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i].Code != b[i].Code {
+			return false
+		}
+	}
+
+	return true
+}
+
+func checkPublisherEquality(a, b []Publisher) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i].Name != b[i].Name {
+			return false
+		}
+	}
+
+	return true
+}
+
+func checkAuthorEquality(a, b []Author) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i].Name != b[i].Name {
+			return false
+		}
+	}
+
+	return true
+}
+
+func checkCategoryEquality(a, b []Category) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i].Name != b[i].Name {
+			return false
+		}
+	}
+
+	return true
+}
+
+func TestPublicationCRUD(t *testing.T) {
+	// Test CreatePublication
+
+	pubUUID := uuid.New().String()
+	publication := &Publication{
+		Title:           "Test Publication",
+		UUID:            pubUUID,
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		CoverUrl:        "http://example.com/cover.jpg",
+		Language: []Language{
+			{Code: "en"},
+			{Code: "fr"},
+		},
+		Publisher: []Publisher{
+			{Name: "Test Publisher A"},
+			{Name: "Test Publisher B"},
+		},
+		Author: []Author{
+			{Name: "Test Author A"},
+			{Name: "Test Author B"},
+		},
+		Category: []Category{
+			{Name: "Test Category A"},
+			{Name: "Test Category B"},
+		},
+	}
+
+	err := stor.CreatePublication(publication)
+	if err != nil {
+		t.Errorf("Error creating publication: %s", err.Error())
+	}
+
+	// Test GetPublicationByID
+	fetchedPublication, err := stor.GetPublicationByUUID(pubUUID)
+	if err != nil {
+		t.Errorf("Error getting publication by ID: %s", err.Error())
+	} else {
+		// Ensure fetched publication matches the created publication
+		if fetchedPublication.ID != publication.ID ||
+			fetchedPublication.UUID != publication.UUID ||
+			!fetchedPublication.DatePublication.Equal(publication.DatePublication) ||
+			fetchedPublication.Description != publication.Description ||
+			!checkLanguageEquality(fetchedPublication.Language, publication.Language) ||
+			!checkPublisherEquality(fetchedPublication.Publisher, publication.Publisher) ||
+			!checkAuthorEquality(fetchedPublication.Author, publication.Author) ||
+			!checkCategoryEquality(fetchedPublication.Category, publication.Category) {
+			t.Error("Fetched publication does not match the created publication")
+		}
+
+	}
+
+	// // Test GetPublicationByTitle
+	// fetchedPublication, _, err = stor.GetPublicationsByTitle(publication.Title, 1, 10)
+	// if err != nil {
+	// 	t.Errorf("Error getting publication by title: %s", err.Error())
+	// } else {
+	// 	// Ensure fetched publication matches the created publication
+	// 	if fetchedPublication.ID != publication.ID ||
+	// 		fetchedPublication.UUID != publication.UUID ||
+	// 		!fetchedPublication.DatePublication.Equal(publication.DatePublication) ||
+	// 		fetchedPublication.Description != publication.Description ||
+	// 		!checkLanguageEquality(fetchedPublication.Language, publication.Language) ||
+	// 		!checkPublisherEquality(fetchedPublication.Publisher, publication.Publisher) ||
+	// 		!checkAuthorEquality(fetchedPublication.Author, publication.Author) ||
+	// 		!checkCategoryEquality(fetchedPublication.Category, publication.Category) {
+	// 		t.Error("Fetched publication does not match the created publication")
+	// 	}
+	// }
+
+	// Test UpdatePublication
+	fetchedPublication.Title = "Updated Test Publication"
+	err = stor.UpdatePublication(fetchedPublication)
+	if err != nil {
+		t.Errorf("Error updating publication: %s", err.Error())
+	}
+
+	// Fetch the updated publication again to ensure the changes were saved
+	updatedPublication, err := stor.GetPublicationByUUID(pubUUID)
+	if err != nil {
+		t.Errorf("Error getting publication by ID: %s", err.Error())
+	} else {
+		if updatedPublication.Title != fetchedPublication.Title {
+			t.Error("Publication title was not updated")
+		}
+	}
+
+	// Test DeletePublication
+	err = stor.DeletePublication(updatedPublication)
+	if err != nil {
+		t.Errorf("Error deleting publication: %s", err.Error())
+	}
+
+	// Ensure the publication is no longer present in the database
+	_, err = stor.GetPublicationByUUID(pubUUID)
+	if err == nil {
+		t.Error("Publication was not deleted")
+	}
+}
+
+func TestGetPublicationByCategory(t *testing.T) {
+	// Create test publications
+	publication1 := &Publication{
+		Title:           "Test Publication 1",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Category: []Category{
+			{Name: "Category A"},
+		},
+	}
+	publication2 := &Publication{
+		Title:           "Test Publication 2",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Category: []Category{
+			{Name: "Category B"},
+		},
+	}
+
+	err := stor.CreatePublication(publication1)
+	if err != nil {
+		t.Errorf("Error creating publication 1: %s", err.Error())
+	}
+	err = stor.CreatePublication(publication2)
+	if err != nil {
+		t.Errorf("Error creating publication 2: %s", err.Error())
+	}
+
+	// Test GetPublicationByCategory
+	publications, _, err := stor.GetPublicationsByCategory("Category B", 1, 10)
+	if err != nil {
+		t.Errorf("Error getting publications by category: %s", err.Error())
+	} else {
+		// Ensure the correct number of publications is retrieved
+		if len(publications) != 1 {
+			t.Errorf("Expected 1 publication, got %d", len(publications))
+		}
+
+		// Ensure the retrieved publication matches the created publication
+		if publications[0].Title != publication2.Title ||
+			publications[0].UUID != publication2.UUID ||
+			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
+			publications[0].Description != publication2.Description ||
+			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
+			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
+			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
+			!checkCategoryEquality(publications[0].Category, publication2.Category) {
+			t.Error("Fetched publication does not match the created publication")
+		}
+	}
+
+	// Clean up the test data
+	err = stor.DeletePublication(publication1)
+	if err != nil {
+		t.Errorf("Error deleting publication 1: %s", err.Error())
+	}
+	err = stor.DeletePublication(publication2)
+	if err != nil {
+		t.Errorf("Error deleting publication 2: %s", err.Error())
+	}
+}
+
+func TestGetPublicationByAuthor(t *testing.T) {
+	// Create test publications
+	publication1 := &Publication{
+		Title:           "Test Publication 1",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Author: []Author{
+			{Name: "Author A"},
+		},
+	}
+	publication2 := &Publication{
+		Title:           "Test Publication 2",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Author: []Author{
+			{Name: "Author B"},
+		},
+	}
+
+	err := stor.CreatePublication(publication1)
+	if err != nil {
+		t.Errorf("Error creating publication 1: %s", err.Error())
+	}
+	err = stor.CreatePublication(publication2)
+	if err != nil {
+		t.Errorf("Error creating publication 2: %s", err.Error())
+	}
+
+	// Test GetPublicationByAuthor
+	publications, _, err := stor.GetPublicationsByAuthor("Author B", 1, 10)
+	if err != nil {
+		t.Errorf("Error getting publications by author: %s", err.Error())
+	} else {
+		// Ensure the correct number of publications is retrieved
+		if len(publications) != 1 {
+			t.Errorf("Expected 1 publication, got %d", len(publications))
+		}
+
+		// Ensure the retrieved publication matches the created publication
+		if publications[0].Title != publication2.Title ||
+			publications[0].UUID != publication2.UUID ||
+			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
+			publications[0].Description != publication2.Description ||
+			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
+			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
+			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
+			!checkCategoryEquality(publications[0].Category, publication2.Category) {
+			t.Error("Fetched publication does not match the created publication")
+		}
+	}
+
+	// Clean up the test data
+	err = stor.DeletePublication(publication1)
+	if err != nil {
+		t.Errorf("Error deleting publication 1: %s", err.Error())
+	}
+	err = stor.DeletePublication(publication2)
+	if err != nil {
+		t.Errorf("Error deleting publication 2: %s", err.Error())
+	}
+}
+
+func TestGetPublicationByPublisher(t *testing.T) {
+	// Create test publications
+	publication1 := &Publication{
+		Title:           "Test Publication 1",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Publisher: []Publisher{
+			{Name: "Publisher A"},
+		},
+	}
+	publication2 := &Publication{
+		Title:           "Test Publication 2",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Publisher: []Publisher{
+			{Name: "Publisher B"},
+		},
+	}
+
+	err := stor.CreatePublication(publication1)
+	if err != nil {
+		t.Errorf("Error creating publication 1: %s", err.Error())
+	}
+	err = stor.CreatePublication(publication2)
+	if err != nil {
+		t.Errorf("Error creating publication 2: %s", err.Error())
+	}
+
+	// Test GetPublicationByPublisher
+	publications, _, err := stor.GetPublicationsByPublisher("Publisher B", 1, 10)
+	if err != nil {
+		t.Errorf("Error getting publications by publisher: %s", err.Error())
+	} else {
+		// Ensure the correct number of publications is retrieved
+		if len(publications) != 1 {
+			t.Errorf("Expected 1 publication, got %d", len(publications))
+		}
+
+		// Ensure the retrieved publication matches the created publication
+		if publications[0].Title != publication2.Title ||
+			publications[0].UUID != publication2.UUID ||
+			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
+			publications[0].Description != publication2.Description ||
+			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
+			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
+			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
+			!checkCategoryEquality(publications[0].Category, publication2.Category) {
+			t.Error("Fetched publication does not match the created publication")
+		}
+	}
+
+	// Clean up the test data
+	err = stor.DeletePublication(publication1)
+	if err != nil {
+		t.Errorf("Error deleting publication 1: %s", err.Error())
+	}
+	err = stor.DeletePublication(publication2)
+	if err != nil {
+		t.Errorf("Error deleting publication 2: %s", err.Error())
+	}
+}
+
+func TestGetPublicationByLanguage(t *testing.T) {
+	// Create test publications
+	publication1 := &Publication{
+		Title:           "Test Publication 1",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Language: []Language{
+			{Code: "aa"},
+		},
+	}
+	publication2 := &Publication{
+		Title:           "Test Publication 2",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Language: []Language{
+			{Code: "bb"},
+		},
+	}
+
+	err := stor.CreatePublication(publication1)
+	if err != nil {
+		t.Errorf("Error creating publication 1: %s", err.Error())
+	}
+	err = stor.CreatePublication(publication2)
+	if err != nil {
+		t.Errorf("Error creating publication 2: %s", err.Error())
+	}
+
+	// Test GetPublicationByLanguage
+	publications, _, err := stor.GetPublicationsByLanguage("bb", 1, 10)
+	if err != nil {
+		t.Errorf("Error getting publications by language: %s", err.Error())
+	} else {
+		// Ensure the correct number of publications is retrieved
+		if len(publications) != 1 {
+			t.Errorf("Expected 1 publication, got %d", len(publications))
+		}
+
+		// Ensure the retrieved publication matches the created publication
+		if publications[0].Title != publication2.Title ||
+			publications[0].UUID != publication2.UUID ||
+			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
+			publications[0].Description != publication2.Description ||
+			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
+			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
+			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
+			!checkCategoryEquality(publications[0].Category, publication2.Category) {
+			t.Error("Fetched publication does not match the created publication")
+		}
+	}
+
+	// Clean up the test data
+	err = stor.DeletePublication(publication1)
+	if err != nil {
+		t.Errorf("Error deleting publication 1: %s", err.Error())
+	}
+	err = stor.DeletePublication(publication2)
+	if err != nil {
+		t.Errorf("Error deleting publication 2: %s", err.Error())
+	}
+}
+
+func TestCreate2PublicationsWithSameCategory(t *testing.T) {
+	publication := &Publication{
+		Title:           "Test Publication",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Language: []Language{
+			{Code: "en"},
+			{Code: "fr"},
+		},
+		Publisher: []Publisher{
+			{Name: "Test Publisher A"},
+			{Name: "Test Publisher B"},
+		},
+		Author: []Author{
+			{Name: "Test Author A"},
+			{Name: "Test Author B"},
+		},
+		Category: []Category{
+			{Name: "Test Category A"},
+			{Name: "Test Category B"},
+		},
+	}
+
+	publication2 := &Publication{
+		Title:           "Test Publication",
+		UUID:            uuid.New().String(),
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Language: []Language{
+			{Code: "en"},
+			{Code: "fr"},
+		},
+		Publisher: []Publisher{
+			{Name: "Test Publisher A"},
+			{Name: "Test Publisher B"},
+		},
+		Author: []Author{
+			{Name: "Test Author A"},
+			{Name: "Test Author B"},
+		},
+		Category: []Category{
+			{Name: "Test Category A"},
+			{Name: "Test Category B"},
+		},
+	}
+
+	err := stor.CreatePublication(publication)
+	if err != nil {
+		t.Errorf("Error creating publication: %s", err.Error())
+	}
+
+	err = stor.CreatePublication(publication2)
+	if err != nil {
+		t.Errorf("Error creating publication: %s", err.Error())
+	}
+
+	categories, err2 := stor.GetCategories()
+	if err2 != nil {
+		t.Errorf("Error getting categories: %s", err.Error())
+	}
+
+	// Ensure the correct number of categories is retrieved
+	// if len(categories) != 2 {
+	// 	t.Errorf("Expected 2 categories, got %d", len(categories))
+	// }
+
+	category1 := Category{Name: "Test Category A"}
+	category2 := Category{Name: "Test Category B"}
+
+	// Ensure the retrieved categories match the created categories
+	foundCategory1 := false
+	foundCategory2 := false
+	for _, category := range categories {
+		if category.Name == category1.Name {
+			foundCategory1 = true
+		} else if category.Name == category2.Name {
+			foundCategory2 = true
+		}
+	}
+	if !foundCategory1 || !foundCategory2 {
+		t.Error("Not all created categories were retrieved")
+	}
+
+	// Clean up the test data
+	err = stor.DeletePublication(publication)
+	if err != nil {
+		t.Errorf("Error deleting publication 1: %s", err.Error())
+	}
+	err = stor.DeletePublication(publication2)
+	if err != nil {
+		t.Errorf("Error deleting publication 2: %s", err.Error())
+	}
+
+}
+
+func TestGetPublicationByUUID(t *testing.T) {
+	// Create test publications
+
+	pubUUID := uuid.New().String()
+	publication := &Publication{
+		Title:           "Test Publication",
+		UUID:            pubUUID,
+		DatePublication: time.Now(),
+		Description:     "Test description",
+		Language: []Language{
+			{Code: "en"},
+			{Code: "fr"},
+		},
+		Publisher: []Publisher{
+			{Name: "Test Publisher A"},
+			{Name: "Test Publisher B"},
+		},
+		Author: []Author{
+			{Name: "Test Author A"},
+			{Name: "Test Author B"},
+		},
+		Category: []Category{
+			{Name: "Test Category A"},
+			{Name: "Test Category B"},
+		},
+	}
+
+	err := stor.CreatePublication(publication)
+	if err != nil {
+		t.Errorf("Error creating publication 1: %s", err.Error())
+	}
+
+	fetchedPublication, _ := stor.GetPublicationByUUID(pubUUID)
+	fmt.Println(fetchedPublication)
+	// Ensure fetched publication matches the created publication
+	if fetchedPublication.ID != publication.ID ||
+		fetchedPublication.UUID != publication.UUID ||
+		!fetchedPublication.DatePublication.Equal(publication.DatePublication) ||
+		fetchedPublication.Description != publication.Description ||
+		!checkLanguageEquality(fetchedPublication.Language, publication.Language) ||
+		!checkPublisherEquality(fetchedPublication.Publisher, publication.Publisher) ||
+		!checkAuthorEquality(fetchedPublication.Author, publication.Author) ||
+		!checkCategoryEquality(fetchedPublication.Category, publication.Category) {
+		t.Error("Fetched publication does not match the created publication")
+	}
+
+	// Clean up the test data
+	err = stor.DeletePublication(publication)
+	if err != nil {
+		t.Errorf("Error deleting publication 1: %s", err.Error())
+	}
+}
+
+File: pkg/stor/stor_test.go
+package stor
+
+import (
+	"fmt"
+	"os"
+	"testing"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+var stor Stor
+
+func TestMain(m *testing.M) {
+	// Set up the database connection
+	var db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		panic("Failed to connect to database: " + err.Error())
+	}
+
+	// Run migrations
+	err = db.AutoMigrate(&Publication{}, &Language{}, &Publisher{}, &Author{}, &Category{}, &User{}, &Transaction{})
+	if err != nil {
+		panic("Failed to migrate database: " + err.Error())
+	}
+
+	stor.db = db
+
+	// Run the tests
+	exitCode := m.Run()
+
+	fmt.Println("ExitCode", exitCode)
+	// Exit with the appropriate exit code
+	os.Exit(exitCode)
+}
+
+func TestSuite(t *testing.T) {
+	t.Run("PublicationCRUD", TestPublicationCRUD)
+	t.Run("TestCreate2PublicationsWithSameCategory", TestCreate2PublicationsWithSameCategory)
+	t.Run("GetPublicationByCategory", TestGetPublicationByCategory)
+	t.Run("GetPublicationByLanguage", TestGetPublicationByLanguage)
+	t.Run("GetPublicationByPublisher", TestGetPublicationByPublisher)
+	t.Run("GetPublicationByAuthor", TestGetPublicationByAuthor)
+	t.Run("GetPublicationByUUID", TestGetPublicationByUUID)
+	t.Run("UserCRUD", TestUserCRUD)
+	t.Run("TransactionCRUD", TestTransactionCRUD)
+}
+
+File: pkg/stor/store.go
+package stor
+
+import (
+	"fmt"
+
+	"github.com/google/uuid"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+type Stor struct {
+	db *gorm.DB
+}
+
+func Init(sqliteDsn string) *Stor {
+
+	if len(sqliteDsn) == 0 {
+		sqliteDsn = "pub.db"
+	}
+
+	db, err := gorm.Open(sqlite.Open(sqliteDsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	// db = db.Session(&gorm.Session{FullSaveAssociations: true})
+
+	// Migrate the schema
+	db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{}, &User{}, &Transaction{})
+
+	// Check if the table is empty
+	var count int64
+	db.Model(&User{}).Count(&count)
+	if count == 0 {
+		// Insert initial record
+		createdUser := &User{
+			UUID:        uuid.New().String(),
+			Name:        "admin",
+			Email:       "admin@edrlab.org",
+			Pass:        "admin",
+			LcpHintMsg:  "Do not used it",
+			LcpPassHash: "edrlab",
+			SessionId:   uuid.New().String(),
+		}
+		result := db.Create(createdUser)
+		if result.Error != nil {
+			panic(fmt.Errorf("failed to insert initial record: %w", result.Error))
+		}
+	}
+
+	return &Stor{db: db}
+
+}
+
+func (stor *Stor) Stop() {
+
+	// Close the database connection
+	sqlDB, err := stor.db.DB()
+	if err != nil {
+		panic("failed to close database connection")
+	}
+	sqlDB.Close()
+
+}
+
+File: pkg/stor/transaction.go
+package stor
+
+import (
+	"errors"
+
+	"gorm.io/gorm"
+)
+
+type Transaction struct {
+	gorm.Model
+	UserID        uint
+	User          User
+	PublicationID uint
+	Publication   Publication
+	LicenceId     string
+}
+
+// CreateTransaction creates a new transaction
+func (stor *Stor) CreateTransaction(transaction *Transaction) error {
+	if err := stor.db.Create(transaction).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateTransaction creates a new transaction
+func (stor *Stor) CreateTransactionWithUUID(pubUUID, userUUID, licenceUUID string) error {
+
+	publication, err := stor.GetPublicationByUUID(pubUUID)
+	if err != nil {
+		return errors.New("can't get publication")
+	}
+
+	user, err := stor.GetUserByUUID(userUUID)
+	if err != nil {
+		return errors.New("can't get user")
+	}
+
+	transaction := &Transaction{
+		UserID:        user.ID,
+		PublicationID: publication.ID,
+		LicenceId:     licenceUUID,
+	}
+
+	return stor.CreateTransaction(transaction)
+}
+
+// UpdateTransaction updates a transaction
+func (stor *Stor) UpdateTransaction(transaction *Transaction) error {
+	if err := stor.db.Save(transaction).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteTransaction deletes a transaction
+func (stor *Stor) DeleteTransaction(transaction *Transaction) error {
+	if err := stor.db.Delete(transaction).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (stor *Stor) GetTransactionByLicenceId(transactionID string) (*Transaction, error) {
+	var transaction Transaction
+	if err := stor.db.Preload("User").Preload("Publication").Where("licence_id = ?", transactionID).First(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Transaction not found")
+		}
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
+func (stor *Stor) GetTransactionByUserAndPublication(userID, publicationID uint) (*Transaction, error) {
+	var transaction Transaction
+	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Where("publication_id = ?", publicationID).Order("created_at DESC").First(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Transaction not found")
+		}
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
+func (stor *Stor) GetTransactionsByUserID(userID uint) (*[]Transaction, error) {
+	var transaction []Transaction
+	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Order("created_at DESC").Find(&transaction).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("Transaction not found")
+		}
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
+File: pkg/stor/transaction_test.go
+package stor
+
+import (
+	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestTransactionCRUD(t *testing.T) {
+	// Create a new transaction
+	transaction := &Transaction{
+		UserID:        1,
+		PublicationID: 1,
+		LicenceId:     gofakeit.UUID(),
+	}
+
+	err := stor.CreateTransaction(transaction)
+	assert.NoError(t, err)
+	assert.NotZero(t, transaction.ID)
+
+	// Read the transaction by licence ID
+	readTransaction, err := stor.GetTransactionByLicenceId(transaction.LicenceId)
+	assert.NoError(t, err)
+	assert.Equal(t, transaction.ID, readTransaction.ID)
+	assert.Equal(t, transaction.UserID, readTransaction.UserID)
+	assert.Equal(t, transaction.PublicationID, readTransaction.PublicationID)
+	assert.Equal(t, transaction.LicenceId, readTransaction.LicenceId)
+
+	// Update the transaction
+	transaction.LicenceId = gofakeit.UUID()
+	err = stor.UpdateTransaction(transaction)
+	assert.NoError(t, err)
+
+	// Verify the updated transaction
+	updatedTransaction, err := stor.GetTransactionByLicenceId(transaction.LicenceId)
+	assert.NoError(t, err)
+	assert.Equal(t, transaction.LicenceId, updatedTransaction.LicenceId)
+
+	// Delete the transaction
+	err = stor.DeleteTransaction(transaction)
+	assert.NoError(t, err)
+
+	// Verify that the transaction is deleted
+	deletedTransaction, err := stor.GetTransactionByLicenceId(transaction.LicenceId)
+	assert.Error(t, err)
+	assert.Nil(t, deletedTransaction)
+}
+
+File: pkg/stor/user.go
+package stor
+
+import (
+	"errors"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+type User struct {
+	gorm.Model
+	UUID        string `gorm:"uniqueIndex"`
+	Name        string
+	Email       string `gorm:"uniqueIndex"`
+	Pass        string
+	LcpHintMsg  string
+	LcpPassHash string
+	SessionId   string // does not works : `gorm:"uniqueIndex:idx_name_not_empty,where:name IS NOT NULL"`
+	// sessionId is empty at first and then filed with a unique UUID v4 when the user is connecting
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.UUID == "" {
+		u.UUID = uuid.New().String()
+	}
+
+	HashedPass, err := bcrypt.GenerateFromPassword([]byte(u.Pass), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("user before create Password Hashing error " + err.Error())
+	}
+	u.Pass = string(HashedPass)
+
+	return
+}
+
+// CreateUser creates a new user
+func (stor *Stor) CreateUser(user *User) error {
+	if err := stor.db.Create(user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateUser updates a user
+func (stor *Stor) UpdateUser(user *User) error {
+	if err := stor.db.Save(user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteUser deletes a user
+func (stor *Stor) DeleteUser(user *User) error {
+	if err := stor.db.Delete(user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (stor *Stor) GetUserBySessionId(sessionId string) (*User, error) {
+	var user User
+	if err := stor.db.Where("session_id = ?", sessionId).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("User not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (stor *Stor) GetUserByEmail(email string) (*User, error) {
+	var user User
+	if err := stor.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("User not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (stor *Stor) GetUserByUUID(uuid string) (*User, error) {
+	var user User
+	if err := stor.db.Where("uuid = ?", uuid).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("User not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+File: pkg/stor/user_test.go
+package stor
+
+import (
+	"testing"
+
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestUserCRUD(t *testing.T) {
+
+	// Create a new user
+	user := &User{
+		UUID:        gofakeit.UUID(),
+		Name:        "Pierre ler",
+		Email:       gofakeit.Email(),
+		Pass:        "password123",
+		LcpHintMsg:  "Hint",
+		LcpPassHash: "Hash",
+		SessionId:   gofakeit.UUID(),
+	}
+
+	err := stor.CreateUser(user)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, user.ID)
+
+	// Retrieve user by email and validate
+	readUser, err := stor.GetUserByEmail(user.Email)
+	assert.NoError(t, err)
+	assert.Equal(t, user.ID, readUser.ID)
+	assert.Equal(t, user.Name, readUser.Name)
+	assert.Equal(t, user.Email, readUser.Email)
+	assert.Equal(t, user.Pass, readUser.Pass)
+	assert.Equal(t, user.LcpHintMsg, readUser.LcpHintMsg)
+	assert.Equal(t, user.LcpPassHash, readUser.LcpPassHash)
+	assert.Equal(t, user.SessionId, readUser.SessionId)
+
+	// Update user name
+	user.Name = "Jane Doe"
+	err = stor.UpdateUser(user)
+	assert.NoError(t, err)
+
+	// Retrieve user by ID and validate updated name
+	readUser, err = stor.GetUserByUUID(user.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, user.Name, readUser.Name)
+
+	// Delete user
+	err = stor.DeleteUser(user)
+	assert.NoError(t, err)
+
+	// Retrieve user by ID and ensure it's not found
+	deletedUser, err := stor.GetUserByUUID(user.UUID)
+	assert.Error(t, err)
+	assert.Nil(t, deletedUser)
+}
+
+File: pkg/view
+
+File: pkg/view/catalog.go
+package view
+
+import (
+	"fmt"
+
+	"github.com/edrlab/pubstore/pkg/stor"
+)
+
+type PublicationCatalogView struct {
+	CoverHref string
+	Title     string
+	Author    string
+	UUID      string
+}
+
+type FacetsView struct {
+	Authors    []string
+	Publishers []string
+	Languages  []string
+	Categories []string
+}
+
+type CatalogView struct {
+	FacetsView
+	Publications   []PublicationCatalogView
+	NbPages        string
+	NbPublications string
+}
+
+func (view *View) GetCatalogFacetsView() *FacetsView {
+	var facets FacetsView
+
+	if authorArray, err := view.stor.GetAuthors(); err != nil {
+		fmt.Println(err)
+		facets.Authors = make([]string, 0)
+	} else {
+		facets.Authors = make([]string, len(authorArray))
+		for i, element := range authorArray {
+			facets.Authors[i] = element.Name
+		}
+	}
+
+	if publisherArray, err := view.stor.GetPublishers(); err != nil {
+		fmt.Println(err)
+		facets.Publishers = make([]string, 0)
+	} else {
+		facets.Publishers = make([]string, len(publisherArray))
+		for i, element := range publisherArray {
+			facets.Publishers[i] = element.Name
+		}
+	}
+
+	if languageArray, err := view.stor.GetLanguages(); err != nil {
+		fmt.Println(err)
+		facets.Languages = make([]string, 0)
+	} else {
+		facets.Languages = make([]string, len(languageArray))
+		for i, element := range languageArray {
+			facets.Languages[i] = element.Code
+		}
+	}
+
+	if categoryArray, err := view.stor.GetCategories(); err != nil {
+		fmt.Println(err)
+		facets.Categories = make([]string, 0)
+	} else {
+		facets.Categories = make([]string, len(categoryArray))
+		for i, element := range categoryArray {
+			facets.Categories[i] = element.Name
+		}
+	}
+
+	return &facets
+}
+
+func (view *View) GetCatalogPublicationsView(facet string, value string, page int, pageSize int) (*[]PublicationCatalogView, int64) {
+
+	var publications []PublicationCatalogView
+	var pubs []stor.Publication
+	var count int64
+	var err error
+
+	switch facet {
+
+	case "author":
+		if pubs, count, err = view.stor.GetPublicationsByAuthor(value, page, pageSize); err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID}
+			}
+		}
+
+	case "publisher":
+		if pubs, count, err = view.stor.GetPublicationsByPublisher(value, page, pageSize); err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+			}
+		}
+
+	case "language":
+		if pubs, count, err = view.stor.GetPublicationsByLanguage(value, page, pageSize); err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+			}
+		}
+
+	case "category":
+		if pubs, count, err = view.stor.GetPublicationsByCategory(value, page, pageSize); err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+			}
+		}
+
+	case "search":
+		if pubs, count, err = view.stor.GetPublicationsByTitle(value, page, pageSize); err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+			}
+		}
+
+	default:
+		if pubs, count, err = view.stor.GetAllPublications(page, pageSize); err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				var author = ""
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+			}
+		}
+	}
+
+	return &publications, count
+}
+
+func GetCatalogView(pubs *[]PublicationCatalogView, facets *FacetsView) *CatalogView {
+
+	var catalogView CatalogView
+
+	catalogView.Authors = facets.Authors
+	catalogView.Categories = facets.Categories
+	catalogView.Languages = facets.Languages
+	catalogView.Publishers = facets.Publishers
+	catalogView.Publications = make([]PublicationCatalogView, len(*pubs))
+	for i, element := range *pubs {
+		catalogView.Publications[i] = PublicationCatalogView{CoverHref: element.CoverHref, Title: element.Title, Author: element.Author, UUID: element.UUID}
+	}
+
+	return &catalogView
+}
+
+File: pkg/view/publication.go
+package view
+
+import (
+	"time"
+
+	"github.com/edrlab/pubstore/pkg/stor"
+)
+
+type PublicationView struct {
+	Title           string
+	UUID            string
+	DatePublication time.Time
+	Description     string
+	CoverUrl        string
+	Author          []string
+	Publisher       []string
+	Category        []string
+	Language        []string
+}
+
+func (view *View) GetPublicationViewFromPublicationStor(originalPublication *stor.Publication) *PublicationView {
+	convertedPublication := PublicationView{
+		Title:           originalPublication.Title,
+		UUID:            originalPublication.UUID,
+		DatePublication: originalPublication.DatePublication,
+		Description:     originalPublication.Description,
+		CoverUrl:        originalPublication.CoverUrl,
+	}
+
+	// Convert Language slice
+	for _, language := range originalPublication.Language {
+		convertedPublication.Language = append(convertedPublication.Language, language.Code)
+	}
+
+	// Convert Publisher slice
+	for _, publisher := range originalPublication.Publisher {
+		convertedPublication.Publisher = append(convertedPublication.Publisher, publisher.Name)
+	}
+
+	// Convert Author slice
+	for _, author := range originalPublication.Author {
+		convertedPublication.Author = append(convertedPublication.Author, author.Name)
+	}
+
+	// Convert Category slice
+	for _, category := range originalPublication.Category {
+		convertedPublication.Category = append(convertedPublication.Category, category.Name)
+	}
+
+	return &convertedPublication
+}
+
+File: pkg/view/transaction.go
+package view
+
+import (
+	"fmt"
+
+	"github.com/edrlab/pubstore/pkg/lcp"
+	"github.com/edrlab/pubstore/pkg/stor"
+)
+
+type TransactionView struct {
+	// TransactionID             string
+	// TransactionDate           time.Time
+	PublicationUUID           string
+	PublicationTitle          string
+	PublicationAuthor         string
+	PublicationCoverUrl       string
+	PublicationPrintRights    string
+	PublicationCopyRights     string
+	PublicationStartDate      string
+	PublicationEndDate        string
+	LicenseStatusMessage      string
+	LicenseStatusCode         string
+	LicenseEndPotentialRights string
+}
+
+func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transaction) *TransactionView {
+
+	var publicationAuthor string
+	publication, err := view.stor.GetPublicationByUUID(transaction.Publication.UUID)
+	if err == nil && len(publication.Author) > 0 {
+		publicationAuthor = publication.Author[0].Name
+	}
+
+	lsdStatus, err := lcp.GetLsdStatus(transaction.LicenceId, transaction.User.Email, transaction.User.LcpHintMsg, transaction.User.LcpPassHash)
+	if err != nil {
+		fmt.Println("LSD STATUS Error from (" + transaction.LicenceId + ")")
+		lsdStatus = &lcp.LsdStatus{}
+	}
+
+	return &TransactionView{
+		PublicationUUID:           transaction.Publication.UUID,
+		PublicationTitle:          transaction.Publication.Title,
+		PublicationAuthor:         publicationAuthor,
+		PublicationCoverUrl:       publication.CoverUrl,
+		PublicationPrintRights:    fmt.Sprintf("%d", lsdStatus.PrintRights),
+		PublicationCopyRights:     fmt.Sprintf("%d", lsdStatus.CopyRights),
+		PublicationStartDate:      lsdStatus.StartDate.Format("2006-01-02 15:04:05"),
+		PublicationEndDate:        lsdStatus.EndDate.Format("2006-01-02 15:04:05"),
+		LicenseStatusMessage:      lsdStatus.StatusMessage,
+		LicenseStatusCode:         lsdStatus.StatusCode,
+		LicenseEndPotentialRights: lsdStatus.EndPotentialRights.Format("2006-01-02 15:04:05"),
+	}
+}
+
+File: pkg/view/view.go
+package view
+
+import "github.com/edrlab/pubstore/pkg/stor"
+
+type View struct {
+	stor *stor.Stor
+}
+
+func Init(s *stor.Stor) *View {
+	return &View{stor: s}
+}
+
+File: pkg/web
+
+File: pkg/web/router.go
+package web
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+
+	"github.com/edrlab/pubstore/pkg/config"
+	"github.com/edrlab/pubstore/pkg/lcp"
+	"github.com/edrlab/pubstore/pkg/stor"
+	"github.com/edrlab/pubstore/pkg/view"
+	"github.com/foolin/goview"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+)
+
+type Web struct {
+	view *view.View
+	stor *stor.Stor
+}
+
+func Init(s *stor.Stor, v *view.View) *Web {
+	return &Web{stor: s, view: v}
+}
+
+func (web *Web) getUserByCookie(r *http.Request) *stor.User {
+
+	if cookie, err := r.Cookie("session"); err == nil {
+		sessionId := cookie.Value
+
+		if user, err := web.stor.GetUserBySessionId(sessionId); err == nil {
+			// redirect to /index the user is logged
+			return user
+		}
+	}
+	return nil
+}
+
+func (web *Web) userIsAuthenticated(r *http.Request) bool {
+
+	if err := web.getUserByCookie(r); err != nil {
+		return true
+	}
+	return false
+}
+
+func (web *Web) signin(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signin handler
+	// This function will handle the "/signin" route
+
+	if web.userIsAuthenticated(r) {
+		http.Redirect(w, r, "/index", http.StatusFound)
+	}
+
+	signinGoview(w, false)
+}
+
+func (web *Web) signout(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signin handler
+	// This function will handle the "/signin" route
+
+	cookie := &http.Cookie{
+		Name:    "session",
+		Value:   "",
+		Expires: time.Unix(0, 0),
+		Path:    "/",
+	}
+
+	http.SetCookie(w, cookie) // Send the cookie in the response to remove it
+
+	http.Redirect(w, r, "/index", http.StatusFound)
+}
+
+func signinGoview(w http.ResponseWriter, userNotFound bool) {
+
+	err := goview.Render(w, http.StatusOK, "signin", goview.M{
+		"pageTitle":           "pubstore - signin",
+		"userIsAuthenticated": false,
+		"userName":            "",
+		"userNotFound":        userNotFound,
+	})
+	if err != nil {
+		fmt.Fprintf(w, "Render index error: %v!", err)
+	}
+}
+
+func (web *Web) signinPost(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signin handler
+	// This function will handle the "/signin" route
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
+	}
+
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+
+	user, err := web.stor.GetUserByEmail(email)
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Pass), []byte(password)) != nil {
+		signinGoview(w, true)
+		return
+	}
+
+	sessionId := uuid.New().String()
+	user.SessionId = sessionId
+
+	if err := web.stor.UpdateUser(user); err != nil {
+		signinGoview(w, true)
+		return
+	}
+
+	cookie := &http.Cookie{
+		Name:    "session",
+		Value:   sessionId,
+		Expires: time.Now().Add(24 * time.Hour), // Set cookie expiration time
+		Path:    "/",
+	}
+
+	http.SetCookie(w, cookie) // Send the cookie in the response
+
+	http.Redirect(w, r, "/index", http.StatusFound)
+
+}
+
+func (web *Web) signup(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signin handler
+	// This function will handle the "/signin" route
+
+	if web.userIsAuthenticated(r) {
+		http.Redirect(w, r, "/index", http.StatusFound)
+	}
+
+	signupGoview(w, false)
+}
+
+func signupGoview(w http.ResponseWriter, userCreationFailed bool) {
+
+	err := goview.Render(w, http.StatusOK, "signup", goview.M{
+		"pageTitle":           "pubstore - signin",
+		"userIsAuthenticated": false,
+		"userName":            "",
+		"userCreationFailed":  userCreationFailed,
+	})
+	if err != nil {
+		fmt.Fprintf(w, "Render index error: %v!", err)
+	}
+}
+
+func (web *Web) signupPostHandler(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the signup handler
+	// This function will handle the "/signup" route
+	// Parse form data
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
+	}
+
+	// Extract form values
+	name := r.Form.Get("name")
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+	lcpPass := r.Form.Get("lcpPass")
+	lcpHint := r.Form.Get("lcpHint")
+
+	// Create a new User instance
+	newUser := stor.User{
+		UUID:        uuid.New().String(),
+		Name:        name,
+		Email:       email,
+		Pass:        password,
+		LcpPassHash: lcp.CreateLcpPassHash(lcpPass),
+		LcpHintMsg:  lcpHint,
+		SessionId:   "",
+	}
+
+	// Perform validation on newUser if required
+
+	// Save newUser to the database using your storage function
+	err = web.stor.CreateUser(&newUser)
+	if err != nil {
+		signupGoview(w, true)
+		// http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+// func userInfos(w http.ResponseWriter, r *http.Request) {
+// 	// Implementation for the userInfos handler
+// 	// This function will handle the "/user/infos" and "/user/bookshelf" routes
+// }
+
+func (web *Web) publicationBuyHandler(w http.ResponseWriter, r *http.Request) {
+	// This function will handle the "/catalog/publication/{id}/buy" route
+
+	var printRights int
+	var copyRights int
+	var err error
+
+	pubUUID := chi.URLParam(r, "id")
+
+	printRightsString := r.URL.Query().Get("printRigths")
+	copyRightsString := r.URL.Query().Get("copyRights")
+
+	if printRights, err = strconv.Atoi(printRightsString); err != nil {
+		printRights = config.PrintRights
+	} else {
+		if printRights < 0 {
+			printRights = 0
+		}
+		if printRights >= 10000 {
+			printRights = 10000
+		}
+	}
+	if copyRights, err = strconv.Atoi(copyRightsString); err != nil {
+		copyRights = config.CopyRights
+	} else {
+		if copyRights < 0 {
+			copyRights = 0
+		}
+		if copyRights >= 10000 {
+			copyRights = 10000
+		}
+	}
+
+	storUser := web.getUserByCookie(r)
+	userUUID := storUser.UUID
+	userEmail := storUser.Email
+	textHint := storUser.LcpHintMsg
+	hexValue := storUser.LcpPassHash
+
+	message := "something went wrong with buy function : "
+
+	var licenceBytes []byte
+	var errorWasHappend bool = false
+	var publicationTitle string
+
+	defer func() {
+		if errorWasHappend {
+
+			http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
+		w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
+
+		io.Copy(w, bytes.NewReader(licenceBytes))
+	}()
+
+	licenceBytes, err = lcp.LicenceBuy(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+
+	licenceId, publicationTitle, _, _, _, _, _, err := lcp.ParseLicenceLCPL(licenceBytes)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+
+	err = web.stor.CreateTransactionWithUUID(pubUUID, userUUID, licenceId)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+
+	if errorWasHappend {
+
+		http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+		return
+	}
+}
+
+func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
+	// This function will handle the "/catalog/publication/{id}/buy" route
+
+	var printRights int
+	var copyRights int
+	var err error
+
+	pubUUID := chi.URLParam(r, "id")
+
+	printRightsString := r.URL.Query().Get("printRights")
+	copyRightsString := r.URL.Query().Get("copyRights")
+	startDateString := r.URL.Query().Get("startDate")
+	endDateString := r.URL.Query().Get("endDate")
+
+	// timeString := "2023-06-14T01:08:15+00:00"
+	// layout := "2006-01-02T15:04:05Z07:00"
+	// layout := "YYYY-MM-DDTHH:mm:ss.nnnZ" // ISO 8601 extended
+	layout := time.RFC3339 // JS toISOString
+	startDate, err := time.Parse(layout, startDateString)
+	if err != nil {
+		fmt.Println(err.Error())
+		startDate = time.Now()
+	}
+	endDate, err := time.Parse(layout, endDateString)
+	if err != nil {
+		fmt.Println(err.Error())
+		endDate = time.Now().AddDate(0, 0, 7)
+	}
+
+	if printRights, err = strconv.Atoi(printRightsString); err != nil {
+		printRights = config.PrintRights
+	} else {
+		if printRights < 0 {
+			printRights = 0
+		}
+		if printRights >= 10000 {
+			printRights = 10000
+		}
+	}
+	if copyRights, err = strconv.Atoi(copyRightsString); err != nil {
+		copyRights = config.CopyRights
+	} else {
+		if copyRights < 0 {
+			copyRights = 0
+		}
+		if copyRights >= 10000 {
+			copyRights = 10000
+		}
+	}
+
+	storUser := web.getUserByCookie(r)
+	userUUID := storUser.UUID
+	userEmail := storUser.Email
+	textHint := storUser.LcpHintMsg
+	hexValue := storUser.LcpPassHash
+
+	message := "something went wrong with loan function : "
+
+	var licenceBytes []byte
+	var errorWasHappend bool = false
+	var publicationTitle string
+
+	defer func() {
+		if errorWasHappend {
+
+			http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
+		w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
+
+		io.Copy(w, bytes.NewReader(licenceBytes))
+	}()
+
+	licenceBytes, err = lcp.LicenceLoan(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, startDate, endDate)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+
+	licenceId, publicationTitle, _, _, _, _, _, err := lcp.ParseLicenceLCPL(licenceBytes)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+
+	err = web.stor.CreateTransactionWithUUID(pubUUID, userUUID, licenceId)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+}
+
+func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Request) {
+
+	pubUUID := chi.URLParam(r, "id")
+
+	publication, _ := web.stor.GetPublicationByUUID(pubUUID)
+	user := web.getUserByCookie(r)
+	transaction, err := web.stor.GetTransactionByUserAndPublication(user.ID, publication.ID)
+	if err != nil {
+		http.Redirect(w, r, "/catalog/publication/"+pubUUID, http.StatusFound)
+		return
+	}
+
+	message := "something went wrong to generate a fresh license : "
+	errorWasHappend := false
+
+	var licenceBytes []byte
+	var publicationTitle string
+
+	defer func() {
+		if errorWasHappend {
+
+			http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubUUID, url.QueryEscape(message)), http.StatusFound)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", "attachment; filename="+publicationTitle+".lcpl")
+		w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(licenceBytes)))
+
+		io.Copy(w, bytes.NewReader(licenceBytes))
+	}()
+
+	licenceBytes, err = lcp.GenerateFreshLicenceFromLcpServer(transaction.LicenceId, user.Email, user.LcpHintMsg, user.LcpPassHash)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+
+	_, publicationTitle, _, _, _, _, _, err = lcp.ParseLicenceLCPL(licenceBytes)
+	if err != nil {
+		message += err.Error()
+		errorWasHappend = true
+	}
+}
+
+func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the bookshelf handler
+	// This function will handle the "/user/bookshelf" route
+
+	user := web.getUserByCookie(r)
+	if user == nil {
+		fmt.Fprintf(w, "bookshelf error")
+		return
+	}
+	transactions, err := web.stor.GetTransactionsByUserID(user.ID)
+	if err != nil {
+		fmt.Fprintf(w, "bookshelf error")
+		return
+	}
+
+	var transactionsView []*view.TransactionView = make([]*view.TransactionView, len(*transactions))
+	for i, transactionStor := range *transactions {
+		transactionsView[i] = web.view.GetTransactionViewFromTransactionStor(&transactionStor)
+	}
+
+	goviewModel := goview.M{
+		"pageTitle":           "pubstore - bookshelf",
+		"userIsAuthenticated": true,
+		"userName":            user.Name,
+		"transactions":        transactionsView,
+	}
+
+	err = goview.Render(w, http.StatusOK, "bookshelf", goviewModel)
+	if err != nil {
+		fmt.Fprintf(w, "Render index error: %v!", err)
+	}
+}
+
+func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the catalog handler
+	// This function will handle the "/catalog" route
+
+	author := r.URL.Query().Get("author")
+	language := r.URL.Query().Get("language")
+	publisher := r.URL.Query().Get("publisher")
+	category := r.URL.Query().Get("category")
+	page := r.URL.Query().Get("page")
+	pageSize := r.URL.Query().Get("pageSize")
+
+	q := r.URL.Query().Get("q")
+	query := r.URL.Query().Get("query")
+	queryStr := query
+	if len(query) == 0 {
+		queryStr = q
+	}
+
+	pageInt, _ := strconv.Atoi(page)
+	if pageInt < 1 || pageInt > 1000 {
+		pageInt = 1
+	}
+	pageSizeInt, _ := strconv.Atoi(pageSize)
+	if pageSizeInt < 1 || pageSizeInt > 1000 {
+		pageSizeInt = config.NumberOfPublicationsPerPage
+	}
+
+	var facet string = ""
+	var value string = ""
+	if len(queryStr) > 0 {
+		facet = "search"
+		value = queryStr
+	} else if len(author) > 0 {
+		facet = "author"
+		value = author
+	} else if len(publisher) > 0 {
+		facet = "publisher"
+		value = publisher
+	} else if len(language) > 0 {
+		facet = "language"
+		value = language
+	} else if len(category) > 0 {
+		facet = "category"
+		value = category
+	}
+
+	facetsView := web.view.GetCatalogFacetsView()
+	pubsView, count := web.view.GetCatalogPublicationsView(facet, value, pageInt, pageSizeInt)
+	catalogView := view.GetCatalogView(pubsView, facetsView)
+
+	var pageRange []string = make([]string, pageInt)
+	for i := 0; i < pageInt; i++ {
+		pageRange[i] = fmt.Sprintf("%d", i+1)
+	}
+	userStor := web.getUserByCookie(r)
+	userName := ""
+	if userStor != nil {
+		userName = userStor.Name
+	}
+
+	goviewModel := goview.M{
+		"pageTitle":           "pubstore - catalog",
+		"userIsAuthenticated": web.userIsAuthenticated(r),
+		"userName":            userName,
+		"currentFacetType":    facet,
+		"currentFacetValue":   value,
+		"currentPageSize":     fmt.Sprintf("%d", pageSizeInt),
+		"currentPage":         fmt.Sprintf("%d", pageInt),
+		"pageRange":           pageRange,
+		"publicationCount":    fmt.Sprintf("%d", count),
+		"authors":             (*catalogView).Authors,
+		"publishers":          (*catalogView).Publishers,
+		"languages":           (*catalogView).Languages,
+		"categories":          (*catalogView).Categories,
+		"publications":        (*catalogView).Publications,
+	}
+
+	err := goview.Render(w, http.StatusOK, "catalog", goviewModel)
+	if err != nil {
+		fmt.Fprintf(w, "Render index error: %v!", err)
+	}
+}
+
+func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
+	// Implementation for the publication handler
+	// This function will handle the "/catalog/publication/{id}" route
+
+	pubUUID := chi.URLParam(r, "id")
+	errLcp := r.URL.Query().Get("err")
+	userStor := web.getUserByCookie(r)
+	licenseOK := false
+
+	if publicationStor, err := web.stor.GetPublicationByUUID(pubUUID); err != nil {
+		http.ServeFile(w, r, "static/404.html")
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		userName := ""
+		if userStor != nil {
+			userName = userStor.Name
+			transaction, err := web.stor.GetTransactionByUserAndPublication(userStor.ID, publicationStor.ID)
+			if err == nil {
+				transactionView := web.view.GetTransactionViewFromTransactionStor(transaction)
+				if transactionView.LicenseStatusCode == "ready" || transactionView.LicenseStatusCode == "active" {
+					licenseOK = true
+				}
+			}
+		}
+
+		publicationView := web.view.GetPublicationViewFromPublicationStor(publicationStor)
+		goviewModel := goview.M{
+			"pageTitle":             fmt.Sprintf("pubstore - %s", publicationView.Title),
+			"userIsAuthenticated":   web.userIsAuthenticated(r),
+			"userName":              userName,
+			"errLcp":                errLcp,
+			"licenseFoundAndActive": licenseOK,
+			"title":                 publicationView.Title,
+			"uuid":                  publicationView.UUID,
+			"datePublication":       publicationView.DatePublication,
+			"description":           publicationView.Description,
+			"coverUrl":              publicationView.CoverUrl,
+			"authors":               publicationView.Author,
+			"publishers":            publicationView.Publisher,
+			"languages":             publicationView.Language,
+			"categories":            publicationView.Category,
+		}
+		err = goview.Render(w, http.StatusOK, "publication", goviewModel)
+		if err != nil {
+			fmt.Fprintf(w, "Render index error: %v!", err)
+		}
+	}
+}
+
+func (web *Web) AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if the user is authenticated
+		if !web.userIsAuthenticated(r) {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+
+		// If authenticated, call the next handler
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (web *Web) Rooter(r chi.Router) {
+
+	// Serve static files from the "static" directory
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
+	// Public Routes
+	r.Group(func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/index", http.StatusFound)
+		})
+		r.Get("/index", func(w http.ResponseWriter, r *http.Request) {
+			userStor := web.getUserByCookie(r)
+			userName := ""
+			if userStor != nil {
+				userName = userStor.Name
+			}
+			goviewModel := goview.M{
+				"pageTitle":           "pubstore",
+				"userIsAuthenticated": web.userIsAuthenticated(r),
+				"userName":            userName,
+			}
+			err := goview.Render(w, http.StatusOK, "index", goviewModel)
+			if err != nil {
+				fmt.Fprintf(w, "Render index error: %v!", err)
+			}
+		})
+		r.Get("/catalog", web.catalogHangler)
+		r.Get("/catalog/publication/{id}", web.publicationHandler)
+		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, "static/404.html")
+			w.WriteHeader(http.StatusNotFound)
+		})
+	})
+
+	// Public signin/signout/signup
+	r.Group(func(r chi.Router) {
+		r.Get("/signin", web.signin)
+		r.Post("/signin", web.signinPost)
+		r.Get("/signout", web.signout)
+		r.Get("/signup", web.signup)
+		r.Post("/signup", web.signupPostHandler)
+	})
+
+	// Private Routes
+	// Require Authentication
+	r.Group(func(r chi.Router) {
+		r.Use(web.AuthMiddleware)
+		// r.Get("/user/infos", userInfos)
+		r.Get("/user/bookshelf", web.bookshelfHandler)
+		r.Get("/catalog/publication/{id}/buy", web.publicationBuyHandler)
+		r.Get("/catalog/publication/{id}/loan", web.publicationLoanHandler)
+		r.Get("/catalog/publication/{id}/license", web.publicationFreshLicenceHandler)
+	})
+}
+

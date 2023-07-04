@@ -23,7 +23,13 @@ import (
 
 func main() {
 
-	_stor := stor.Init("pub.db")
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("no .env file found")
+	}
+	config.Init()
+
+	_stor := stor.Init(config.DSN)
 	_api := api.Init(_stor)
 	_view := view.Init(_stor)
 	_web := web.Init(_stor, _view)
@@ -37,13 +43,6 @@ func main() {
 	r.Group(_api.Rooter)
 	r.Group(_web.Rooter)
 	r.Group(_opds.Router)
-
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println("no .env file found")
-	}
-
-	config.Init()
 
 	// The HTTP Server
 	server := &http.Server{Addr: fmt.Sprintf("0.0.0.0:%d", config.PORT), Handler: r}

@@ -19,6 +19,8 @@ var LCP_SERVER_URL = "https://front-prod.edrlab.org/lcpserver"
 var LCP_SERVER_USERNAME = "adm_username"
 var LCP_SERVER_PASSWORD = "adm_password"
 
+var DSN = "pub.db"
+
 func Init() {
 
 	var portEnv = os.Getenv("PORT")
@@ -52,4 +54,8 @@ func Init() {
 		LCP_SERVER_USERNAME = lcpServerUsername
 	}
 
+	var dsnEnv = os.Getenv("DSN")
+	if dsnEnv != "" {
+		DSN = dsnEnv
+	}
 }
