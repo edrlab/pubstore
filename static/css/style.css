@@ -38,8 +38,6 @@ header nav ul {
 
 header nav ul li a img {
     transform-origin: center;
-    position: absolute;
-    top: -100px;
     scale: 0.8;
 }
 
@@ -283,6 +281,9 @@ footer h5 {
     font-size: 14px;
 }
 
+.footer-readium p {
+    margin: 0;
+}
 
 .footer-contact ul {
     list-style-type: none;
