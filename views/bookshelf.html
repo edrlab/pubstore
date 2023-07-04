@@ -23,8 +23,6 @@ td, th {
 <table>
 
     <tr>
-        <th>ID</th>
-        <th>Transaction Date</th>
         <th>Cover</th>
         <th>Publication</th>
         <th>Publication Title</th>
@@ -40,8 +38,6 @@ td, th {
 
     {{range .transactions}}
     <tr>
-        <td>{{.TransactionID}}</td>
-        <th>{{.TransactionDate}}</th>
         <td><img src="{{.PublicationCoverUrl}}" /></td>
         <td><a href="/catalog/publication/{{.PublicationUUID}}">Link</a></td>
         <td>{{.PublicationTitle}}</td>
