@@ -1,13 +1,7 @@
-.book-list,
-.book-list-latest {
+.book-list {
     display: grid;
     gap: 20px;
     max-width: 1920px;
-    overflow-x: scroll;
-}
-
-.book-list-latest {
-    grid-template-columns: repeat(10,1fr);
 }
 
 .book-list {
