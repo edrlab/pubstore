@@ -309,7 +309,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 	endDate, err := time.Parse(layout, endDateString)
 	if err != nil {
 		fmt.Println(err.Error())
-		endDate = time.Now()
+		endDate = time.Now().AddDate(0, 0, 7)
 	}
 
 	if printRights, err = strconv.Atoi(printRightsString); err != nil {
