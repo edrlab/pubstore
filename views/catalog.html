@@ -86,7 +86,7 @@
         <p>Page</p>
             {{range $page := .pageRange}}
                 {{ if eq $page $.currentPage }}
-                <p>hello</p>
+            <a href="/catalog?page={{.}}" style="color : red">{{$page}}</a>
                 {{ else }}
                 <a href="/catalog?page={{.}}">{{$page}}</a>
                 {{end}}

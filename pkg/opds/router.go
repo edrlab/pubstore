@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edrlab/pubstore/pkg/config"
+	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -88,13 +90,72 @@ func (opds *Opds) catalogHandler(w http.ResponseWriter, r *http.Request) {
 
 func (opds *Opds) publicationHandler(w http.ResponseWriter, r *http.Request) {
 
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	authentified := false
+	if !ok {
+		authentified = true
+	}
+
+	storPublication, ok := ctx.Value("publication").(*stor.Publication)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+	pub, err := convertToPublication(storPublication)
+	if err != nil {
+		http.Error(w, "Failed to convert publication", http.StatusInternalServerError)
+		return
+	}
+
+	if authentified {
+		// add authentified acquisition link
+
+		user, err := opds.stor.GetUserByEmail(credential)
+		if err != nil {
+			http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+			return
+		}
+
+		transactions, err := opds.getTransactionFromUserAndPubUUID(user, storPublication.UUID)
+		if err != nil {
+			http.Error(w, "Failed to get transaction", http.StatusInternalServerError)
+			return
+		}
+
+		lsdStatus, err := lcp.GetLsdStatus(transactions.LicenceId, user.Email, user.LcpHintMsg, user.LcpPassHash)
+		if err != nil {
+			lsdStatus = &lcp.LsdStatus{}
+		}
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice(false, storPublication.UUID, lsdStatus.StatusCode, user.LcpPassHash, lsdStatus.StartDate, lsdStatus.EndDate))
+
+	} else {
+		// add borrow link
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice(true, "", "", "", time.Time{}, time.Time{}))
+	}
+
+	// Encode the publication as JSON and write it to the response
+	w.Header().Set("Content-Type", "application/opds+json")
+	err = json.NewEncoder(w).Encode(pub)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (opds *Opds) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
-	opdsFeed, err := opds.GenerateBookshelfFeed()
-	if err != nil {
-		fmt.Fprintf(w, "opds feed : %v!", err)
+	ctx := r.Context()
+	credential, ok := ctx.Value(CredentialContext).(string)
+	if !ok {
+		http.Error(w, http.StatusText(500), 500)
+		return
 	}
+
+	opdsFeed, err := opds.GenerateBookshelfFeed(credential)
+	if err != nil {
+		fmt.Println("Bookshelf : " + err.Error())
+	}
+
 	// Encode the publication as JSON and write it to the response
 	w.Header().Set("Content-Type", "application/opds+json")
 	err = json.NewEncoder(w).Encode(opdsFeed)
@@ -117,7 +178,7 @@ func (opds *Opds) Router(r chi.Router) {
 	}))
 
 	s := oauth.NewBearerServer(
-		"Edrlab-Rocks-opds",
+		config.OauthSeed,
 		time.Second*3600,
 		&UserVerifier{stor: opds.stor},
 		nil)
@@ -137,12 +198,13 @@ func (opds *Opds) Router(r chi.Router) {
 	r.Post("/opds/v1/token", s.UserCredentials)
 	r.Route("/opds/v1", func(opdsRouter chi.Router) {
 		opdsRouter.Get("/catalog", opds.catalogHandler)
-		opdsRouter.Route("/{id}", func(idRouter chi.Router) {
+		opdsRouter.Route("/publication/{id}", func(idRouter chi.Router) {
+			idRouter.Use(authorizePassthrough(config.OauthSeed, nil))
 			idRouter.Use(opds.publicationCtx)
 			idRouter.Get("/", opds.publicationHandler)
 		})
 		opdsRouter.Group(func(opdsRouterAuth chi.Router) {
-			opdsRouterAuth.Use(authorize("Edrlab-Rocks-opds", nil))
+			opdsRouterAuth.Use(authorize(config.OauthSeed, nil))
 			opdsRouterAuth.Get("/bookshelf", opds.bookshelfHandler)
 		})
 	})
@@ -239,6 +301,69 @@ func (ba *BearerAuthentication) Authorize(next http.Handler) http.Handler {
 
 // Check header and token.
 func (ba *BearerAuthentication) checkAuthorizationHeader(auth string) (t *oauth.Token, err error) {
+	if len(auth) < 7 {
+		return nil, errors.New("Invalid bearer authorization header")
+	}
+	authType := strings.ToLower(auth[:6])
+	if authType != "bearer" {
+		return nil, errors.New("Invalid bearer authorization header")
+	}
+	token, err := ba.provider.DecryptToken(auth[7:])
+	if err != nil {
+		return nil, errors.New("Invalid token")
+	}
+	if time.Now().UTC().After(token.CreationDate.Add(token.ExpiresIn)) {
+		return nil, errors.New("Token expired")
+	}
+	return token, nil
+}
+
+// BearerAuthentication middleware for go-chi
+type BearerAuthenticationPassthrough struct {
+	secretKey string
+	provider  *oauth.TokenProvider
+}
+
+// NewBearerAuthentication create a BearerAuthentication middleware
+func newBearerAuthenticationPassthrough(secretKey string, formatter oauth.TokenSecureFormatter) *BearerAuthentication {
+	ba := &BearerAuthentication{secretKey: secretKey}
+	if formatter == nil {
+		formatter = oauth.NewSHA256RC4TokenSecurityProvider([]byte(secretKey))
+	}
+	ba.provider = oauth.NewTokenProvider(formatter)
+	return ba
+}
+
+// Authorize is the OAuth 2.0 middleware for go-chi resource server.
+// Authorize creates a BearerAuthentication middleware and return the Authorize method.
+func authorizePassthrough(secretKey string, formatter oauth.TokenSecureFormatter) func(next http.Handler) http.Handler {
+	return newBearerAuthentication(secretKey, formatter).Authorize
+}
+
+// Authorize verifies the bearer token authorizing or not the request.
+// Token is retrieved from the Authorization HTTP header that respects the format
+// Authorization: Bearer {access_token}
+func (ba *BearerAuthenticationPassthrough) AuthorizePassthrough(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		token, err := ba.checkAuthorizationHeaderPassthrough(auth)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, CredentialContext, token.Credential)
+		ctx = context.WithValue(ctx, ClaimsContext, token.Claims)
+		ctx = context.WithValue(ctx, ScopeContext, token.Scope)
+		ctx = context.WithValue(ctx, TokenTypeContext, token.TokenType)
+		ctx = context.WithValue(ctx, AccessTokenContext, auth[7:])
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// Check header and token.
+func (ba *BearerAuthenticationPassthrough) checkAuthorizationHeaderPassthrough(auth string) (t *oauth.Token, err error) {
 	if len(auth) < 7 {
 		return nil, errors.New("Invalid bearer authorization header")
 	}

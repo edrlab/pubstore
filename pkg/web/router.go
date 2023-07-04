@@ -25,8 +25,7 @@ type Web struct {
 	service *service.Service
 }
 
-func Init(s *stor.Stor, service *service.Service) *Web {
-	v := view.Init(s)
+func Init(s *stor.Stor, service *service.Service, v *view.View) *Web {
 	return &Web{stor: s, view: v, service: service}
 }
 
@@ -309,7 +308,7 @@ func (web *Web) publicationLoanHandler(w http.ResponseWriter, r *http.Request) {
 	endDate, err := time.Parse(layout, endDateString)
 	if err != nil {
 		fmt.Println(err.Error())
-		endDate = time.Now()
+		endDate = time.Now().AddDate(0, 0, 7)
 	}
 
 	if printRights, err = strconv.Atoi(printRightsString); err != nil {
@@ -522,10 +521,10 @@ func (web *Web) catalogHangler(w http.ResponseWriter, r *http.Request) {
 		"userName":            userName,
 		"currentFacetType":    facet,
 		"currentFacetValue":   value,
-		"currentPageSize":     pageSizeInt,
-		"currentPage":         pageInt,
+		"currentPageSize":     fmt.Sprintf("%d", pageSizeInt),
+		"currentPage":         fmt.Sprintf("%d", pageInt),
 		"pageRange":           pageRange,
-		"publicationCount":    count,
+		"publicationCount":    fmt.Sprintf("%d", count),
 		"authors":             (*catalogView).Authors,
 		"publishers":          (*catalogView).Publishers,
 		"languages":           (*catalogView).Languages,

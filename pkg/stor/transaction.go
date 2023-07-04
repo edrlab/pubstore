@@ -78,7 +78,7 @@ func (stor *Stor) GetTransactionByLicenceId(transactionID string) (*Transaction,
 
 func (stor *Stor) GetTransactionByUserAndPublication(userID, publicationID uint) (*Transaction, error) {
 	var transaction Transaction
-	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Where("publication_id = ?", publicationID).First(&transaction).Error; err != nil {
+	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Where("publication_id = ?", publicationID).Order("created_at DESC").First(&transaction).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("Transaction not found")
 		}
@@ -90,7 +90,7 @@ func (stor *Stor) GetTransactionByUserAndPublication(userID, publicationID uint)
 
 func (stor *Stor) GetTransactionsByUserID(userID uint) (*[]Transaction, error) {
 	var transaction []Transaction
-	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Find(&transaction).Error; err != nil {
+	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Order("created_at DESC").Find(&transaction).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("Transaction not found")
 		}

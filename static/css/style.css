@@ -33,6 +33,16 @@ a, a:visited {
     padding: 30px 20px 0;
 }
 
+header nav ul {
+    position: relative;
+}
+
+header nav ul li a img {
+    transform-origin: center;
+    position: absolute;
+    top: -100px;
+}
+
 .header-infos-title {
     display: flex;
     gap: 20px;

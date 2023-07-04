@@ -292,28 +292,46 @@ func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue stri
 	return body, nil
 }
 
-func GetLsdStatus(licenceId, email, textHint, hexValue string) (string, string, time.Time, int, int, time.Time, time.Time, error) {
+type LsdStatus struct {
+	StatusMessage      string
+	StatusCode         string
+	EndPotentialRights time.Time
+	PrintRights        int
+	CopyRights         int
+	StartDate          time.Time
+	EndDate            time.Time
+}
+
+func GetLsdStatus(licenceId, email, textHint, hexValue string) (*LsdStatus, error) {
 
 	licenceBytes, err := GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue)
 	if err != nil {
-		return "", "", time.Now(), 0, 0, time.Now(), time.Now(), err
+		return nil, err
 
 	}
 
 	_, _, publicationStatusHref, printRights, copyRights, startDate, endDate, err := ParseLicenceLCPL(licenceBytes)
 	if err != nil {
-		return "", "", time.Now(), 0, 0, time.Now(), time.Now(), err
+		return nil, err
 	}
 
 	// make a request on publicationStatusHref
 	lsd, err := getLsdStatusDocument(publicationStatusHref)
 	if err != nil {
-		return "", "", time.Now(), printRights, copyRights, startDate, endDate, err
+		return nil, err
 	}
 
 	statusMessage := lsd.Message
 	endPotentialRights := lsd.PotentialRights.End
 	statusCode := lsd.Status
 
-	return statusMessage, statusCode, endPotentialRights, printRights, copyRights, startDate, endDate, err
+	return &LsdStatus{
+		StatusMessage:      statusMessage,
+		StatusCode:         statusCode,
+		EndPotentialRights: endPotentialRights,
+		PrintRights:        printRights,
+		CopyRights:         copyRights,
+		StartDate:          startDate,
+		EndDate:            endDate,
+	}, nil
 }

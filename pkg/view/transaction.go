@@ -2,26 +2,25 @@ package view
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
 )
 
 type TransactionView struct {
-	TransactionID             string
-	TransactionDate           time.Time
+	// TransactionID             string
+	// TransactionDate           time.Time
 	PublicationUUID           string
 	PublicationTitle          string
 	PublicationAuthor         string
 	PublicationCoverUrl       string
 	PublicationPrintRights    string
 	PublicationCopyRights     string
-	PublicationStartDate      time.Time
-	PublicationEndDate        time.Time
+	PublicationStartDate      string
+	PublicationEndDate        string
 	LicenseStatusMessage      string
 	LicenseStatusCode         string
-	LicenseEndPotentialRights time.Time
+	LicenseEndPotentialRights string
 }
 
 func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transaction) *TransactionView {
@@ -32,21 +31,23 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 		publicationAuthor = publication.Author[0].Name
 	}
 
-	statusMessage, statusCode, endPotentialRights, printRights, copyRights, startDate, endDate, err := lcp.GetLsdStatus(transaction.LicenceId, transaction.User.Email, transaction.User.LcpHintMsg, transaction.User.LcpPassHash)
+	lsdStatus, err := lcp.GetLsdStatus(transaction.LicenceId, transaction.User.Email, transaction.User.LcpHintMsg, transaction.User.LcpPassHash)
+	if err != nil {
+		fmt.Println("LSD STATUS Error from (" + transaction.LicenceId + ")")
+		lsdStatus = &lcp.LsdStatus{}
+	}
 
 	return &TransactionView{
-		TransactionID:             fmt.Sprintf("%d", transaction.ID),
-		TransactionDate:           transaction.CreatedAt,
 		PublicationUUID:           transaction.Publication.UUID,
 		PublicationTitle:          transaction.Publication.Title,
 		PublicationAuthor:         publicationAuthor,
 		PublicationCoverUrl:       publication.CoverUrl,
-		PublicationPrintRights:    fmt.Sprintf("%d", printRights),
-		PublicationCopyRights:     fmt.Sprintf("%d", copyRights),
-		PublicationStartDate:      startDate,
-		PublicationEndDate:        endDate,
-		LicenseStatusMessage:      statusMessage,
-		LicenseStatusCode:         statusCode,
-		LicenseEndPotentialRights: endPotentialRights,
+		PublicationPrintRights:    fmt.Sprintf("%d", lsdStatus.PrintRights),
+		PublicationCopyRights:     fmt.Sprintf("%d", lsdStatus.CopyRights),
+		PublicationStartDate:      lsdStatus.StartDate.Format("2006-01-02 15:04:05"),
+		PublicationEndDate:        lsdStatus.EndDate.Format("2006-01-02 15:04:05"),
+		LicenseStatusMessage:      lsdStatus.StatusMessage,
+		LicenseStatusCode:         lsdStatus.StatusCode,
+		LicenseEndPotentialRights: lsdStatus.EndPotentialRights.Format("2006-01-02 15:04:05"),
 	}
 }
