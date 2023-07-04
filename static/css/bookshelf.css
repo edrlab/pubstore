@@ -39,8 +39,13 @@ td {
     background: #1c7430;
 }
 
-.expired {
+.expired,
+.cancelled {
     background: #a2a1a1;
+}
+
+.revoked {
+    background: #f35b5b;
 }
 
 .fa-cloud-arrow-down {
@@ -63,4 +68,25 @@ td {
 
 .purchase-publication:hover {
     background: rgba(167, 198, 248, 0.76);
+}
+
+.book-cover-container {
+    position: relative;
+}
+
+
+.book-cover-container .status {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    z-index: 10;
+    text-align: center;
+}
+
+.book-cover-container .status i {
+    margin-right: 10px;
+}
+
+.book-cover-container .status i:hover {
+    color: black;
 }

@@ -74,6 +74,11 @@ header nav ul li a img {
     cursor: pointer;
     border: none;
     background: transparent;
+    transition: 200ms;
+}
+
+.header-options a:hover {
+    font-weight: bold;
 }
 
 .header-options_settings {
@@ -367,6 +372,7 @@ footer h5 {
         margin-bottom: 10px;
     }
 }
+
 
 @media screen and (max-width: 600px) {
     .header-infos {

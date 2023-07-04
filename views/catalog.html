@@ -14,9 +14,9 @@
 {{define "content"}}
     <div class="main-content-header">
         <h2>Catalog</h2>
-        <p>Page {{.currentPage}}</p>
+<!--        <p>Page {{.currentPage}}</p>-->
         <h3>{{.currentFacetValue}}</h3>
-        <p>Results by page : {{.currentPageSize}}</p>
+<!--        <p>Results by page : {{.currentPageSize}}</p>-->
         <p>{{.publicationCount}} results found</p>
     </div>
     <div class="catalog-content">
@@ -73,7 +73,7 @@
                     <a href="/catalog/publication/{{.UUID}}">
                         <div class="book-cover-container">
                             <img class="book-cover" src="{{.CoverHref}}">
-                            <i class="fa-solid fa-bookmark"></i>
+                            <!--<i class="fa-solid fa-bookmark"></i>-->
                         </div>
                         <p class="book-title">{{.Title}}</p>
                         <p class="book-author">{{.Author}}</p>

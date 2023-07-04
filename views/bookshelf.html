@@ -2,6 +2,7 @@
 <link href="/static/css/style.css" rel="stylesheet" />
 <link href="/static/css/bookshelf.css" rel="stylesheet">
 <link href="/static/css/catalog.css" rel="stylesheet">
+<script type="module" src="/static/js/main.js"></script>
 <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
@@ -12,6 +13,7 @@
         <a href="/catalog/publication/{{.PublicationUUID}}">
             <div class="book-cover-container">
                 <img class="book-cover" src="{{.PublicationCoverUrl}}">
+                <span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span>
             </div>
             <p class="book-title">{{.PublicationTitle}}</p>
             <p class="book-author">{{.PublicationAuthor}}</p>
@@ -20,7 +22,7 @@
     {{end}}
 </ul>
 
-    <table class="purchasesListContainer">
+    <table class="purchasesListContainer" style="display: none">
         <thead>
         <tr>
             <th scope="col">Publication</th>
