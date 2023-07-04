@@ -30,9 +30,11 @@
     pointer-events: auto;
     background-color: #fff;
     background-clip: padding-box;
-    border: 1px solid rgba(0,0,0,.2);
+    border: none;
     border-radius: 0.3rem;
     outline: 0;
+    box-shadow: 28px 28px 55px rgba(0,0,0,0.3),
+    -28px -28px 55px rgba(0,0,0,0.3);
 }
 
 .modal-body-publications {

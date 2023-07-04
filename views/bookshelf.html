@@ -1,10 +1,26 @@
 {{define "head"}}
 <link href="/static/css/style.css" rel="stylesheet" />
 <link href="/static/css/bookshelf.css" rel="stylesheet">
+<link href="/static/css/catalog.css" rel="stylesheet">
 <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
 {{define "content"}}
+
+<ul class="book-list" id="searchList">
+    {{range .transactions}}
+    <li>
+        <a href="/catalog/publication/{{.PublicationUUID}}">
+            <div class="book-cover-container">
+                <img class="book-cover" src="{{.PublicationCoverUrl}}">
+            </div>
+            <p class="book-title">{{.PublicationTitle}}</p>
+            <p class="book-author">{{.PublicationAuthor}}</p>
+        </a>
+    </li>
+    {{end}}
+</ul>
+
     <table class="purchasesListContainer">
         <thead>
         <tr>
@@ -18,7 +34,7 @@
             <th scope="col">Download</th>
         </tr>
         </thead>
-        <tbody class="purchaseList" id="searchList">
+        <tbody class="purchaseList">
         {{range .transactions}}
         <tr>
             <td><a href="/catalog/publication/{{.PublicationUUID}}" class="purchase-publication"><img src={{.PublicationCoverUrl}} class="purchase-cover"><span>{{.PublicationTitle}} <br> by <br> {{.PublicationAuthor}}</span></a></td>
@@ -27,7 +43,7 @@
             <td>{{.PublicationStartDate}}</td>
             <td>{{.PublicationEndDate}}</td>
             <td>{{.LicenseEndPotentialRights}}</td>
-            <td><span class="status {{.LicenseStatusMessage}}">{{.LicenseStatusMessage}}</span></td>
+            <td><span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span></td>
             <td><a href="/catalog/publication/{{.PublicationUUID}}/license"><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
         </tr>
         {{end}}

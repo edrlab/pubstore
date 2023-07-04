@@ -1,7 +1,13 @@
 {{define "head"}}
     <link href="/static/css/style.css" rel="stylesheet" />
     <link href="/static/css/catalog.css" rel="stylesheet">
-    <script type="module" src="/static/js/filter-categories.js"></script>
+    <script type="module" defer>
+        const dropdown = document.querySelectorAll('.dropdown');
+
+        dropdown.forEach(input => input.addEventListener('click', function() {
+            input.classList.toggle('active')
+        }));
+    </script>
     <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
@@ -57,7 +63,9 @@
                     </ul>
                 </li>
             </ul>
-            <a href="/catalog" class="reset"></a>
+            {{if .currentFacetValue}}
+            <a href="/catalog" class="reset">Clear Filter</a>
+            {{end}}
         </aside>
         <ul class="book-list" id="searchList">
             {{range .publications}}
@@ -65,6 +73,7 @@
                     <a href="/catalog/publication/{{.UUID}}">
                         <div class="book-cover-container">
                             <img class="book-cover" src="{{.CoverHref}}">
+                            <i class="fa-solid fa-bookmark"></i>
                         </div>
                         <p class="book-title">{{.Title}}</p>
                         <p class="book-author">{{.Author}}</p>
@@ -75,8 +84,12 @@
     </div>
     <div class="pages">
         <p>Page</p>
-        {{range .pageRange}}
-        <a href="/catalog?page={{.}}">{{.}}</a>
-        {{end}}
+            {{range $page := .pageRange}}
+                {{ if eq $page $.currentPage }}
+                <p>hello</p>
+                {{ else }}
+                <a href="/catalog?page={{.}}">{{$page}}</a>
+                {{end}}
+            {{end}}
     </div>
 {{end}}

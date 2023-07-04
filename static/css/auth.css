@@ -1,15 +1,16 @@
-.signin-page {
+.signin-page,
+.signup-page {
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.signin-container {
+.signin-container,
+.signup-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 500px;
-    height: 400px;
     margin-bottom: 50px;
     border-radius: 51px;
     background: rgba(235, 235, 235, 0.51);
@@ -19,16 +20,19 @@
     gap: 50px;
 }
 
-.signin-container h2 {
+.signin-container h2,
+.signup-container h2 {
     font-size: 30px;
 }
 
-.user-not-found {
+.user-not-found,
+.user-creation-failed {
     background-color: #ffcccc;
     padding: 10px
 }
 
-.signin-container form {
+.signin-container form,
+.signup-container form {
     text-align: center;
     padding: 20px;
     font-size: 24px;
@@ -39,11 +43,14 @@
     gap: 30px;
 }
 
-.signin-container form input {
+.signin-container form input,
+.signup-container form input {
     height: 20px;
+    width: 200px;
 }
 
-.signin-container form input[type=submit] {
+.signin-container form input[type=submit],
+.signup-container form input[type=submit] {
     font-size: 18px;
     border: 1px solid #DDDBDD;
     border-radius: 25px;
@@ -58,7 +65,8 @@
     right: 40px;*/
 }
 
-.signin-container form input[type=submit]:hover {
+.signin-container form input[type=submit]:hover,
+.signup-container form input[type=submit]:hover {
     box-shadow: 5px 5px 5px grey;
 }
 

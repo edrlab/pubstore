@@ -3,6 +3,25 @@
 <link href="/static/css/publication.css" rel="stylesheet">
 <link href="/static/css/modal.css" rel="stylesheet">
 <script defer src="/static/js/purchase-modal.js"></script>
+<script defer>
+    window.addEventListener("load", function(event) {
+        document.querySelectorAll('.tab-bar .tab').forEach(function(tab) {
+            if (!tab.dataset.for) {
+                return;
+            }
+            tab.addEventListener('click', function() {
+                tab.parentElement.querySelectorAll('.tab').forEach(function(atab) {
+                    atab.classList.remove('tab--active');
+                });
+                tab.classList.add('tab--active');
+                tab.parentElement.parentElement.querySelectorAll('.tabbed').forEach(function(tabbed) {
+                    tabbed.style.display = 'none';
+                });
+                tab.parentElement.parentElement.querySelector('#' + tab.dataset.for).style.display = 'block';
+            });
+        });
+    });
+</script>
 <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
@@ -25,7 +44,7 @@
             <div class="login">
                 <a href="/signin" id="login-button">Sign In</a>
                 <p>or</p>
-                <a href="" id="signup-button">Sign Up</a>
+                <a href="/signup" id="signup-button">Sign Up</a>
             </div>
             {{ end }}
         </div>
@@ -35,7 +54,7 @@
         <div class="authors">
             <p>written by</p>
             {{ range .authors}}
-            <h3>{{.}}</h3>
+            <a href="/catalog?author={{.}}">{{.}}</a>
             {{end}}
         </div>
         <div class="pub-categories-tags">
@@ -43,20 +62,33 @@
             <a href="/catalog?category={{.}}" class="tag">{{.}}</a>
             {{end}}
         </div>
-        <div class="summary">
+        <div class="tab-bar">
+            <button class="tab tab--active" data-for="summary">Summary</button>
+            <button class="tab" data-for="lcp-infos">LCP Infos</button>
+        </div>
+            <p id="summary" class="tabbed" style="display : block;">{{.description}}</p>
+            <div class="lcp-infos tabbed" id="lcp-infos" style="display : none;">
+                <p>Copy : {{.PublicationCopyRights}}</p>
+                <p>Print : {{.PublicationPrintRights}}</p>
+                <p>Start Date : {{.PublicationStartDate}}</p>
+                <p>End Date : {{.PublicationEndDate}}</p>
+                <p>End Potential Rights : {{.LicenseEndPotentialRights}}</p>
+                <p class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</p>
+            </div>
+<!--        <div class="summary">
             <h4>Summary</h4>
             <p>{{.description}}</p>
-        </div>
+        </div>-->
     </div>
 </div>
-<div class="related">
+<!--<div class="related">
     <h4>More from this author</h4>
     <div class="related-pub">
         <a href="#"><img src="" class="related-pub-cover"/></a>
         <a href="#"><img src="" class="related-pub-cover"/></a>
         <a href="#"><img src="" class="related-pub-cover"/></a>
     </div>
-</div>
+</div>-->
 
 <div class="fade" id="modal-window" tabindex="-1" style="display: none;" aria-hidden="true">
     <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">

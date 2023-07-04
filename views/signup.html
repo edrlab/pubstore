@@ -1,30 +1,47 @@
 
 {{define "head"}}
-
+<link href="/static/css/style.css" rel="stylesheet" />
+<link href="/static/css/catalog.css" rel="stylesheet">
+<link href="/static/css/auth.css" rel="stylesheet">
+<script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
 
 {{define "content"}}
-<h2>Sign Up</h2>
-{{if .userCreationFailed}}
-<div style="background-color: #ffcccc; padding: 10px;">User creation failed</div>
-{{end}}
-<form action="/signup" method="post">
-    <label for="name">Name:</label>
-    <input type="text" name="name" id="name" required><br>
+<div class="signup-page">
+    <div class="signup-container">
+        <h2>Sign Up</h2>
+        {{if .userCreationFailed}}
+        <div class="user-creation-failed">User creation failed</div>
+        {{end}}
+        <form action="/signup" method="post">
+            <div class="signup-name">
+                <label for="name">Name:</label>
+                <input type="text" name="name" id="name" required>
+            </div>
 
-    <label for="email">Email:</label>
-    <input type="email" name="email" id="email" required><br>
+            <div class="signup-email">
+                <label for="email">Email:</label>
+                <input type="email" name="email" id="email" required>
+            </div>
 
-    <label for="password">Password:</label>
-    <input type="password" name="password" id="password" required><br>
+            <div class="signup-password">
+                <label for="password">Password:</label>
+                <input type="password" name="password" id="password" required>
+            </div>
 
-    <label for="lcpPass">LCP Password:</label>
-    <input type="password" name="lcpPass" id="lcpPass" required><br>
+            <div class="signup-lcpPass">
+                <label for="lcpPass">LCP Passphrase:</label>
+                <input type="password" name="lcpPass" id="lcpPass" required>
+            </div>
 
-    <label for="lcpHint">LCP Hint Message:</label>
-    <input type="text" name="lcpHint" id="lcpHint"><br>
+            <div class="signup-lcpHint">
+                <label for="lcpHint">LCP Hint Message:</label>
+                <input type="text" name="lcpHint" id="lcpHint" title="Write a phrase to remember your LCP passphrase">
+            </div>
 
-    <input type="submit" value="Signup">
-</form>
+            <input type="submit" value="Signup">
+        </form>
+    </div>
+</div>
 {{end}}
