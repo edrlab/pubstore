@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/edrlab/pubstore/pkg/config"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -86,7 +87,7 @@ func (api *Api) Rooter(r chi.Router) {
 	}))
 
 	s := oauth.NewBearerServer(
-		"Edrlab-Rocks",
+		config.OauthSeed,
 		time.Second*120,
 		&UserVerifier{stor: api.stor},
 		nil)
@@ -107,14 +108,14 @@ func (api *Api) Rooter(r chi.Router) {
 
 	r.Route("/api/v1/publication", func(publicationRouter chi.Router) {
 		publicationRouter.Group(func(postRouter chi.Router) {
-			postRouter.Use(oauth.Authorize("Edrlab-Rocks", nil))
+			postRouter.Use(oauth.Authorize(config.OauthSeed, nil))
 			postRouter.Post("/", api.createPublicationHandler)
 		})
 		publicationRouter.Route("/{id}", func(idRouter chi.Router) {
 			idRouter.Use(api.publicationCtx)
 			idRouter.Get("/", api.getPublicationHandler)
 			idRouter.Group(func(idRouterGroup chi.Router) {
-				idRouterGroup.Use(oauth.Authorize("Edrlab-Rocks", nil))
+				idRouterGroup.Use(oauth.Authorize(config.OauthSeed, nil))
 				idRouterGroup.Put("/", api.updatePublicationHandler)
 				idRouterGroup.Delete("/", api.deletePublicationHandler)
 			})
@@ -122,14 +123,14 @@ func (api *Api) Rooter(r chi.Router) {
 	})
 	r.Route("/api/v1/user", func(userRouter chi.Router) {
 		userRouter.Group(func(postRouter chi.Router) {
-			postRouter.Use(oauth.Authorize("Edrlab-Rocks", nil))
+			postRouter.Use(oauth.Authorize(config.OauthSeed, nil))
 			postRouter.Post("/", api.createUserHandler)
 		})
 		userRouter.Route("/{id}", func(idRouter chi.Router) {
 			idRouter.Use(api.userCtx)
 			idRouter.Get("/", api.getUserHandler)
 			idRouter.Group(func(idRouterGroup chi.Router) {
-				idRouterGroup.Use(oauth.Authorize("Edrlab-Rocks", nil))
+				idRouterGroup.Use(oauth.Authorize(config.OauthSeed, nil))
 				idRouterGroup.Put("/", api.updateUserHandler)
 				idRouterGroup.Delete("/", api.deleteUserHandler)
 			})

@@ -25,8 +25,7 @@ type Web struct {
 	service *service.Service
 }
 
-func Init(s *stor.Stor, service *service.Service) *Web {
-	v := view.Init(s)
+func Init(s *stor.Stor, service *service.Service, v *view.View) *Web {
 	return &Web{stor: s, view: v, service: service}
 }
 
