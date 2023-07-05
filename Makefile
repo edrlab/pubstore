@@ -17,6 +17,8 @@ clean:
 test:
 	go test -coverpkg=./pkg/./... ./pkg/./...
 
+build: $(pubstore)
+
 $(pubstore):	
 	GOPATH=$(BUILD_DIR) go install ./$@
 	
