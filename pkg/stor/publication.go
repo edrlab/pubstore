@@ -14,7 +14,11 @@ type Language struct {
 }
 
 func (l *Language) BeforeSave(tx *gorm.DB) (err error) {
-	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	tx.Statement.AddClause(clause.OnConflict{
+		DoNothing: false,
+		Columns:   []clause.Column{{Name: "code"}},
+		DoUpdates: clause.AssignmentColumns([]string{"code"}), //map[string]interface{}{"code": "EXCLUDED.code"}),
+	})
 	return
 }
 
@@ -24,7 +28,11 @@ type Publisher struct {
 }
 
 func (l *Publisher) BeforeSave(tx *gorm.DB) (err error) {
-	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	tx.Statement.AddClause(clause.OnConflict{
+		DoNothing: false,
+		Columns:   []clause.Column{{Name: "name"}},
+		DoUpdates: clause.AssignmentColumns([]string{"name"}), //map[string]interface{}{"name": "EXCLUDED.name"}),
+	})
 	return
 }
 
@@ -34,7 +42,11 @@ type Author struct {
 }
 
 func (l *Author) BeforeSave(tx *gorm.DB) (err error) {
-	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	tx.Statement.AddClause(clause.OnConflict{
+		DoNothing: false,
+		Columns:   []clause.Column{{Name: "name"}},
+		DoUpdates: clause.AssignmentColumns([]string{"name"}), //map[string]interface{}{"name": "EXCLUDED.name"}),
+	})
 	return
 }
 
@@ -44,7 +56,11 @@ type Category struct {
 }
 
 func (l *Category) BeforeSave(tx *gorm.DB) (err error) {
-	tx.Statement.AddClause(clause.OnConflict{DoNothing: false})
+	tx.Statement.AddClause(clause.OnConflict{
+		DoNothing: false,
+		Columns:   []clause.Column{{Name: "name"}},
+		DoUpdates: clause.AssignmentColumns([]string{"name"}), //map[string]interface{}{"name": "EXCLUDED.name"}),
+	})
 	return
 }
 
@@ -55,7 +71,7 @@ type Publication struct {
 	DatePublication time.Time
 	Description     string
 	CoverUrl        string
-	Language        []Language  `gorm:"many2many:publication_language;save_association:false"`
+	Language        []Language  `gorm:"many2many:publication_language;"`
 	Publisher       []Publisher `gorm:"many2many:publication_publisher;"`
 	Author          []Author    `gorm:"many2many:publication_author;"`
 	Category        []Category  `gorm:"many2many:publication_category;"`
@@ -91,7 +107,8 @@ func (stor *Stor) DeletePublication(publication *Publication) error {
 }
 
 func (stor *Stor) preloadPublication() *gorm.DB {
-	return stor.db.Model(&Publication{}).Preload("Author").Preload("Publisher").Preload("Language").Preload("Category")
+	return stor.db.Session(&gorm.Session{FullSaveAssociations: true}).Model(&Publication{}).Preload("Author").Preload("Publisher").Preload("Language").Preload("Category")
+	// return stor.db.Model(&Publication{}).Preload("Author").Preload("Publisher").Preload("Language").Preload("Category")
 }
 
 // GetPublicationByID retrieves a publication by ID
