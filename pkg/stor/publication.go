@@ -129,7 +129,7 @@ func (stor *Stor) GetAllPublications(page int, pageSize int) ([]Publication, int
 	var count int64
 	offset := (page - 1) * pageSize
 
-	if err := stor.preloadPublication().Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+	if err := stor.preloadPublication().Order(clause.OrderByColumn{Column: clause.Column{Name: "updated_at"}, Desc: true}).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -142,7 +142,7 @@ func (stor *Stor) GetPublicationsByTitle(title string, page int, pageSize int) (
 	var count int64
 	offset := (page - 1) * pageSize
 
-	if err := stor.preloadPublication().Where("Title LIKE ?", "%"+title+"%").Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+	if err := stor.preloadPublication().Where("Title LIKE ?", "%"+title+"%").Order(clause.OrderByColumn{Column: clause.Column{Name: "updated_at"}, Desc: true}).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, errors.New("publications not found")
 
@@ -161,7 +161,7 @@ func (stor *Stor) GetPublicationsByCategory(category string, page int, pageSize 
 
 	if err := stor.preloadPublication().Joins("JOIN publication_category ON publication_category.publication_id = publications.id").
 		Joins("JOIN categories ON categories.id = publication_category.category_id").
-		Where("categories.name = ?", category).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		Where("categories.name = ?", category).Order(clause.OrderByColumn{Column: clause.Column{Name: "updated_at"}, Desc: true}).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, errors.New("publications not found")
 		}
@@ -179,7 +179,7 @@ func (stor *Stor) GetPublicationsByAuthor(author string, page int, pageSize int)
 
 	if err := stor.preloadPublication().Joins("JOIN publication_author ON publication_author.publication_id = publications.id").
 		Joins("JOIN authors ON authors.id = publication_author.author_id").
-		Where("authors.name = ?", author).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		Where("authors.name = ?", author).Order(clause.OrderByColumn{Column: clause.Column{Name: "updated_at"}, Desc: true}).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, errors.New("Publication not found")
 		}
@@ -197,7 +197,7 @@ func (stor *Stor) GetPublicationsByPublisher(publisher string, page int, pageSiz
 
 	if err := stor.preloadPublication().Joins("JOIN publication_publisher ON publication_publisher.publication_id = publications.id").
 		Joins("JOIN publishers ON publishers.id = publication_publisher.publisher_id").
-		Where("publishers.name = ?", publisher).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		Where("publishers.name = ?", publisher).Order(clause.OrderByColumn{Column: clause.Column{Name: "updated_at"}, Desc: true}).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, errors.New("publications not found")
 		}
@@ -215,7 +215,7 @@ func (stor *Stor) GetPublicationsByLanguage(code string, page int, pageSize int)
 
 	if err := stor.preloadPublication().Joins("JOIN publication_language ON publication_language.publication_id = publications.id").
 		Joins("JOIN languages ON languages.id = publication_language.language_id").
-		Where("languages.code = ?", code).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
+		Where("languages.code = ?", code).Order(clause.OrderByColumn{Column: clause.Column{Name: "updated_at"}, Desc: true}).Count(&count).Offset(offset).Limit(pageSize).Find(&publications).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, errors.New("publications not found")
 		}
@@ -227,7 +227,7 @@ func (stor *Stor) GetPublicationsByLanguage(code string, page int, pageSize int)
 
 func (stor *Stor) GetCategories() ([]Category, error) {
 	var categories []Category
-	if err := stor.db.Find(&categories).Error; err != nil {
+	if err := stor.db.Order(clause.OrderByColumn{Column: clause.Column{Name: "name"}, Desc: false}).Find(&categories).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("no categories found")
 		}
@@ -239,7 +239,7 @@ func (stor *Stor) GetCategories() ([]Category, error) {
 
 func (stor *Stor) GetAuthors() ([]Author, error) {
 	var authors []Author
-	if err := stor.db.Find(&authors).Error; err != nil {
+	if err := stor.db.Order(clause.OrderByColumn{Column: clause.Column{Name: "name"}, Desc: false}).Find(&authors).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("no authors found")
 		}
@@ -251,7 +251,7 @@ func (stor *Stor) GetAuthors() ([]Author, error) {
 
 func (stor *Stor) GetPublishers() ([]Publisher, error) {
 	var publishers []Publisher
-	if err := stor.db.Find(&publishers).Error; err != nil {
+	if err := stor.db.Order(clause.OrderByColumn{Column: clause.Column{Name: "name"}, Desc: false}).Find(&publishers).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("no publishers found")
 		}
@@ -263,7 +263,7 @@ func (stor *Stor) GetPublishers() ([]Publisher, error) {
 
 func (stor *Stor) GetLanguages() ([]Language, error) {
 	var languages []Language
-	if err := stor.db.Find(&languages).Error; err != nil {
+	if err := stor.db.Order(clause.OrderByColumn{Column: clause.Column{Name: "code"}, Desc: false}).Find(&languages).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("no languages found")
 		}
