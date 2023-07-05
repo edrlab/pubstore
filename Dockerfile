@@ -18,6 +18,8 @@ WORKDIR /app
 
 # Copy the pubstore executable from the build stage
 COPY --from=build /app/pubstore .
+COPY views /app/views
+COPY static /app/static
 
 # Set the environment variables
 ENV BASE_URL="http://localhost:8080"
