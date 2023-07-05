@@ -579,7 +579,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 			"publishers":            publicationView.Publisher,
 			"languages":             publicationView.Language,
 			"categories":            publicationView.Category,
-			"licenseFound":          bool(viewTransaction != view.TransactionView{}),
+			"licenseFound":          bool(viewTransaction.PublicationUUID != ""),
 			"transaction":           viewTransaction,
 		}
 		err = goview.Render(w, http.StatusOK, "publication", goviewModel)
