@@ -6,9 +6,10 @@ A publication store which can be associated with an lcp-server
 
 ```
 
+docker run --name my-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
+
 docker build -t pubstore .
 
-docker run -p 8080:8080 -e DSN="host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai" pubstore
-
+docker run -p 8080:8080 -e DSN="host=host.docker.internal user=postgres password=mysecretpassword dbname=postgres port=5432 sslmode=disable" pubstore
 
 ```
