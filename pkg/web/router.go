@@ -556,7 +556,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 			userName = userStor.Name
 			transaction, err := web.stor.GetTransactionByUserAndPublication(userStor.ID, publicationStor.ID)
 			if err == nil {
-				viewTransaction := *web.view.GetTransactionViewFromTransactionStor(transaction)
+				viewTransaction = *web.view.GetTransactionViewFromTransactionStor(transaction)
 				if viewTransaction.LicenseStatusCode == "ready" || viewTransaction.LicenseStatusCode == "active" {
 					licenseOK = true
 				}
