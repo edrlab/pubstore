@@ -550,13 +550,14 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/404.html")
 		w.WriteHeader(http.StatusNotFound)
 	} else {
+		viewTransaction := view.TransactionView{}
 		userName := ""
 		if userStor != nil {
 			userName = userStor.Name
 			transaction, err := web.stor.GetTransactionByUserAndPublication(userStor.ID, publicationStor.ID)
 			if err == nil {
-				transactionView := web.view.GetTransactionViewFromTransactionStor(transaction)
-				if transactionView.LicenseStatusCode == "ready" || transactionView.LicenseStatusCode == "active" {
+				viewTransaction := *web.view.GetTransactionViewFromTransactionStor(transaction)
+				if viewTransaction.LicenseStatusCode == "ready" || viewTransaction.LicenseStatusCode == "active" {
 					licenseOK = true
 				}
 			}
@@ -578,6 +579,8 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 			"publishers":            publicationView.Publisher,
 			"languages":             publicationView.Language,
 			"categories":            publicationView.Category,
+			"licenseFound":          bool(viewTransaction != view.TransactionView{}),
+			"transaction":           viewTransaction,
 		}
 		err = goview.Render(w, http.StatusOK, "publication", goviewModel)
 		if err != nil {
