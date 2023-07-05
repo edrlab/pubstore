@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/edrlab/pubstore/pkg/config"
 )
 
 /**
@@ -132,9 +134,9 @@ func CreateLcpPassHash(passphrase string) string {
 	return hashString
 }
 
-func generateLicence(provider, userID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) Licence {
+func generateLicence(provider, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) Licence {
 	user := User{
-		ID:        userID,
+		ID:        userUUID,
 		Email:     userEmail,
 		Encrypted: []string{"email"},
 	}
@@ -165,14 +167,14 @@ func generateLicence(provider, userID, userEmail, textHint, hexValue string, pri
 	return licence
 }
 
-func generateLicenceFromLcpServer(pubUUID, userID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
+func generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
 
 	provider := "https://pubstore.edrlab.org"
-	licence := generateLicence(provider, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+	licence := generateLicence(provider, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
 
-	url := fmt.Sprintf("https://front-prod.edrlab.org/lcpserver/contents/%s/license", pubUUID)
-	username := "adm_username"
-	password := "adm_password"
+	url := fmt.Sprintf(config.LCP_SERVER_URL+"/contents/%s/license", pubUUID)
+	username := config.LCP_SERVER_USERNAME
+	password := config.LCP_SERVER_PASSWORD
 
 	payload, err := json.Marshal(licence)
 	if err != nil {
@@ -213,17 +215,15 @@ func generateLicenceFromLcpServer(pubUUID, userID, userEmail, textHint, hexValue
 	return body, nil
 }
 
-func LicenceBuy(pubUUID, userID, userEmail, textHint, hexValue string, printRights, copyRights int) ([]byte, error) {
-	start := time.Date(2023, 6, 14, 1, 8, 15, 0, time.FixedZone("CET", 3600))
-	end := time.Date(2100, 1, 1, 0, 0, 0, 0, time.FixedZone("CET", 3600))
-
-	return generateLicenceFromLcpServer(pubUUID, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
-
+func LicenceBuy(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int) ([]byte, error) {
+	start := time.Now()
+	end := time.Now().AddDate(100, 0, 0)
+	return generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
 }
 
-func LicenceLoan(pubUUID, userID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
+func LicenceLoan(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
 
-	return generateLicenceFromLcpServer(pubUUID, userID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+	return generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
 }
 
 func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue string) ([]byte, error) {
@@ -254,9 +254,9 @@ func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue stri
 		return nil, err
 	}
 
-	url := "https://front-prod.edrlab.org/lcpserver/licenses/" + licenceId
-	username := "adm_username"
-	password := "adm_password"
+	url := config.LCP_SERVER_URL + "/licenses/" + licenceId
+	username := config.LCP_SERVER_USERNAME
+	password := config.LCP_SERVER_PASSWORD
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {

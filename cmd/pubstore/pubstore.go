@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,22 +11,28 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/api"
+	"github.com/edrlab/pubstore/pkg/config"
 	"github.com/edrlab/pubstore/pkg/opds"
-	"github.com/edrlab/pubstore/pkg/service"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/view"
 	"github.com/edrlab/pubstore/pkg/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 
-	_stor := stor.Init("pub.db")
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("no .env file found")
+	}
+	config.Init()
+
+	_stor := stor.Init(config.DSN)
 	_api := api.Init(_stor)
-	_service := service.Init(_stor)
 	_view := view.Init(_stor)
-	_web := web.Init(_stor, _service, _view)
+	_web := web.Init(_stor, _view)
 	_opds := opds.Init(_stor)
 
 	r := chi.NewRouter()
@@ -38,7 +45,7 @@ func main() {
 	r.Group(_opds.Router)
 
 	// The HTTP Server
-	server := &http.Server{Addr: "0.0.0.0:8080", Handler: r}
+	server := &http.Server{Addr: fmt.Sprintf("0.0.0.0:%d", config.PORT), Handler: r}
 
 	// Server run context
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
@@ -68,8 +75,8 @@ func main() {
 	}()
 
 	// Run the server
-	log.Println("Server started on port 8080")
-	err := server.ListenAndServe()
+	log.Println("Server started on port " + fmt.Sprintf("%d", config.PORT))
+	err = server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

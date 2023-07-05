@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -13,13 +12,13 @@ type Stor struct {
 	db *gorm.DB
 }
 
-func Init(sqliteDsn string) *Stor {
+func Init(dsn string) *Stor {
 
-	if len(sqliteDsn) == 0 {
-		sqliteDsn = "pub.db"
+	if len(dsn) == 0 {
+		dsn = "pub.db"
 	}
 
-	db, err := gorm.Open(sqlite.Open(sqliteDsn), &gorm.Config{
+	db, err := gorm.Open(GormDialector(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
