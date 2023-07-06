@@ -30,7 +30,7 @@ ENV LCP_SERVER_PASSWORD="adm_password"
 ENV DSN=""
 
 # Expose the port on which the HTTP server will listen
-EXPOSE 8080
+EXPOSE $PORT
 
 # Run the pubstore when the container starts
 CMD ["./pubstore"]
