@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/config"
+	_ "github.com/edrlab/pubstore/pkg/docs"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/oauth"
 	"github.com/go-playground/validator/v10"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -72,6 +74,26 @@ func (*UserVerifier) StoreTokenID(tokenType oauth.TokenType, credential, tokenID
 	return nil
 }
 
+// @title Pubstore API
+// @version 1.0
+// @description Pubstore API.
+
+// @contact.name edrlab
+// @contact.url https://edrlab.org
+// @contact.email support@edrlab.org
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host pubstore.edrlab.org
+// @BasePath /api/v1
+
+//	@securitydefinitions.oauth2.password	OAuth2Password
+//	@tokenUrl								https://pubstore.edrlab.org/api/v1/token
+//	@scope.read								Grants read access
+//	@scope.write							Grants write access
+//	@scope.admin							Grants read and write access to administrative information:w
+
 func (api *Api) Rooter(r chi.Router) {
 
 	validate = validator.New()
@@ -91,6 +113,8 @@ func (api *Api) Rooter(r chi.Router) {
 		time.Second*120,
 		&UserVerifier{stor: api.stor},
 		nil)
+
+	r.Get("/api/v1/swagger/*", httpSwagger.WrapHandler)
 
 	/*
 		 Generate Token using username & password

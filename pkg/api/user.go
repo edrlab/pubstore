@@ -74,6 +74,17 @@ func ConvertUserToUserStor(u User, originalUser *stor.User) *stor.User {
 	  "lcpPassHash": "hash123"
 	}' http://localhost:8080/api/v1/user
 */
+
+// @Summary Create a new user
+// @Description Create a new user with the provided payload
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body User true "User object"
+// @Success 201 {object} User "User created successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request payload or validation errors"
+// @Failure 500 {object} ErrorResponse "Failed to create user"
+// @Router /user [post]
 func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var viewUser User
@@ -124,6 +135,15 @@ func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Get a user by ID
+// @Description Retrieve a user by its ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} User "OK"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /user/{id} [get]
 func (api *Api) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	storUser, ok := ctx.Value("user").(*stor.User)
@@ -147,6 +167,17 @@ func (api *Api) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Update a user by ID
+// @Description Update a user with the provided payload
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param user body User true "User object"
+// @Success 200 {object} User "User updated successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request payload or validation errors"
+// @Failure 500 {object} ErrorResponse "Failed to update user"
+// @Router /user/{id} [put]
 func (api *Api) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	storUser, ok := ctx.Value("user").(*stor.User)
@@ -198,6 +229,15 @@ func (api *Api) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Delete a user by ID
+// @Description Delete a user by its ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 "User deleted successfully"
+// @Failure 500 {object} ErrorResponse "Failed to delete user"
+// @Router /user/{id} [delete]
 func (api *Api) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	storUser, ok := ctx.Value("user").(*stor.User)

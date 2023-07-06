@@ -1,0 +1,311 @@
+basePath: /api/v1
+definitions:
+  api.Author:
+    properties:
+      name:
+        type: string
+    type: object
+  api.Category:
+    properties:
+      name:
+        type: string
+    type: object
+  api.Language:
+    properties:
+      code:
+        type: string
+    type: object
+  api.Publication:
+    properties:
+      author:
+        items:
+          $ref: '#/definitions/api.Author'
+        type: array
+      category:
+        items:
+          $ref: '#/definitions/api.Category'
+        type: array
+      coverUrl:
+        type: string
+      datePublication:
+        type: string
+      description:
+        type: string
+      language:
+        items:
+          $ref: '#/definitions/api.Language'
+        type: array
+      publisher:
+        items:
+          $ref: '#/definitions/api.Publisher'
+        type: array
+      title:
+        type: string
+      uuid:
+        type: string
+    type: object
+  api.Publisher:
+    properties:
+      name:
+        type: string
+    type: object
+  api.User:
+    properties:
+      email:
+        type: string
+      lcpHintMsg:
+        type: string
+      lcpPassHash:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      uuid:
+        type: string
+    type: object
+host: pubstore.edrlab.org
+info:
+  contact:
+    email: support@edrlab.org
+    name: edrlab
+    url: https://edrlab.org
+  description: Pubstore API.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Pubstore API
+  version: "1.0"
+paths:
+  /publication:
+    post:
+      consumes:
+      - application/json
+      description: Create a new publication with the provided payload
+      parameters:
+      - description: Publication object
+        in: body
+        name: publication
+        required: true
+        schema:
+          $ref: '#/definitions/api.Publication'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Publication created successfully
+          schema:
+            $ref: '#/definitions/api.Publication'
+        "400":
+          description: Invalid request payload or validation errors
+          schema:
+            type: string
+        "500":
+          description: Failed to create publication
+          schema:
+            type: string
+      summary: Create a new publication
+      tags:
+      - publications
+  /publication/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a publication by its ID
+      parameters:
+      - description: Publication ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Publication deleted successfully
+        "500":
+          description: Failed to delete publication
+          schema:
+            type: string
+      summary: Delete a publication by ID
+      tags:
+      - publications
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a publication by its ID
+      parameters:
+      - description: Publication ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Publication'
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get a publication by ID
+      tags:
+      - publications
+    put:
+      consumes:
+      - application/json
+      description: Update a publication with the provided payload
+      parameters:
+      - description: Publication ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Publication object
+        in: body
+        name: publication
+        required: true
+        schema:
+          $ref: '#/definitions/api.Publication'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Publication updated successfully
+          schema:
+            $ref: '#/definitions/api.Publication'
+        "400":
+          description: Invalid request payload or validation errors
+          schema:
+            type: string
+        "500":
+          description: Failed to update publication
+          schema:
+            type: string
+      summary: Update a publication by ID
+      tags:
+      - publications
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the provided payload
+      parameters:
+      - description: User object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/api.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/api.User'
+        "400":
+          description: Invalid request payload or validation errors
+          schema:
+            type: string
+        "500":
+          description: Failed to create user
+          schema:
+            type: string
+      summary: Create a new user
+      tags:
+      - users
+  /user/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted successfully
+        "500":
+          description: Failed to delete user
+          schema:
+            type: string
+      summary: Delete a user by ID
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a user by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.User'
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user with the provided payload
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/api.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            $ref: '#/definitions/api.User'
+        "400":
+          description: Invalid request payload or validation errors
+          schema:
+            type: string
+        "500":
+          description: Failed to update user
+          schema:
+            type: string
+      summary: Update a user by ID
+      tags:
+      - users
+securityDefinitions:
+  OAuth2Password:
+    flow: password
+    scopes:
+      admin: "\t\t\t\t\t\t\tGrants read and write access to administrative information:w"
+      read: "\t\t\t\t\t\t\t\tGrants read access"
+      write: "\t\t\t\t\t\t\tGrants write access"
+    tokenUrl: https://pubstore.edrlab.org/api/v1/token
+    type: oauth2
+swagger: "2.0"

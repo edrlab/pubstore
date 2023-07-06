@@ -7,7 +7,9 @@ rm=rm -rf
 
 pubstore=cmd/pubstore/pubstore.go
 
-.PHONY: all clean $(pubstore) test
+swag=~/go/bin/swag
+
+.PHONY: all clean $(pubstore) test docs run
 
 all: $(pubstore)
 
@@ -19,6 +21,11 @@ test:
 
 build: $(pubstore)
 
+docs:
+	$(swag) init -g router.go -d pkg/api -o pkg/docs
+
 $(pubstore):	
 	GOPATH=$(BUILD_DIR) go install ./$@
 	
+run:
+	./build/bin/pubstore
