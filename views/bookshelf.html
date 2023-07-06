@@ -1,57 +1,53 @@
 {{define "head"}}
-
-<style>
-table {
-  width: 100%;
-  table-layout: auto;
-  border-collapse: collapse;
-}
-
-td, th {
-  padding: 10px;
-  border: 1px solid black;
-}
-
-</style>
-
+<link href="/static/css/style.css" rel="stylesheet" />
+<link href="/static/css/bookshelf.css" rel="stylesheet">
+<link href="/static/css/catalog.css" rel="stylesheet">
+<script type="module" src="/static/js/main.js"></script>
+<script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
-
 {{define "content"}}
-<hr>
-
-<table>
-
-    <tr>
-        <th>Cover</th>
-        <th>Publication</th>
-        <th>Publication Title</th>
-        <th>Publication Auteur</th>
-        <th>Publication Print Rights</th>
-        <th>Publication Copy Rights</th>
-        <th>Publication Start Date</th>
-        <th>Publication End Date</th>
-        <th>License Status Message</th>
-        <th>License End Potential Rights</th>
-        <th>Download</th>
-    </tr>
-
+<ul class="book-list" id="searchList">
     {{range .transactions}}
-    <tr>
-        <td><img src="{{.PublicationCoverUrl}}" /></td>
-        <td><a href="/catalog/publication/{{.PublicationUUID}}">Link</a></td>
-        <td>{{.PublicationTitle}}</td>
-        <td>{{.PublicationAuthor}}</td>
-        <td>{{.PublicationPrintRights}}</td>
-        <td>{{.PublicationCopyRights}}</td>
-        <td>{{.PublicationStartDate}}</td>
-        <td>{{.PublicationEndDate}}</td>
-        <td>{{.LicenseStatusMessage}}</td>
-        <td>{{.LicenseEndPotentialRights}}</td>
-        <td><a href="/catalog/publication/{{.PublicationUUID}}/license">Download</a></td>
-
-    </tr>
+    <li>
+        <a href="/catalog/publication/{{.PublicationUUID}}">
+            <div class="book-cover-container">
+                <img class="book-cover" src="{{.PublicationCoverUrl}}">
+                <span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span>
+            </div>
+            <p class="book-title">{{.PublicationTitle}}</p>
+            <p class="book-author">{{.PublicationAuthor}}</p>
+        </a>
+    </li>
     {{end}}
-</table>
+</ul>
 
+    <table class="purchasesListContainer" style="display: none">
+        <thead>
+        <tr>
+            <th scope="col">Publication</th>
+            <th scope="col">Copy</th>
+            <th scope="col">Print</th>
+            <th scope="col">Start Date</th>
+            <th scope="col">End Date</th>
+            <th scope="col">End Potential Rights</th>
+            <th scope="col">Status</th>
+            <th scope="col">Download</th>
+        </tr>
+        </thead>
+        <tbody class="purchaseList">
+        {{range .transactions}}
+        <tr>
+            <td><a href="/catalog/publication/{{.PublicationUUID}}" class="purchase-publication"><img src={{.PublicationCoverUrl}} class="purchase-cover"><span>{{.PublicationTitle}} <br> by <br> {{.PublicationAuthor}}</span></a></td>
+            <td>{{.PublicationCopyRights}}</td>
+            <td>{{.PublicationPrintRights}}</td>
+            <td>{{.PublicationStartDate}}</td>
+            <td>{{.PublicationEndDate}}</td>
+            <td>{{.LicenseEndPotentialRights}}</td>
+            <td><span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span></td>
+            <td><a href="/catalog/publication/{{.PublicationUUID}}/license"><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
+        </tr>
+        {{end}}
+        </tbody>
+    </table>
 {{end}}

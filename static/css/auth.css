@@ -1,0 +1,72 @@
+.signin-page,
+.signup-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.signin-container,
+.signup-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 500px;
+    margin-bottom: 50px;
+    border-radius: 51px;
+    background: rgba(235, 235, 235, 0.51);
+    box-shadow:  45px 45px 97px #ebebeb,
+    -45px -45px 97px #ffffff;
+    position: relative;
+    gap: 50px;
+}
+
+.signin-container h2,
+.signup-container h2 {
+    font-size: 30px;
+}
+
+.user-not-found,
+.user-creation-failed {
+    background-color: #ffcccc;
+    padding: 10px
+}
+
+.signin-container form,
+.signup-container form {
+    text-align: center;
+    padding: 20px;
+    font-size: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    justify-content: center;
+    gap: 30px;
+}
+
+.signin-container form input,
+.signup-container form input {
+    height: 20px;
+    width: 200px;
+}
+
+.signin-container form input[type=submit],
+.signup-container form input[type=submit] {
+    font-size: 18px;
+    border: 1px solid #DDDBDD;
+    border-radius: 25px;
+    width: 100px;
+    height: 40px;
+    background-color: black;
+    color: white;
+    padding: 10px 15px;
+    cursor: pointer;
+/*    position: absolute;
+    bottom: 20px;
+    right: 40px;*/
+}
+
+.signin-container form input[type=submit]:hover,
+.signup-container form input[type=submit]:hover {
+    box-shadow: 5px 5px 5px grey;
+}
+

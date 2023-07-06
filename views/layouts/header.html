@@ -1,12 +1,39 @@
-<header>
-    <a href="/catalog">catalog</a>
-
-    {{ if .userIsAuthenticated}}
-    <a href="/user/bookshelf">bookshelf</a>
-    <a href="/signout">signout</a>
-    <p>Hello {{.userName}}</p>
-    {{ else }}
-    <a href="/signin">signin</a>
-    <a href="/signup">signup</a>
-    {{ end }}
-</header>
+<div class="header-infos">
+    <div class="header-infos-title">
+        <a href="/index"><img src="/static/images/edrlab-logo.jpeg" alt="logo" class="logo"/></a>
+        <h1>PubStore</h1>
+    </div>
+    <div class="header-options">
+        <div class="header-options_settings">
+            {{ if .userIsAuthenticated}}
+            <p id="user-options">Hello {{.userName}}</p>
+            <p>|</p>
+            <a href="/signout">Sign Out</a>
+            {{ else }}
+            <a href="/signin" id="login-button">Sign In</a>
+            <a href="/signup" id="signup-button">Sign Up</a>
+            {{ end }}
+        </div>
+    </div>
+</div>
+<nav>
+    <ul>
+        <li><a href="/catalog">Catalog</a></li>
+        {{ if .userIsAuthenticated}}
+        <li><a href="/user/bookshelf">Bookshelf</a></li>
+        {{else }}
+        <li><a href="/signin" class="inactive">Bookshelf</a></li>
+        {{ end }}
+    </ul>
+    <form class="header-options_searchbar">
+        <input
+                type="search"
+                id="searchBar"
+                name="q"
+                placeholder="Search a publication"
+        />
+        <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </form>
+</nav>
+<section id="Banner">
+</section>

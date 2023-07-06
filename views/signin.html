@@ -1,21 +1,32 @@
 
 {{define "head"}}
-
+  <link href="/static/css/style.css" rel="stylesheet" />
+  <link href="/static/css/catalog.css" rel="stylesheet">
+<link href="/static/css/auth.css" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
 
 
 {{define "content"}}
-<h2>Sign In</h2>
-{{if .userNotFound}}
-<div style="background-color: #ffcccc; padding: 10px;">User not found</div>
-{{end}}
-<form method="post" action="/signin">
-  <label for="email">Email:</label>
-  <input type="email" id="email" name="email" required><br><br>
+<div class="signin-page">
+  <div class="signin-container">
+    <h2>Sign In</h2>
+    {{if .userNotFound}}
+    <div class="user-not-found">User not found</div>
+    {{end}}
+    <form method="post" action="/signin">
+      <div class="signin-email">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+      </div>
 
-  <label for="password">Password:</label>
-  <input type="password" id="password" name="password" required><br><br>
+      <div class="signin-password">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+      </div>
 
-  <input type="submit" value="Sign In">
-</form>
+      <input type="submit" value="Sign In">
+    </form>
+  </div>
+</div>
 {{end}}

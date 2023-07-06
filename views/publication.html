@@ -1,74 +1,139 @@
-
 {{define "head"}}
-
+<link href="/static/css/style.css" rel="stylesheet" />
+<link href="/static/css/publication.css" rel="stylesheet">
+<link href="/static/css/modal.css" rel="stylesheet">
+<script defer src="/static/js/purchase-modal.js"></script>
+<script defer>
+    window.addEventListener("load", function(event) {
+        document.querySelectorAll('.tab-bar .tab').forEach(function(tab) {
+            if (!tab.dataset.for) {
+                return;
+            }
+            tab.addEventListener('click', function() {
+                tab.parentElement.querySelectorAll('.tab').forEach(function(atab) {
+                    atab.classList.remove('tab--active');
+                });
+                tab.classList.add('tab--active');
+                tab.parentElement.parentElement.querySelectorAll('.tabbed').forEach(function(tabbed) {
+                    tabbed.style.display = 'none';
+                });
+                tab.parentElement.parentElement.querySelector('#' + tab.dataset.for).style.display = 'block';
+            });
+        });
+    });
+</script>
+<script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
 {{end}}
-
 
 {{define "content"}}
-<p>Publications : </p>
-<a href="/catalog/publication/{{.uuid}}">SelfLink</a>
-<img src="{{.coverUrl}}" />
-<p>{{.title}}</p>
-<p>{{.datePublication}}</p>
-<p>{{.description}}</p>
-<p>Authors:</p>
-{{range .authors}}
-<p>{{.}}</p>
-{{end}}
-<p>Publkishse:</p>
-{{range .publishers}}
-<p>{{.}}</p>
-{{end}}
-<p>lang:</p>
-{{range .languages}}
-<p>{{.}}</p>
-{{end}}
-<p>Categories:</p>
-{{range .categories}}
-<p>{{.}}</p>
-{{end}}
-
-<hr>
 {{if .errLcp}}
 <div style="background-color: #ffcccc; padding: 10px;">{{.errLcp}}</div>
 {{end}}
+<div class="pub-container">
+    <div class="pub-left-side">
+        <img src="{{.coverUrl}}" alt="book cover"/>
+        <div class="pub-actions">
+            {{ if .userIsAuthenticated}}
+            {{if .licenseFoundAndActive}}
+            <a href="/catalog/publication/{{.uuid}}/license">Download <i class="fa-solid fa-cloud-arrow-down"></i></a>
+            {{else}}
+            <button id="buy">Buy</button>
+            <button id="loan">Borrow</button>
+            {{ end }}
+            {{ else }}
+            <div class="login">
+                <a href="/signin" id="login-button">Sign In</a>
+                <p>or</p>
+                <a href="/signup" id="signup-button">Sign Up</a>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+    <div class="pub-right-side">
+        <h1>{{.title}}</h1>
+        <div class="authors">
+            <p>written by</p>
+            {{ range .authors}}
+            <a href="/catalog?author={{.}}">{{.}}</a>
+            {{end}}
+        </div>
+        <div class="pub-categories-tags">
+            {{ range .categories}}
+            <a href="/catalog?category={{.}}" class="tag">{{.}}</a>
+            {{end}}
+        </div>
+        <div class="tab-bar">
+            <button class="tab tab--active" data-for="summary">Summary</button>
+            <button class="tab" data-for="details">Details</button>
+            <button class="tab" data-for="accessibility">Accessibility</button>
+            {{ if .licenseFound}}
+            <button class="tab" data-for="lcp-infos">LCP Infos</button>
+            {{end}}
+        </div>
+        <p id="summary" class="tabbed" style="display : block;">{{.description}}</p>
+        <div class="tabbed" id="details" style="display:none;">
+            <p>Published on : {{.datePublication}}</p>
+            <p>Publisher : {{range .publishers}}<a href="/catalog?publisher={{.}}" class="bold"> {{.}},</a>{{end}}</p>
+            <p>Language : {{range .languages}}<a href="/catalog?language={{.}}" class="bold">{{.}},</a>{{end}}</p>
+        </div>
+        <div class="lcp-infos tabbed" id="lcp-infos" style="display : none;">
+            <p>Copy : {{.transaction.PublicationCopyRights}}</p>
+            <p>Print : {{.transaction.PublicationPrintRights}}</p>
+            <p>Start Date : {{.transaction.PublicationStartDate}}</p>
+            <p>End Date : {{.transaction.PublicationEndDate}}</p>
+            <p>End Potential Rights : {{.transaction.LicenseEndPotentialRights}}</p>
+            <p>License Status : <span class="status {{.transaction.LicenseStatusCode}}">{{.transaction.LicenseStatusMessage}}</span></p>
+        </div>
+        <p id="accessibility" class="tabbed" style="display: none;">-There is not data available yet.</p>
+    </div>
+</div>
+<!--<div class="related">
+    <h4>More from this author</h4>
+    <div class="related-pub">
+        <a href="#"><img src="" class="related-pub-cover"/></a>
+        <a href="#"><img src="" class="related-pub-cover"/></a>
+        <a href="#"><img src="" class="related-pub-cover"/></a>
+    </div>
+</div>-->
 
-{{if .licenseFoundAndActive}}
-<a href="/catalog/publication/{{.uuid}}/license">Download</a>
-
-{{else}}
-
-<form action="/catalog/publication/{{.uuid}}/buy" method="GET">
-    <label for="copyRights">Number Copy:</label>
-    <input type="number" id="copyRights" name="copyRights" required>
-
-    <label for="printRigths">Number Print:</label>
-    <input type="number" id="printRigths" name="printRights" required>
-
-    <input type="submit" value="Buy">
-</form>
-<hr>
-
-<form action="/catalog/publication/{{.uuid}}/loan" method="GET">
-
-    <label for="copyRights">Number Copy:</label>
-    <input type="number" id="copyRights" name="copyRights" required>
-
-    <label for="printRights">Number Print:</label>
-    <input type="number" id="printRights" name="printRights" required>
-    
-    <label for="startDate">Start Date:</label>
-    <input type="datetime-local" id="startDate" name="startDate" required>
-
-    <label for="endDate">End Date:</label>
-    <input type="datetime-local" id="endDate" name="endDate" required>
-
-
-    <input type="submit" value="Loan">
-</form>
-
-{{end}}
-
-<hr>
-
+<div class="fade" id="modal-window" tabindex="-1" style="display: none;" aria-hidden="true">
+    <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">
+        <div class="modal-wrapper js-modal-stop">
+            <div class="modal-body-publications">
+                <form  id="buyForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/buy" method="GET">
+                    <div class="select-global-options">
+                        <label for="copyRights">Characters to be copied</label>
+                        <input id="copyRights" name="copyRights" type="number" value="5000">
+                        <label for="printRights">Pages to be printed</label>
+                        <input id="printRights" name="printRights" type="number" value="10">
+                    </div>
+                    <div class="modal-loan-buttons">
+                        <button class="modal-button back-button" id="backButtonBuy"><i class="fa-solid fa-rotate-left"></i> Back</button>
+                        <button type="submit" value="Buy"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
+                    </div>
+                </form>
+                <form  id="loanForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/loan" method="GET">
+                    <div class="select-global-options">
+                        <label for="copyRights">Characters to be copied</label>
+                        <input id="copyRights" name="copyRights" type="number" value="5000">
+                        <label for="printRights">Pages to be printed</label>
+                        <input id="printRights" name="printRights" type="number" value="10">
+                    </div>
+                    <div class="select-loan-dates">
+                        <label for="startDateLocal">Start Date</label>
+                        <input id="startDateLocal" name="start-date" type="datetime-local" required>
+                        <label for="endDateLocal">End Date</label>
+                        <input id="endDateLocal" name="end-date" type="datetime-local" required>
+                        <input id="startDate" name="startDate" type="text" hidden>
+                        <input id="endDate" name="endDate" type="text" hidden>
+                    </div>
+                    <div class="modal-loan-buttons">
+                        <button class="modal-button back-button" id="backButtonLoan"><i class="fa-solid fa-rotate-left"></i> Back</button>
+                        <button type="submit" value="Loan" class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </aside>
+</div>
 {{end}}

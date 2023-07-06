@@ -1,62 +1,95 @@
-
 {{define "head"}}
-<style>
-    .hello{ color: red;}
-    hr{ border: 1px #ccc dashed;}
-</style>
-{{end}}
+    <link href="/static/css/style.css" rel="stylesheet" />
+    <link href="/static/css/catalog.css" rel="stylesheet">
+    <script type="module" defer>
+        const dropdown = document.querySelectorAll('.dropdown');
 
+        dropdown.forEach(input => input.addEventListener('click', function() {
+            input.classList.toggle('active')
+        }));
+    </script>
+    <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
+{{end}}
 
 {{define "content"}}
-<hr>
-
-<p>CurrentFacetType :  {{.currentFacetType}}</p>
-<p>CurrentFacetValue :  {{.currentFacetValue}}</p>
-<p>Pagination : {{.currentPage}}</p>
-<p>Pagination size : {{.currentPageSize}}</p>
-<p>Publication total count : {{.publicationCount}}</p>
-<p></p>
-{{range .pageRange}}
-<a href="/catalog?page={{.}}">Page {{.}}</a>
-{{end}}
-<p></p>
-<form action="/catalog" method="get">
-    <input type="text" id="search" name="q">
-    <input type="submit" value="search">
-</form>
-
-<p>Author</p>
-<ul>
-    <p>Authors : </p>
-    {{range .authors}}
-    <li><a href="/catalog?author={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-<ul>
-    <p>Categories : </p>
-    {{range .categories}}
-    <li><a href="/catalog?category={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-<ul>
-    <p>Languages : </p>
-    {{range .languages}}
-    <li><a href="/catalog?language={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-<ul>
-    <p>Publishers : </p>
-    {{range .publishers}}
-    <li><a href="/catalog?publisher={{.}}">{{.}}</a></li>
-    {{end}}
-</ul>
-
-<p>Publications : </p>
-{{range .publications}}
-<a href="/catalog/publication/{{.UUID}}">link</a>
-<img src="{{.CoverHref}}" />
-<p>{{.Title}}</p>
-<p>{{.Author}}</p>
-{{end}}
-
+    <div class="main-content-header">
+        <h2>Catalog</h2>
+<!--        <p>Page {{.currentPage}}</p>-->
+        <h3>{{.currentFacetValue}}</h3>
+<!--        <p>Results by page : {{.currentPageSize}}</p>-->
+        <p>{{.publicationCount}} results found</p>
+    </div>
+    <div class="catalog-content">
+        <aside class="categories">
+            <ul>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Authors" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .authors}}
+                        <li><a href="/catalog?author={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Categories" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .categories}}
+                        <li><a href="/catalog?category={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Languages" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .languages}}
+                        <li><a href="/catalog?language={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Publishers" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .publishers}}
+                        <li><a href="/catalog?publisher={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+            </ul>
+            {{if .currentFacetValue}}
+            <a href="/catalog" class="reset">Clear Filter</a>
+            {{end}}
+        </aside>
+        <ul class="book-list" id="searchList">
+            {{range .publications}}
+                <li>
+                    <a href="/catalog/publication/{{.UUID}}">
+                        <div class="book-cover-container">
+                            <img class="book-cover" src="{{.CoverHref}}">
+                            <!--<i class="fa-solid fa-bookmark"></i>-->
+                        </div>
+                        <p class="book-title">{{.Title}}</p>
+                        <p class="book-author">{{.Author}}</p>
+                    </a>
+                </li>
+            {{end}}
+        </ul>
+    </div>
+    <div class="pages">
+        <p>Page</p>
+            {{range $page := .pageRange}}
+                {{ if eq $page $.currentPage }}
+            <a href="/catalog?page={{.}}" style="font-weight: bold; text-decoration: underline">{{$page}}</a>
+                {{ else }}
+                <a href="/catalog?page={{.}}">{{$page}}</a>
+                {{end}}
+            {{end}}
+    </div>
 {{end}}
