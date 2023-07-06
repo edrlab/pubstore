@@ -63,7 +63,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    gap: 10px;
 }
 
 
@@ -196,14 +196,16 @@
 
 .pub-right-side .lcp-infos {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
+    gap: 50px;
 }
 
-.status {
+
+.pub-right-side .status {
     border-radius: 10px;
     padding: 5px 10px;
     color: white;
+    width: 100px;
+    text-align: center;
 }
 
 .ready {

@@ -64,21 +64,27 @@
         </div>
         <div class="tab-bar">
             <button class="tab tab--active" data-for="summary">Summary</button>
+            <button class="tab" data-for="details">Details</button>
+            <button class="tab" data-for="accessibility">Accessibility</button>
+            {{ if .licenseFound}}
             <button class="tab" data-for="lcp-infos">LCP Infos</button>
+            {{end}}
         </div>
-            <p id="summary" class="tabbed" style="display : block;">{{.description}}</p>
-            <div class="lcp-infos tabbed" id="lcp-infos" style="display : none;">
-                <p>Copy : {{.PublicationCopyRights}}</p>
-                <p>Print : {{.PublicationPrintRights}}</p>
-                <p>Start Date : {{.PublicationStartDate}}</p>
-                <p>End Date : {{.PublicationEndDate}}</p>
-                <p>End Potential Rights : {{.LicenseEndPotentialRights}}</p>
-                <p class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</p>
-            </div>
-<!--        <div class="summary">
-            <h4>Summary</h4>
-            <p>{{.description}}</p>
-        </div>-->
+        <p id="summary" class="tabbed" style="display : block;">{{.description}}</p>
+        <div class="tabbed" id="details" style="display:none;">
+            <p>Published on : {{.datePublication}}</p>
+            <p>Publisher : {{range .publishers}}<a href="/catalog?publisher={{.}}" class="bold"> {{.}},</a>{{end}}</p>
+            <p>Language : {{range .languages}}<a href="/catalog?language={{.}}" class="bold">{{.}},</a>{{end}}</p>
+        </div>
+        <div class="lcp-infos tabbed" id="lcp-infos" style="display : none;">
+            <p>Copy : {{.transaction.PublicationCopyRights}}</p>
+            <p>Print : {{.transaction.PublicationPrintRights}}</p>
+            <p>Start Date : {{.transaction.PublicationStartDate}}</p>
+            <p>End Date : {{.transaction.PublicationEndDate}}</p>
+            <p>End Potential Rights : {{.transaction.LicenseEndPotentialRights}}</p>
+            <p>License Status : <span class="status {{.transaction.LicenseStatusCode}}">{{.transaction.LicenseStatusMessage}}</span></p>
+        </div>
+        <p id="accessibility" class="tabbed" style="display: none;">-There is not data available yet.</p>
     </div>
 </div>
 <!--<div class="related">

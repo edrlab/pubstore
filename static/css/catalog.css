@@ -69,12 +69,13 @@
 
 .book-cover-container {
     box-shadow: 0 4px 16px rgba(0,0,0,.5);
-    transition: 100ms linear;
+    transition: 200ms linear;
     position: relative;
 }
 
 .book-cover-container:hover {
     box-shadow: 0 2px 16px rgba(0,0,0,1);
+    transform: scale(1.02);
 }
 
 .book-cover-container .fa-bookmark {
