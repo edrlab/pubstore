@@ -151,6 +151,19 @@ func convertPublicationToStor(convertedPublication Publication, originalPublicat
 	  }' \
 	  http://localhost:8080/api/v1/publication
 */
+
+type ErrorResponse string
+
+// @Summary Create a new publication
+// @Description Create a new publication with the provided payload
+// @Tags publications
+// @Accept json
+// @Produce json
+// @Param publication body Publication true "Publication object"
+// @Success 201 {object} Publication "Publication created successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request payload or validation errors"
+// @Failure 500 {object} ErrorResponse "Failed to create publication"
+// @Router /publication [post]
 func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse and validate the request body
 	var publication Publication
@@ -196,6 +209,15 @@ func (api *Api) createPublicationHandler(w http.ResponseWriter, r *http.Request)
 	// fmt.Fprint(w, "Publication created successfully")
 }
 
+// @Summary Get a publication by ID
+// @Description Retrieve a publication by its ID
+// @Tags publications
+// @Accept json
+// @Produce json
+// @Param id path string true "Publication ID"
+// @Success 200 {object} Publication "OK"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /publication/{id} [get]
 func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	storPublication, ok := ctx.Value("publication").(*stor.Publication)
@@ -218,6 +240,17 @@ func (api *Api) getPublicationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Update a publication by ID
+// @Description Update a publication with the provided payload
+// @Tags publications
+// @Accept json
+// @Produce json
+// @Param id path string true "Publication ID"
+// @Param publication body Publication true "Publication object"
+// @Success 200 {object} Publication "Publication updated successfully"
+// @Failure 400 {object} ErrorResponse "Invalid request payload or validation errors"
+// @Failure 500 {object} ErrorResponse "Failed to update publication"
+// @Router /publication/{id} [put]
 func (api *Api) updatePublicationHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	storPublication, ok := ctx.Value("publication").(*stor.Publication)
@@ -265,6 +298,15 @@ func (api *Api) updatePublicationHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// @Summary Delete a publication by ID
+// @Description Delete a publication by its ID
+// @Tags publications
+// @Accept json
+// @Produce json
+// @Param id path string true "Publication ID"
+// @Success 200 "Publication deleted successfully"
+// @Failure 500 {object} ErrorResponse "Failed to delete publication"
+// @Router /publication/{id} [delete]
 func (api *Api) deletePublicationHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	storPublication, ok := ctx.Value("publication").(*stor.Publication)
