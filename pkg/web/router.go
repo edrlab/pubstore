@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/config"
@@ -566,6 +567,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		publicationView := web.view.GetPublicationViewFromPublicationStor(publicationStor)
 		goviewModel := goview.M{
 			"pageTitle":             fmt.Sprintf("pubstore - %s", publicationView.Title),
+			"host":                  strings.Split(config.BASE_URL, "://")[1],
 			"userIsAuthenticated":   web.userIsAuthenticated(r),
 			"userName":              userName,
 			"errLcp":                errLcp,
