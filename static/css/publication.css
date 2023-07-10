@@ -2,6 +2,7 @@
     padding: 0 10%;
     display: flex;
     justify-content: space-around;
+    border-bottom: 1px solid black;
 }
 
 .pub-left-side {
@@ -45,6 +46,12 @@
     align-items: center;
 }
 
+.pub-left-side .thorium-logo {
+    width: 30px;
+    height: 30px;
+    border: none;
+}
+
 .pub-left-side .pub-actions button,
 .pub-left-side .pub-actions > a {
     padding: 10px 5px;
@@ -53,10 +60,14 @@
     color: black;
     border-radius: 25px;
     cursor: pointer;
-    width: 150px;
-    margin: 10px;
+    width: 250px;
     text-align: center;
     transition: 200ms;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 5px;
 }
 
 .pub-left-side .pub-actions .login {
@@ -77,8 +88,12 @@
 }
 
 .pub-left-side .pub-actions button:hover,
-.pub-left-side .pub-actions > a:hover {
+.pub-left-side .pub-actions > a:hover{
     box-shadow: 5px 5px 5px grey;
+    background: #a7c6f8;
+}
+
+.pub-left-side .pub-actions > a:hover .thorium-logo {
     background: #a7c6f8;
 }
 

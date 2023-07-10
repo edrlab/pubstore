@@ -108,6 +108,7 @@
 }
 
 .pages {
+    border-bottom: 1px solid black;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -242,5 +243,15 @@
 
 .reset:visited {
     color: black;
+}
+
+
+@media screen and (max-width: 800px) {
+    .catalog-content {
+        flex-direction: column;
+    }
+    .book-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 

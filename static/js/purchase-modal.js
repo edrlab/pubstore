@@ -47,11 +47,15 @@ loanButton.addEventListener('click', (e) => {
 
 
 submitButtonBuy.addEventListener('click', (e) => {
-    closeModal(e)
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000)
 });
 
 submitButtonLoan.addEventListener('click', (e) => {
-    closeModal(e)
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000)
 });
 
 backToPresentationButtonBuy.addEventListener("click", (e) => {

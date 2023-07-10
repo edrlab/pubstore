@@ -36,6 +36,7 @@
             {{ if .userIsAuthenticated}}
             {{if .licenseFoundAndActive}}
             <a href="/catalog/publication/{{.uuid}}/license">Download <i class="fa-solid fa-cloud-arrow-down"></i></a>
+            <a href="thorium://{{.host}}/catalog/publication/{{.uuid}}/license">Download in Thorium <img src="/static/images/ThoriumLogo.png" class="thorium-logo"></a>
             {{else}}
             <button id="buy">Buy</button>
             <button id="loan">Borrow</button>
@@ -96,10 +97,15 @@
     </div>
 </div>-->
 
+
 <div class="fade" id="modal-window" tabindex="-1" style="display: none;" aria-hidden="true">
     <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">
         <div class="modal-wrapper js-modal-stop">
             <div class="modal-body-publications">
+                <form>
+                    <input>
+                    <button type="submit"></button>
+                </form>
                 <form  id="buyForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/buy" method="GET">
                     <div class="select-global-options">
                         <label for="copyRights">Characters to be copied</label>
@@ -112,7 +118,7 @@
                         <button type="submit" value="Buy"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
                     </div>
                 </form>
-                <form  id="loanForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/loan" method="GET">
+                <form  id="loanForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/loan" method="GET" onsubmit="location.reload()">
                     <div class="select-global-options">
                         <label for="copyRights">Characters to be copied</label>
                         <input id="copyRights" name="copyRights" type="number" value="5000">

@@ -1,24 +1,5 @@
-.userListContainer,
-.purchasesListContainer {
-    text-align: center;
-    width: 100%;
-    padding: 30px;
-    margin: auto;
-    border-collapse: collapse;
-}
-
-.userListContainer tr:hover,
-.purchasesListContainer tr:hover {
-    background-color: rgba(167, 198, 248, 0.24);
-}
-
-th {
-    padding: 20px 0;
-}
-
-th,
-td {
-    border-bottom: 1px solid;
+.bs-list {
+    border-bottom: 1px solid black;
 }
 
 .purchase-cover {
@@ -90,3 +71,4 @@ td {
 .book-cover-container .status i:hover {
     color: black;
 }
+
