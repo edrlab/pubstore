@@ -7,7 +7,7 @@
 {{end}}
 
 {{define "content"}}
-<ul class="book-list" id="searchList">
+<ul class="book-list bs-list" id="searchList">
     {{range .transactions}}
     <li>
         <a href="/catalog/publication/{{.PublicationUUID}}">
@@ -21,33 +21,4 @@
     </li>
     {{end}}
 </ul>
-
-    <table class="purchasesListContainer" style="display: none">
-        <thead>
-        <tr>
-            <th scope="col">Publication</th>
-            <th scope="col">Copy</th>
-            <th scope="col">Print</th>
-            <th scope="col">Start Date</th>
-            <th scope="col">End Date</th>
-            <th scope="col">End Potential Rights</th>
-            <th scope="col">Status</th>
-            <th scope="col">Download</th>
-        </tr>
-        </thead>
-        <tbody class="purchaseList">
-        {{range .transactions}}
-        <tr>
-            <td><a href="/catalog/publication/{{.PublicationUUID}}" class="purchase-publication"><img src={{.PublicationCoverUrl}} class="purchase-cover"><span>{{.PublicationTitle}} <br> by <br> {{.PublicationAuthor}}</span></a></td>
-            <td>{{.PublicationCopyRights}}</td>
-            <td>{{.PublicationPrintRights}}</td>
-            <td>{{.PublicationStartDate}}</td>
-            <td>{{.PublicationEndDate}}</td>
-            <td>{{.LicenseEndPotentialRights}}</td>
-            <td><span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span></td>
-            <td><a href="/catalog/publication/{{.PublicationUUID}}/license"><i class="fa-solid fa-cloud-arrow-down"></i></a></td>
-        </tr>
-        {{end}}
-        </tbody>
-    </table>
 {{end}}
