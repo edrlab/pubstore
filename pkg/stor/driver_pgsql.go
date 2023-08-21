@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func GormDialector(sqliteDsn string) gorm.Dialector {
+func GormDialector(postgresDsn string) gorm.Dialector {
 
-	return postgres.Open(sqliteDsn)
+	return postgres.Open(postgresDsn)
 }
