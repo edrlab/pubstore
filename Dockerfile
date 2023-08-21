@@ -27,6 +27,8 @@ ENV PORT=8080
 ENV LCP_SERVER_URL="https://front-prod.edrlab.org/lcpserver"
 ENV LCP_SERVER_USERNAME="adm_username"
 ENV LCP_SERVER_PASSWORD="adm_password"
+ENV PUBSTORE_USERNAME="adm_username"
+ENV PUBSTORE_PASSWORD="adm_password"
 ENV DSN=""
 
 # Expose the port on which the HTTP server will listen
