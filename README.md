@@ -55,6 +55,8 @@ The following environment variables are used in the Dockerfile:
 - `LCP_SERVER_URL`: The URL of the LCP server. Default value: `https://front-prod.edrlab.org/lcpserver`.
 - `LCP_SERVER_USERNAME`: The username for the LCP server. Default value: `adm_username`.
 - `LCP_SERVER_PASSWORD`: The password for the LCP server. Default value: `adm_password`.
+- `PUBSTORE_USERNAME`: The username for notifying Pubstore of a new encrypted publication. Default value: `adm_username`.
+- `PUBSTORE_PASSWORD`: The password for notifying Pubstore of a new encrypted publication. Default value: `adm_password`.
 - `DSN`: The database connection string. Default value: `""` (empty string).
 
 You can modify these environment variables according to your requirements. Make sure to set the appropriate values based on your deployment environment.
