@@ -19,7 +19,7 @@ func Init(dsn string) *Stor {
 	}
 
 	db, err := gorm.Open(GormDialector(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
 		panic("failed to connect database")
