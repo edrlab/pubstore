@@ -604,10 +604,14 @@ func (web *Web) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (web *Web) Rooter(r chi.Router) {
+func (web *Web) Router(r chi.Router) {
 
 	// Serve static files from the "static" directory
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
+	// Serve resources from a configurable directory (usable for encrypted publications and cover images)
+	r.Handle("/resources/*", http.StripPrefix("/resources/", http.FileServer(http.Dir(config.PUBSTORE_RESOURCES))))
+	fmt.Println("resources in ", config.PUBSTORE_RESOURCES)
 
 	// Public Routes
 	r.Group(func(r chi.Router) {

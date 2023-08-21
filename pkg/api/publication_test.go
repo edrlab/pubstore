@@ -21,7 +21,7 @@ import (
 func TestPublicationHandler(t *testing.T) {
 	// Initialize router
 	r := chi.NewRouter()
-	r.Group(api.Rooter)
+	r.Group(api.Router)
 
 	jsonData := `
 	{
@@ -84,7 +84,7 @@ func TestPublicationHandler(t *testing.T) {
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {createdUser.Email},
-		"password":   {"password123"},
+		"password":   {createdUser.Pass},
 	}
 	tokenReq, err := http.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
 	assert.NoError(t, err)
@@ -104,21 +104,21 @@ func TestPublicationHandler(t *testing.T) {
 	assert.NotEmpty(t, tokenResp.Token)
 	fmt.Println(tokenResp.Token)
 
-	req, err := http.NewRequest("POST", "/api/v1/publication", bytes.NewBuffer([]byte(jsonData)))
+	req, err := http.NewRequest("POST", "/api/v1/publications", bytes.NewBuffer([]byte(jsonData)))
 	assert.NoError(t, err)
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	assert.NoError(t, err)
-	req, err = http.NewRequest("POST", "/api/v1/publication", bytes.NewBuffer([]byte(jsonData)))
+	req, err = http.NewRequest("POST", "/api/v1/publications", bytes.NewBuffer([]byte(jsonData)))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	assert.NoError(t, err)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusCreated, recorder.Code)
 
-	// Unmarshal the response to get the created user
+	// Unmarshal the response to get the created publication
 	var createPublicationStor stor.Publication
 	err = json.Unmarshal(recorder.Body.Bytes(), &createPublicationStor)
 	assert.NoError(t, err)
@@ -126,8 +126,8 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, "Test Publication", createPublicationStor.Title)
 	assert.Equal(t, "Test description", createPublicationStor.Description)
 
-	// Test GET /api/v1/publication/{id}
-	getUserURL := "/api/v1/publication/" + createPublicationStor.UUID
+	// Test GET /api/v1/publications/{id}
+	getUserURL := "/api/v1/publications/" + createPublicationStor.UUID
 	req, err = http.NewRequest("GET", getUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	assert.NoError(t, err)
@@ -138,10 +138,10 @@ func TestPublicationHandler(t *testing.T) {
 	var retrievedPub stor.Publication
 	err = json.Unmarshal(recorder.Body.Bytes(), &retrievedPub)
 	assert.NoError(t, err)
-	// Check the retrieved user details
+	// Check the retrieved publication details
 
-	// Test PUT /api/v1/user/{id}
-	updateUserURL := "/api/v1/publication/" + createPublicationStor.UUID
+	// Test PUT /api/v1/users/{id}
+	updateUserURL := "/api/v1/publications/" + createPublicationStor.UUID
 	updateUserData := map[string]interface{}{
 		"title": "Jane Doe",
 	}
@@ -159,8 +159,8 @@ func TestPublicationHandler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Jane Doe", pubGetFromStor.Title)
 
-	// Test DELETE /api/v1/publication/{id}
-	deleteUserURL := "/api/v1/publication/" + createPublicationStor.UUID
+	// Test DELETE /api/v1/publications/{id}
+	deleteUserURL := "/api/v1/publications/" + createPublicationStor.UUID
 	req, err = http.NewRequest("DELETE", deleteUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	assert.NoError(t, err)
@@ -168,7 +168,7 @@ func TestPublicationHandler(t *testing.T) {
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
-	// Retrieve user by ID and ensure it's not found
+	// Retrieve publication by ID and ensure it's not found
 	pubDeleteFromStor, err := api.stor.GetPublicationByUUID(createdUser.UUID)
 	assert.Error(t, err)
 	assert.Nil(t, pubDeleteFromStor)

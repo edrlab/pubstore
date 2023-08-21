@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -20,7 +19,7 @@ import (
 func TestUserHandler(t *testing.T) {
 	// Initialize router
 	r := chi.NewRouter()
-	r.Group(api.Rooter)
+	r.Group(api.Router)
 
 	// Create a new user for testing
 	createdUser := &stor.User{
@@ -59,33 +58,33 @@ func TestUserHandler(t *testing.T) {
 	err = json.Unmarshal(tokenRecorder.Body.Bytes(), &tokenResp)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, tokenResp.Token)
-	fmt.Println(tokenResp.Token)
 
+	// Try creating a user without any token
 	newUser := &stor.User{
-		Name:        "dupont et",
+		Name:        "Jean Mène",
 		Email:       gofakeit.Email(),
 		Pass:        "password123",
 		LcpHintMsg:  "Hint",
 		LcpPassHash: "hash123",
 		SessionId:   uuid.New().String(),
 	}
-
 	newUserBytes, err := json.Marshal(newUser)
 	assert.NoError(t, err)
-	req, err := http.NewRequest("POST", "/api/v1/user", bytes.NewBuffer(newUserBytes))
+	req, err := http.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(newUserBytes))
 	assert.NoError(t, err)
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
-
 	assert.NoError(t, err)
-	req, err = http.NewRequest("POST", "/api/v1/user", bytes.NewBuffer(newUserBytes))
+
+	// Try creating a user with a token
+	// Test POST /api/v1/users
+	req, err = http.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(newUserBytes))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	assert.NoError(t, err)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusCreated, recorder.Code)
-	fmt.Println(recorder.Body.String())
 
 	// Unmarshal the response to get the created user
 	var createdUserFromPostRequest stor.User
@@ -93,18 +92,19 @@ func TestUserHandler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, createdUserFromPostRequest.UUID)
 
-	// Test GET /api/v1/user/{id}
-	getUserURL := "/api/v1/user/" + createdUser.UUID
+	// Get the user previously created by its id
+	// Test GET /api/v1/users/{id}
+	getUserURL := "/api/v1/users/" + createdUser.UUID
 	req, err = http.NewRequest("GET", getUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	assert.NoError(t, err)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
-
 	var retrievedUser stor.User
 	err = json.Unmarshal(recorder.Body.Bytes(), &retrievedUser)
 	assert.NoError(t, err)
+
 	// Check the retrieved user details
 	assert.Equal(t, createdUser.Name, retrievedUser.Name)
 	assert.Equal(t, createdUser.Email, retrievedUser.Email)
@@ -113,8 +113,9 @@ func TestUserHandler(t *testing.T) {
 	assert.Equal(t, createdUser.LcpPassHash, retrievedUser.LcpPassHash)
 	assert.Equal(t, "", retrievedUser.SessionId)
 
-	// Test PUT /api/v1/user/{id}
-	updateUserURL := "/api/v1/user/" + createdUser.UUID
+	// Update the user
+	// Test PUT /api/v1/users/{id}
+	updateUserURL := "/api/v1/users/" + createdUser.UUID
 	updateUserData := map[string]interface{}{
 		"name": "Jane Doe",
 	}
@@ -132,8 +133,9 @@ func TestUserHandler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Jane Doe", userGetFromStor.Name)
 
-	// Test DELETE /api/v1/user/{id}
-	deleteUserURL := "/api/v1/user/" + createdUser.UUID
+	// Delete the user
+	// Test DELETE /api/v1/users/{id}
+	deleteUserURL := "/api/v1/users/" + createdUser.UUID
 	req, err = http.NewRequest("DELETE", deleteUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	assert.NoError(t, err)

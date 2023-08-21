@@ -40,8 +40,8 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Group(_api.Rooter)
-	r.Group(_web.Rooter)
+	r.Group(_api.Router)
+	r.Group(_web.Router)
 	r.Group(_opds.Router)
 
 	// The HTTP Server
@@ -57,7 +57,8 @@ func main() {
 		<-sig
 
 		// Shutdown signal with grace period of 30 seconds
-		shutdownCtx, _ := context.WithTimeout(serverCtx, 30*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(serverCtx, 30*time.Second)
+		defer cancel()
 
 		go func() {
 			<-shutdownCtx.Done()
