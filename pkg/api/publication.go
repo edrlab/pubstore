@@ -27,8 +27,8 @@ type Category struct {
 }
 
 type Publication struct {
-	Title           string      `json:"title"`
 	UUID            string      `json:"uuid" validate:"omitempty,uuid4_rfc4122"`
+	Title           string      `json:"title"`
 	DatePublication time.Time   `json:"datePublication"`
 	Description     string      `json:"description"`
 	CoverUrl        string      `json:"coverUrl"`
@@ -149,7 +149,7 @@ func convertPublicationToStor(convertedPublication Publication, originalPublicat
 	      {"name": "Test Category B"}
 	    ]
 	  }' \
-	  http://localhost:8080/api/v1/publication
+	  http://localhost:8080/api/v1/publications
 */
 
 type ErrorResponse string

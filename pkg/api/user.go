@@ -33,7 +33,7 @@ func ConvertUserFromUserStor(u stor.User) *User {
 	}
 }
 
-func ConvertUserToUserStor(u User, originalUser *stor.User) *stor.User {
+func convertUserToUserStor(u User, originalUser *stor.User) *stor.User {
 	if originalUser == nil {
 		originalUser = &stor.User{}
 	}
@@ -72,7 +72,7 @@ func ConvertUserToUserStor(u User, originalUser *stor.User) *stor.User {
 	  "password": "password123",
 	  "lcpHintMsg": "Hint",
 	  "lcpPassHash": "hash123"
-	}' http://localhost:8080/api/v1/user
+	}' http://localhost:8080/api/v1/users
 */
 
 // @Summary Create a new user
@@ -113,7 +113,7 @@ func (api *Api) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert the view model user to the storage user
-	storUser := ConvertUserToUserStor(viewUser, &stor.User{})
+	storUser := convertUserToUserStor(viewUser, &stor.User{})
 
 	// Call your storage function to create the user
 	err = api.stor.CreateUser(storUser)
@@ -205,7 +205,7 @@ func (api *Api) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(user)
 
-	storUserConverted := ConvertUserToUserStor(user, storUser)
+	storUserConverted := convertUserToUserStor(user, storUser)
 
 	fmt.Println(storUserConverted)
 
