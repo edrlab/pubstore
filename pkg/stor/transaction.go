@@ -1,101 +1,51 @@
+// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// specified in the Github project LICENSE file.
+
 package stor
 
 import (
-	"errors"
-
 	"gorm.io/gorm"
 )
 
 type Transaction struct {
 	gorm.Model
-	UserID        uint
+	UserID        uint // implicit foreign key to the related user
 	User          User
-	PublicationID uint
+	PublicationID uint // implicit foreign key to the related publication
 	Publication   Publication
 	LicenceId     string
 }
 
 // CreateTransaction creates a new transaction
-func (stor *Stor) CreateTransaction(transaction *Transaction) error {
-	if err := stor.db.Create(transaction).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// CreateTransaction creates a new transaction
-func (stor *Stor) CreateTransactionWithUUID(pubUUID, userUUID, licenceUUID string) error {
-
-	publication, err := stor.GetPublicationByUUID(pubUUID)
-	if err != nil {
-		return errors.New("can't get publication")
-	}
-
-	user, err := stor.GetUserByUUID(userUUID)
-	if err != nil {
-		return errors.New("can't get user")
-	}
-
-	transaction := &Transaction{
-		UserID:        user.ID,
-		PublicationID: publication.ID,
-		LicenceId:     licenceUUID,
-	}
-
-	return stor.CreateTransaction(transaction)
+func (s *Store) CreateTransaction(transaction *Transaction) error {
+	return s.db.Create(transaction).Error
 }
 
 // UpdateTransaction updates a transaction
-func (stor *Stor) UpdateTransaction(transaction *Transaction) error {
-	if err := stor.db.Save(transaction).Error; err != nil {
-		return err
-	}
+func (s *Store) UpdateTransaction(transaction *Transaction) error {
+	return s.db.Save(transaction).Error
+}
 
-	return nil
+// GetTransactionByLicense retrieves a transaction using its licenseID
+func (s *Store) GetTransactionByLicence(licenseID string) (*Transaction, error) {
+	var transaction Transaction
+	return &transaction, s.db.Preload("User").Preload("Publication").Where("licence_id = ?", licenseID).First(&transaction).Error
+}
+
+// GetTransactionByUserAndPublication retrieves a transaction using its userID and publicationID
+func (s *Store) GetTransactionByUserAndPublication(userID, publicationID uint) (*Transaction, error) {
+	var transaction Transaction
+	return &transaction, s.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Where("publication_id = ?", publicationID).Order("created_at DESC").First(&transaction).Error
+}
+
+// FindTransactionsByUser retrieves the array to transactions made by a specific user
+func (s *Store) FindTransactionsByUser(userID uint) (*[]Transaction, error) {
+	var transaction []Transaction
+	return &transaction, s.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Order("created_at DESC").Find(&transaction).Error
 }
 
 // DeleteTransaction deletes a transaction
-func (stor *Stor) DeleteTransaction(transaction *Transaction) error {
-	if err := stor.db.Delete(transaction).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (stor *Stor) GetTransactionByLicenceId(transactionID string) (*Transaction, error) {
-	var transaction Transaction
-	if err := stor.db.Preload("User").Preload("Publication").Where("licence_id = ?", transactionID).First(&transaction).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Transaction not found")
-		}
-		return nil, err
-	}
-
-	return &transaction, nil
-}
-
-func (stor *Stor) GetTransactionByUserAndPublication(userID, publicationID uint) (*Transaction, error) {
-	var transaction Transaction
-	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Where("publication_id = ?", publicationID).Order("created_at DESC").First(&transaction).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Transaction not found")
-		}
-		return nil, err
-	}
-
-	return &transaction, nil
-}
-
-func (stor *Stor) GetTransactionsByUserID(userID uint) (*[]Transaction, error) {
-	var transaction []Transaction
-	if err := stor.db.Preload("User").Preload("Publication").Where("user_id = ?", userID).Order("created_at DESC").Find(&transaction).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Transaction not found")
-		}
-		return nil, err
-	}
-
-	return &transaction, nil
+func (s *Store) DeleteTransaction(transaction *Transaction) error {
+	return s.db.Delete(transaction).Error
 }

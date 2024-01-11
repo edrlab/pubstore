@@ -23,4 +23,4 @@ go.work
 
 build
 .idea
-pub.db
+pubstore.db

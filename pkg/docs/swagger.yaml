@@ -25,9 +25,9 @@ definitions:
         items:
           $ref: '#/definitions/api.Category'
         type: array
-      coverUrl:
+      cover_url:
         type: string
-      datePublication:
+      date_published:
         type: string
       description:
         type: string
@@ -53,9 +53,9 @@ definitions:
     properties:
       email:
         type: string
-      lcpHintMsg:
+      TextHint:
         type: string
-      lcpPassHash:
+      Passphrase:
         type: string
       name:
         type: string

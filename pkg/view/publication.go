@@ -1,30 +1,28 @@
 package view
 
 import (
-	"time"
-
 	"github.com/edrlab/pubstore/pkg/stor"
 )
 
 type PublicationView struct {
-	Title           string
-	UUID            string
-	DatePublication time.Time
-	Description     string
-	CoverUrl        string
-	Author          []string
-	Publisher       []string
-	Category        []string
-	Language        []string
+	Title         string
+	UUID          string
+	DatePublished string
+	Description   string
+	CoverUrl      string
+	Author        []string
+	Publisher     []string
+	Category      []string
+	Language      []string
 }
 
 func (view *View) GetPublicationViewFromPublicationStor(originalPublication *stor.Publication) *PublicationView {
 	convertedPublication := PublicationView{
-		Title:           originalPublication.Title,
-		UUID:            originalPublication.UUID,
-		DatePublication: originalPublication.DatePublication,
-		Description:     originalPublication.Description,
-		CoverUrl:        originalPublication.CoverUrl,
+		Title:         originalPublication.Title,
+		UUID:          originalPublication.UUID,
+		DatePublished: originalPublication.DatePublished,
+		Description:   originalPublication.Description,
+		CoverUrl:      originalPublication.CoverUrl,
 	}
 
 	// Convert Language slice

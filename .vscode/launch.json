@@ -1,0 +1,31 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": 0
+    },
+    {
+      "name": "Debug pubstore",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/pubstore",
+      "env": {
+        "PUBSTORE_CONFIG":"/Users/laurentlemeur/work/lcpconfig/pubstore-config.yaml",
+        "PUBSTORE_OAUTH_SEED":"EDRLab-Rocks",
+        "PUBSTORE_USERNAME":"laurent",
+        "PUBSTORE_PASSWORD":"laurent",
+        "PUBSTORE_LCPSERVER_USERNAME":"laurent",
+        "PUBSTORE_LCPSERVER_PASSWORD":"laurent",
+      }
+    }
+
+  ]
+}

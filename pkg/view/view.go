@@ -1,11 +1,18 @@
 package view
 
-import "github.com/edrlab/pubstore/pkg/stor"
+import (
+	"github.com/edrlab/pubstore/pkg/conf"
+	"github.com/edrlab/pubstore/pkg/stor"
+)
 
 type View struct {
-	stor *stor.Stor
+	*conf.Config
+	*stor.Store
 }
 
-func Init(s *stor.Stor) *View {
-	return &View{stor: s}
+func Init(c *conf.Config, s *stor.Store) View {
+	return View{
+		Config: c,
+		Store:  s,
+	}
 }

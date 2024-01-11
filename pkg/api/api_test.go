@@ -5,31 +5,27 @@ import (
 	"os"
 	"testing"
 
+	"github.com/edrlab/pubstore/pkg/conf"
 	"github.com/edrlab/pubstore/pkg/stor"
-	"github.com/go-playground/validator/v10"
 )
 
-var api *Api
+var testapi Api
 
 func TestMain(m *testing.M) {
 
-	validate = validator.New()
+	config := conf.Config{OAuthSeed: "EDRLAB_Rocks"}
 
-	s := stor.Init("file::memory:?cache=shared")
+	store, err := stor.Init("sqlite3://file::memory:?cache=shared")
+	if err != nil {
+		panic("Database setup failed.")
+	}
 
-	api = &Api{stor: s}
+	testapi = Init(&config, &store)
 
 	// Run the tests
 	exitCode := m.Run()
 
-	s.Stop()
-
 	fmt.Println("ExitCode", exitCode)
 	// Exit with the appropriate exit code
 	os.Exit(exitCode)
-}
-
-func TestSuite(t *testing.T) {
-	t.Run("TestPublicationHandler", TestPublicationHandler)
-	t.Run("TestUserHandler", TestUserHandler)
 }

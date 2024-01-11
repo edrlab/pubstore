@@ -1,66 +1,112 @@
+// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// specified in the Github project LICENSE file.
+
+// The stor package manages the database storage of pubstore entities.
 package stor
 
 import (
+	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-type Stor struct {
+// Store defines a generic store with a gorm db
+type Store struct {
 	db *gorm.DB
 }
 
-func Init(dsn string) *Stor {
+// Init initializes the database
+func Init(dsn string) (Store, error) {
+	str := Store{}
 
 	if len(dsn) == 0 {
-		dsn = "pub.db"
+		return str, errors.New("database source name is missing")
+	}
+	dialect, cnx := dbFromURI(dsn)
+	if dialect == "error" {
+		return str, fmt.Errorf("incorrect database source name: %q", dsn)
 	}
 
-	db, err := gorm.Open(GormDialector(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+	// the use of time.Time fields for mysql requires parseTime
+	if dialect == "mysql" && !strings.Contains(cnx, "parseTime") {
+		return str, fmt.Errorf("incomplete mysql database source name, parseTime required: %q", dsn)
+	}
+	// Any constraint for other databases?
+
+	// database logger
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold: time.Second, // Slow SQL threshold
+			LogLevel:      logger.Warn, // Log level (Silent, Error, Warn, Info)
+			//LogLevel:                  logger.Info, // Log level (Silent, Error, Warn, Info)
+			IgnoreRecordNotFoundError: true, // Ignore ErrRecordNotFound error for logger
+			Colorful:                  true, // Enable color
+		},
+	)
+
+	db, err := gorm.Open(GormDialector(cnx), &gorm.Config{
+		Logger: newLogger,
 	})
 	if err != nil {
-		panic("failed to connect database")
+		log.Printf("Failed connecting to the database: %v", err)
+		return str, err
+	}
+
+	err = performDialectSpecific(db, dialect)
+	if err != nil {
+		log.Printf("Failed performing dialect specific database init: %v", err)
+		return str, err
 	}
 
 	// db = db.Session(&gorm.Session{FullSaveAssociations: true})
 
-	// Migrate the schema
-	db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{}, &User{}, &Transaction{})
-
-	// Check if the table is empty
-	var count int64
-	db.Model(&User{}).Count(&count)
-	if count == 0 {
-		// Insert initial record
-		createdUser := &User{
-			UUID:        uuid.New().String(),
-			Name:        "admin",
-			Email:       "admin@edrlab.org",
-			Pass:        "admin",
-			LcpHintMsg:  "Do not used it",
-			LcpPassHash: "edrlab",
-			SessionId:   uuid.New().String(),
-		}
-		result := db.Create(createdUser)
-		if result.Error != nil {
-			panic(fmt.Errorf("failed to insert initial record: %w", result.Error))
-		}
+	err = db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{}, &User{}, &Transaction{})
+	if err != nil {
+		log.Printf("Failed performing database automigrate: %v", err)
+		return str, err
 	}
 
-	return &Stor{db: db}
-
+	str.db = db
+	return str, nil
 }
 
-func (stor *Stor) Stop() {
-
-	// Close the database connection
-	sqlDB, err := stor.db.DB()
-	if err != nil {
-		panic("failed to close database connection")
+// dbFromURI
+func dbFromURI(uri string) (string, string) {
+	parts := strings.Split(uri, "://")
+	if len(parts) != 2 {
+		return "error", ""
 	}
-	sqlDB.Close()
+	return parts[0], parts[1]
+}
 
+// performDialectSpecific
+func performDialectSpecific(db *gorm.DB, dialect string) error {
+	switch dialect {
+	case "sqlite3":
+		err := db.Exec("PRAGMA journal_mode = WAL").Error
+		if err != nil {
+			return err
+		}
+		err = db.Exec("PRAGMA foreign_keys = ON").Error
+		if err != nil {
+			return err
+		}
+	case "mysql":
+		// nothing , so far
+	case "postgres":
+		// nothing , so far
+	case "mssql":
+		// nothing , so far
+	default:
+		return fmt.Errorf("invalid dialect: %s", dialect)
+	}
+	return nil
 }

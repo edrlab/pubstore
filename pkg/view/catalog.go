@@ -1,3 +1,7 @@
+// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// specified in the Github project LICENSE file.
+
 package view
 
 import (
@@ -30,7 +34,7 @@ type CatalogView struct {
 func (view *View) GetCatalogFacetsView() *FacetsView {
 	var facets FacetsView
 
-	if authorArray, err := view.stor.GetAuthors(); err != nil {
+	if authorArray, err := view.Store.GetAuthors(); err != nil {
 		fmt.Println(err)
 		facets.Authors = make([]string, 0)
 	} else {
@@ -40,7 +44,7 @@ func (view *View) GetCatalogFacetsView() *FacetsView {
 		}
 	}
 
-	if publisherArray, err := view.stor.GetPublishers(); err != nil {
+	if publisherArray, err := view.Store.GetPublishers(); err != nil {
 		fmt.Println(err)
 		facets.Publishers = make([]string, 0)
 	} else {
@@ -50,7 +54,7 @@ func (view *View) GetCatalogFacetsView() *FacetsView {
 		}
 	}
 
-	if languageArray, err := view.stor.GetLanguages(); err != nil {
+	if languageArray, err := view.Store.GetLanguages(); err != nil {
 		fmt.Println(err)
 		facets.Languages = make([]string, 0)
 	} else {
@@ -60,7 +64,7 @@ func (view *View) GetCatalogFacetsView() *FacetsView {
 		}
 	}
 
-	if categoryArray, err := view.stor.GetCategories(); err != nil {
+	if categoryArray, err := view.Store.GetCategories(); err != nil {
 		fmt.Println(err)
 		facets.Categories = make([]string, 0)
 	} else {
@@ -77,13 +81,12 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 
 	var publications []PublicationCatalogView
 	var pubs []stor.Publication
-	var count int64
 	var err error
 
 	switch facet {
 
 	case "author":
-		if pubs, count, err = view.stor.GetPublicationsByAuthor(value, page, pageSize); err != nil {
+		if pubs, err = view.Store.FindPublicationsByAuthor(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -93,7 +96,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 		}
 
 	case "publisher":
-		if pubs, count, err = view.stor.GetPublicationsByPublisher(value, page, pageSize); err != nil {
+		if pubs, err = view.Store.FindPublicationsByPublisher(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -107,7 +110,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 		}
 
 	case "language":
-		if pubs, count, err = view.stor.GetPublicationsByLanguage(value, page, pageSize); err != nil {
+		if pubs, err = view.Store.FindPublicationsByLanguage(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -121,7 +124,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 		}
 
 	case "category":
-		if pubs, count, err = view.stor.GetPublicationsByCategory(value, page, pageSize); err != nil {
+		if pubs, err = view.Store.FindPublicationsByCategory(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -135,7 +138,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 		}
 
 	case "search":
-		if pubs, count, err = view.stor.GetPublicationsByTitle(value, page, pageSize); err != nil {
+		if pubs, err = view.Store.FindPublicationsByTitle(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -149,7 +152,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 		}
 
 	default:
-		if pubs, count, err = view.stor.GetAllPublications(page, pageSize); err != nil {
+		if pubs, err = view.Store.ListPublications(page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
@@ -163,7 +166,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 		}
 	}
 
-	return &publications, count
+	return &publications, int64(len(publications))
 }
 
 func GetCatalogView(pubs *[]PublicationCatalogView, facets *FacetsView) *CatalogView {

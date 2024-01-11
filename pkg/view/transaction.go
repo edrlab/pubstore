@@ -26,12 +26,13 @@ type TransactionView struct {
 func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transaction) *TransactionView {
 
 	var publicationAuthor string
-	publication, err := view.stor.GetPublicationByUUID(transaction.Publication.UUID)
+	publication, err := view.Store.GetPublication(transaction.Publication.UUID)
 	if err == nil && len(publication.Author) > 0 {
 		publicationAuthor = publication.Author[0].Name
 	}
 
-	lsdStatus, err := lcp.GetLsdStatus(transaction.LicenceId, transaction.User.Email, transaction.User.LcpHintMsg, transaction.User.LcpPassHash)
+	// TODO: avoid fetching the Status Document in this function
+	lsdStatus, err := lcp.GetStatusDocument(view.Config.LCPServer, transaction.LicenceId, transaction.User.Email, transaction.User.TextHint, transaction.User.HPassphrase)
 	if err != nil {
 		fmt.Println("LSD STATUS Error from (" + transaction.LicenceId + ")")
 		lsdStatus = &lcp.LsdStatus{}
@@ -42,8 +43,8 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 		PublicationTitle:          transaction.Publication.Title,
 		PublicationAuthor:         publicationAuthor,
 		PublicationCoverUrl:       publication.CoverUrl,
-		PublicationPrintRights:    fmt.Sprintf("%d", lsdStatus.PrintRights),
-		PublicationCopyRights:     fmt.Sprintf("%d", lsdStatus.CopyRights),
+		PublicationPrintRights:    fmt.Sprintf("%d", lsdStatus.PrintLimit),
+		PublicationCopyRights:     fmt.Sprintf("%d", lsdStatus.CopyLimit),
 		PublicationStartDate:      lsdStatus.StartDate.Format("2006-01-02 15:04:05"),
 		PublicationEndDate:        lsdStatus.EndDate.Format("2006-01-02 15:04:05"),
 		LicenseStatusMessage:      lsdStatus.StatusMessage,

@@ -1,13 +1,13 @@
+// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// specified in the Github project LICENSE file.
+
 package opds
 
 import (
-	"errors"
-	"fmt"
-	"strings"
 	"time"
 
-	"github.com/edrlab/pubstore/pkg/config"
-	"github.com/edrlab/pubstore/pkg/lcp"
+	"github.com/edrlab/pubstore/pkg/conf"
 	"github.com/edrlab/pubstore/pkg/stor"
 )
 
@@ -15,13 +15,14 @@ type MetadataFeed struct {
 	Title string `json:"title"`
 }
 
+// TODO: an OPDS Publication supports x languages as an array -> update the model and mapping
 type Metadata struct {
-	Type       string     `json:"@type"`
-	Title      string     `json:"title"`
-	Author     string     `json:"author,omitempty"`
-	Identifier string     `json:"identifier,omitempty"`
-	Language   string     `json:"language,omitempty"`
-	Modified   *time.Time `json:"modified,omitempty"`
+	Type       string `json:"@type"`
+	Title      string `json:"title"`
+	Author     string `json:"author,omitempty"`
+	Identifier string `json:"identifier,omitempty"`
+	Language   string `json:"language,omitempty"`
+	Published  string `json:"published,omitempty"`
 }
 
 type Link struct {
@@ -63,242 +64,22 @@ type Root struct {
 	Publications []Publication `json:"publications"`
 }
 
-// "authentified" || "notAuthentified" || "authentifiedAndBorrowed"
-func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHashedPassphrase string, startDate, endDate time.Time) Link {
-
-	if choice == "authentified" {
-		return Link{
-			Type: "application/vnd.readium.lcp.license.v1.0+json",
-			Rel:  "http://opds-spec.org/acquisition/borrow",
-			Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/loan",
-			Properties: &Properties{
-				Availability: &Availability{
-					Status: "available",
-				},
-				IndirectAcquisition: []Link{
-					{
-						Type: "application/vnd.readium.lcp.license.v1.0+json",
-						Child: []Link{
-							{
-								Type: "application/epub+zip",
-							},
-						},
-					},
-				},
-			},
-		}
-
-	} else if choice == "notAuthentified" {
-		return Link{
-			Type: "application/opds-publication+json",
-			Rel:  "http://opds-spec.org/acquisition/borrow",
-			Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/borrow",
-			Properties: &Properties{
-				Availability: &Availability{
-					Status: "available",
-				},
-				IndirectAcquisition: []Link{
-					{
-						Type: "application/vnd.readium.lcp.license.v1.0+json",
-						Child: []Link{
-							{
-								Type: "application/epub+zip",
-							},
-						},
-					},
-				},
-			},
-		}
-
-	}
-	return Link{
-		Type: "application/vnd.readium.lcp.license.v1.0+json",
-		Rel:  "http://opds-spec.org/acquisition",
-		Href: config.BASE_URL + "/opds/v1/publication/" + pubUUID + "/license",
-		Properties: &Properties{
-			Availability: &Availability{
-				Status:    statusCode,
-				StartDate: &startDate,
-				EndDate:   &endDate,
-			},
-			LcpHashedPassphrase: lcpHashedPassphrase,
-			IndirectAcquisition: []Link{
-				{
-					Type: "application/vnd.readium.lcp.license.v1.0+json",
-					Child: []Link{
-						{
-							Type: "application/epub+zip",
-						},
-					},
-				},
-			},
-		},
-	}
-
+type Opds struct {
+	*conf.Config
+	*stor.Store
 }
 
-func convertToPublication(storPublication *stor.Publication) (Publication, error) {
-	if storPublication == nil {
-		return Publication{}, errors.New("invalid stor.Publication")
+// PublicBaseURL is set with the base URL of the server.
+// Creating this avoids passing the whole config to many inner functions of this module.
+var publicBaseUrl string
+
+// Init initializes the module
+func Init(c *conf.Config, s *stor.Store) Opds {
+
+	publicBaseUrl = c.PublicBaseUrl
+
+	return Opds{
+		Config: c,
+		Store:  s,
 	}
-
-	publication := Publication{
-		Metadata: Metadata{
-			Type:       "http://schema.org/Book",
-			Title:      storPublication.Title,
-			Author:     getAuthorNames(storPublication.Author),
-			Identifier: storPublication.UUID,
-			Language:   getLanguageCode(storPublication.Language),
-			Modified:   &storPublication.DatePublication,
-		},
-		Links: []Link{
-			{
-				Rel:  "self",
-				Href: config.BASE_URL + "/opds/v1/publication/" + storPublication.UUID,
-				Type: "application/opds+json",
-			},
-		},
-		Images: getImages(storPublication.CoverUrl),
-	}
-
-	return publication, nil
-}
-
-func getAuthorNames(authors []stor.Author) string {
-	var names []string
-	for _, author := range authors {
-		names = append(names, author.Name)
-	}
-	return strings.Join(names, ", ")
-}
-
-func getLanguageCode(languages []stor.Language) string {
-	var codes []string
-	for _, language := range languages {
-		codes = append(codes, language.Code)
-	}
-	if len(codes) > 0 {
-		return codes[0]
-	}
-	return ""
-}
-
-func getImages(coverURL string) []Image {
-	if coverURL == "" {
-		return nil
-	}
-
-	images := []Image{
-		{
-			Href: coverURL,
-			Type: "image/jpeg",
-		},
-	}
-	return images
-}
-
-func (opds *Opds) GenerateOpdsFeed(page, pageSize int) (Root, error) {
-
-	publications, _, err := opds.stor.GetAllPublications(page, pageSize)
-	if err != nil {
-		return Root{}, errors.New("Error fetching publications:" + err.Error())
-	}
-
-	root := Root{
-		Metadata: MetadataFeed{
-			Title: "Pubstore OPDS Feed",
-		},
-		Links: []Link{
-			{
-				Rel:  "self",
-				Href: config.BASE_URL + "/opds/v1/catalog",
-				Type: "application/opds+json",
-			},
-			{
-				Rel:  "http://opds-spec.org/shelf",
-				Href: config.BASE_URL + "/opds/v1/bookshelf",
-				Type: "application/opds+json",
-			},
-		},
-		Publications: make([]Publication, len(publications)),
-	}
-
-	for i, storPub := range publications {
-		root.Publications[i], err = convertToPublication(&storPub)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	fmt.Println(root.Links)
-
-	return root, nil
-}
-
-func (opds *Opds) getTransactionFromUserAndPubUUID(user *stor.User, pubUUID string) (*stor.Transaction, error) {
-	if user == nil {
-		return nil, errors.New("no user")
-	}
-
-	pub, err := opds.stor.GetPublicationByUUID(pubUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	transactions, err := opds.stor.GetTransactionByUserAndPublication(user.ID, pub.ID)
-	if err != nil {
-		return nil, err
-
-	}
-	return transactions, nil
-}
-
-func (opds *Opds) GenerateBookshelfFeed(credential string) (Root, error) {
-
-	user, err := opds.stor.GetUserByEmail(credential)
-	if err != nil {
-		return Root{}, err
-	}
-	transactions, err := opds.stor.GetTransactionsByUserID(user.ID)
-	if err != nil {
-		return Root{}, err
-	}
-
-	var publicationOpdsView []Publication = make([]Publication, len(*transactions))
-	var lsdStatus []*lcp.LsdStatus = make([]*lcp.LsdStatus, len(*transactions))
-	for i, transactionStor := range *transactions {
-		lsdStatus[i], err = lcp.GetLsdStatus(transactionStor.LicenceId, transactionStor.User.Email, transactionStor.User.LcpHintMsg, transactionStor.User.LcpPassHash)
-		if err != nil {
-			lsdStatus[i] = &lcp.LsdStatus{}
-		}
-		publicationOpdsView[i], err = convertToPublication(&transactionStor.Publication)
-		if err != nil {
-			publicationOpdsView[i] = Publication{}
-		}
-	}
-
-	root := Root{
-		Metadata: MetadataFeed{
-			Title: "bookshelf",
-		},
-		Links: []Link{
-			{
-				Rel:  "self",
-				Href: config.BASE_URL + "/opds/v1/bookshelf",
-				Type: "application/opds+json",
-			},
-			{
-				Rel:  "http://opds-spec.org/shelf",
-				Href: config.BASE_URL + "/opds/v1/bookshelf",
-				Type: "application/opds+json",
-			},
-		},
-		Publications: publicationOpdsView,
-	}
-
-	for i, status := range lsdStatus {
-		root.Publications[i].Links = append(root.Publications[i].Links, publicationAcquisitionLinkChoice("authentified", root.Publications[i].Metadata.Identifier, status.StatusCode, user.LcpPassHash, status.StartDate, status.EndDate))
-	}
-
-	return root, nil
 }

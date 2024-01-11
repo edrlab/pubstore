@@ -394,10 +394,10 @@
                         "$ref": "#/definitions/api.Category"
                     }
                 },
-                "coverUrl": {
+                "cover_url": {
                     "type": "string"
                 },
-                "datePublication": {
+                "date_publication": {
                     "type": "string"
                 },
                 "description": {
@@ -437,10 +437,10 @@
                 "email": {
                     "type": "string"
                 },
-                "lcpHintMsg": {
+                "TextHint": {
                     "type": "string"
                 },
-                "lcpPassHash": {
+                "Passphrase": {
                     "type": "string"
                 },
                 "name": {

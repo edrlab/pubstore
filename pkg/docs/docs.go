@@ -401,10 +401,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/api.Category"
                     }
                 },
-                "coverUrl": {
+                "cover_url": {
                     "type": "string"
                 },
-                "datePublication": {
+                "date_published": {
                     "type": "string"
                 },
                 "description": {
@@ -444,10 +444,10 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "lcpHintMsg": {
+                "TextHint": {
                     "type": "string"
                 },
-                "lcpPassHash": {
+                "Passphrase": {
                     "type": "string"
                 },
                 "name": {

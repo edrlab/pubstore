@@ -27,17 +27,17 @@
 
             <div class="signup-password">
                 <label for="password">Password:</label>
-                <input type="password" name="password" id="password" required>
-            </div>
-
-            <div class="signup-lcpPass">
-                <label for="lcpPass">LCP Passphrase:</label>
-                <input type="password" name="lcpPass" id="lcpPass" required>
+                <input type="text" name="password" id="password" required>
             </div>
 
             <div class="signup-lcpHint">
                 <label for="lcpHint">LCP Hint Message:</label>
-                <input type="text" name="lcpHint" id="lcpHint" title="Write a phrase to remember your LCP passphrase">
+                <input type="text" name="lcpHint" id="lcpHint" required title="A sentence used as a reminder for your passphrase">
+            </div>
+
+            <div class="signup-lcpPass">
+                <label for="lcpPass">LCP Passphrase:</label>
+                <input type="text" name="lcpPass" id="lcpPass" required title="Enter at least 3 characters">
             </div>
 
             <input type="submit" value="Signup">

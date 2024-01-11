@@ -1,5 +1,4 @@
 //go:build PGSQL
-// +build PGSQL
 
 package stor
 
@@ -8,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func GormDialector(postgresDsn string) gorm.Dialector {
+func GormDialector(cnx string) gorm.Dialector {
 
-	return postgres.Open(postgresDsn)
+	return postgres.Open(cnx)
 }

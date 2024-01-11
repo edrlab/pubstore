@@ -1,3 +1,7 @@
+// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// specified in the Github project LICENSE file.
+
 package lcp
 
 import (
@@ -5,18 +9,34 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
-	"github.com/edrlab/pubstore/pkg/config"
+	"github.com/edrlab/pubstore/pkg/conf"
 )
 
-/**
+// LicenseRequest contains every parameter required for requesting a
+// license to the License Server v2
+type LicenseRequest struct {
+	PublicationID string     `json:"publication_id"`
+	UserID        string     `json:"user_id,omitempty"`
+	UserName      string     `json:"user_name,omitempty"`
+	UserEmail     string     `json:"user_email,omitempty"`
+	UserEncrypted []string   `json:"user_encrypted,omitempty"`
+	Start         *time.Time `json:"start,omitempty"`
+	End           *time.Time `json:"end,omitempty"`
+	Copy          *int       `json:"copy,omitempty"`
+	Print         *int       `json:"print,omitempty"`
+	Profile       string     `json:"profile"`
+	TextHint      string     `json:"text_hint"`
+	PassHash      string     `json:"pass_hash"`
+}
 
+/* Example of License Request V1
 `{
-	  "provider": "http://www.imaginaryebookretailer.com",
 	  "user": {
 	    "id": "d9f298a7-7f34-49e7-8aae-4378ecb1d597",
 	    "email": "user@mymail.com",
@@ -37,12 +57,11 @@ import (
 	}`
 */
 
-type Licence struct {
+type LicenceRequestV1 struct {
 	Provider   string     `json:"provider"`
-	ID         string     `json:"id"`
 	User       User       `json:"user"`
 	Encryption Encryption `json:"encryption"`
-	Rights     Rights     `json:"rights"`
+	Rights     Rights     `json:"rights,omitempty"`
 }
 
 type User struct {
@@ -61,72 +80,14 @@ type UserKey struct {
 }
 
 type Rights struct {
-	Print int       `json:"print"`
-	Copy  int       `json:"copy"`
-	Start time.Time `json:"start"`
-	End   time.Time `json:"end"`
+	Print *int       `json:"print,omitempty"`
+	Copy  *int       `json:"copy,omitempty"`
+	Start *time.Time `json:"start,omitempty"`
+	End   *time.Time `json:"end,omitempty"`
 }
 
-/**
-
-	{
-  "provider": "https://pubstore.edrlab.org",
-  "id": "aea91a67-b1de-4761-97fa-9d2f038a20ba",
-  "issued": "2023-06-22T12:07:51Z",
-  "encryption": {
-    "profile": "http://readium.org/lcp/profile-1.0",
-    "content_key": {
-      "algorithm": "http://www.w3.org/2001/04/xmlenc#aes256-cbc",
-      "encrypted_value": "AqbaQUVuhI1VehuBsJ5uGjtDJLCOiuhhP/WvjKFi7BlBV/0mZNo+x5BX/3jAuMsmv+6+YT01pmJ7Pr+rQIbBDw=="
-    },
-    "user_key": {
-      "algorithm": "http://www.w3.org/2001/04/xmlenc#sha256",
-      "text_hint": "Hint",
-      "key_check": "N0pZvdznClFwMfdsFimjYZehUum7tRtd0jVnuSH8rlasBmivCBQ/QlhIoZfNG9qb5UZQbYhM07g9g7yNYqUBdQ=="
-    }
-  },
-  "links": [
-    {
-      "rel": "hint",
-      "href": "https://front-prod.edrlab.org/frontend/static/hint.html",
-      "type": "text/html"
-    },
-    {
-      "rel": "publication",
-      "href": "https://front-prod.edrlab.org/lcpserver/contents/6b4b7eb4-7630-4819-a813-e8276a83f78f",
-      "type": "application/epub+zip",
-      "title": "1342.encrypted.epub",
-      "length": 24850367,
-      "hash": "2b76a1fd895f05883db9da1e16d25f712af57d8d1a98ba8586cc645c3808f1d8"
-    },
-    {
-      "rel": "status",
-      "href": "https://front-prod.edrlab.org/lsdserver/licenses/aea91a67-b1de-4761-97fa-9d2f038a20ba/status",
-      "type": "application/vnd.readium.license.status.v1.0+json"
-    }
-  ],
-  "user": {
-    "id": "7e1ac2b9-ed71-4180-bfb2-4a07bce46477",
-    "email": "Qpz++L4gjQ0UolZcDnSg9vG5bKfX+rhLakGo+9JsvALrY1r+N3znlyLSPksgC9Wg",
-    "encrypted": [
-      "email"
-    ]
-  },
-  "rights": {
-    "print": 43,
-    "copy": 12,
-    "start": "2023-06-14T00:08:15Z",
-    "end": "2099-12-31T23:00:00Z"
-  },
-  "signature": {
-    "certificate": "MIIDKTCCAhGgAwIBAgIIEjZ5lJEfgf8wDQYJKoZIhvcNAQELBQAwQjETMBEGA1UEChMKZWRybGFiLm9yZzEXMBUGA1UECxMOZWRybGFiLm9yZyBMQ1AxEjAQBgNVBAMTCUVEUkxhYiBDQTAeFw0yMjA3MDgxNDMzMDFaFw0yNDA3MDcyMzU5NTlaME4xEzARBgNVBAoTCmVkcmxhYi5vcmcxJjAkBgNVBAsTHVJlYWRpdW0gTENQIExpY2Vuc2UgUHJvdmlkZXJzMQ8wDQYDVQQDEwZFRFJMYWIwgZswEAYHKoZIzj0CAQYFK4EEACMDgYYABAEU5BNfVLta4fz4MtmfHROMkLLThwyuKIKFeysg4cHjxBx0GAU+hGD3+rNTj7cDHa9FMQlE+sFNdbGfd2s4c3D8fAFErQI6QQ52MDuFSClaN0aWdVpjznc5V6Y6qvWTgh4P4V4gv40ot+QiVzwTevBWtsSbrw8nltCySIRGs66D7BEiU6OBnjCBmzAfBgNVHSMEGDAWgBTcXPyT5B+f7rC66lILK8pSXODJhzAdBgNVHQ4EFgQUCc2GhhgYvSOYvXkdYOxNqxs4FywwDgYDVR0PAQH/BAQDAgeAMAkGA1UdEwQCMAAwPgYDVR0fBDcwNTAzoDGgL4YtaHR0cDovL2NybC5lZHJsYWIudGVsZXNlYy5kZS9ybC9FRFJMYWJfQ0EuY3JsMA0GCSqGSIb3DQEBCwUAA4IBAQBxCl511aMdpIl56NKI0VW2tTM3FvhN717kNWsdr6Mj4xm2HXZ+BLfhGqFkm1iYwkM45o2unuVqe8zkIfEE24ghBd37aXrmS8IxY9t6gVFZKUGP/Q7NeA0EzUKru086mDDAuOgC05EAMlL6hgk+8IXw/BiD3hROAaop781UAkG3usU46n8w3meDqjjseLFfLTlGCU4njTGWZe3U8bOM0iz52LPcJGGT+fOPm2wGMdLL7aicxF166qWD05xC4UpdARwjopBGj7qkw6LVrM0E2mGpF0SyCyM4tdQH4PkHTtZ06vjipbzvE6TlFJP9/9M4HTUDDUevH4rPUip+de8wKvGF",
-    "value": "AHaPyrqHzS+S2CGQrLZvyUVIsA8wabf+P4rnovY8PZHhtW3vhH/QdCXSN/r1ptF9W66NwMV3PFZySSFe56ihRhkvAK8Htk7zOY7UJrPqTj7KqmrTnJPVipJizeoW/p/1AKfiQ39tzybrj3oWO71whpLX1YCNBRO4GIOOUNXqRSdLkjYR",
-    "algorithm": "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"
-  }
-}
-*/
-
-func CreateLcpPassHash(passphrase string) string {
+// HashPassphrase generates the hash of a passphrase
+func HashPassphrase(passphrase string) string {
 
 	hash := sha256.Sum256([]byte(passphrase))
 	hashString := hex.EncodeToString(hash[:])
@@ -134,16 +95,17 @@ func CreateLcpPassHash(passphrase string) string {
 	return hashString
 }
 
-func generateLicence(provider, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) Licence {
+// v1Request prepares a license request in the form expected by the License Server V1
+func v1Request(licenseReq LicenseRequest) LicenceRequestV1 {
 	user := User{
-		ID:        userUUID,
-		Email:     userEmail,
+		ID:        licenseReq.UserID,
+		Email:     licenseReq.UserEmail,
 		Encrypted: []string{"email"},
 	}
 
 	userKey := UserKey{
-		TextHint: textHint,
-		HexValue: hexValue,
+		TextHint: licenseReq.TextHint,
+		HexValue: licenseReq.PassHash,
 	}
 
 	encryption := Encryption{
@@ -151,14 +113,14 @@ func generateLicence(provider, userUUID, userEmail, textHint, hexValue string, p
 	}
 
 	rights := Rights{
-		Print: printRights,
-		Copy:  copyRights,
-		Start: start,
-		End:   end,
+		Print: licenseReq.Print,
+		Copy:  licenseReq.Copy,
+		Start: licenseReq.Start,
+		End:   licenseReq.End,
 	}
 
-	licence := Licence{
-		Provider:   provider,
+	licence := LicenceRequestV1{
+		Provider:   "https://edrlab.org",
 		User:       user,
 		Encryption: encryption,
 		Rights:     rights,
@@ -167,18 +129,30 @@ func generateLicence(provider, userUUID, userEmail, textHint, hexValue string, p
 	return licence
 }
 
-func generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
+// GenerateLicense sends a request to the License Server and returns a new license to the caller
+func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) ([]byte, error) {
 
-	provider := "https://pubstore.edrlab.org"
-	licence := generateLicence(provider, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
+	var url string
+	var payload []byte
+	var err error
 
-	url := fmt.Sprintf(config.LCP_SERVER_URL+"/contents/%s/license", pubUUID)
-	username := config.LCP_SERVER_USERNAME
-	password := config.LCP_SERVER_PASSWORD
+	// License Server V1
+	if lcpsv.Version == "v1" {
+		url = fmt.Sprintf(lcpsv.Url+"/contents/%s/license", licenseReq.PublicationID)
 
-	payload, err := json.Marshal(licence)
-	if err != nil {
-		return nil, err
+		v1req := v1Request(licenseReq)
+		payload, err = json.Marshal(v1req)
+		if err != nil {
+			return nil, err
+		}
+
+		// License Server V2
+	} else {
+		url = lcpsv.Url + "/licenses"
+		payload, err = json.Marshal(licenseReq)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
@@ -187,27 +161,27 @@ func generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexVal
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(lcpsv.UserName, lcpsv.Password)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return nil, err
+		return nil, errors.New("failed to send a license request to the License Server")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusCreated {
 		fmt.Println("License created successfully.")
 	} else if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
-		return nil, fmt.Errorf("client error occurred. Status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("a client error occurred. Status code: %d", resp.StatusCode)
 	} else if resp.StatusCode == http.StatusInternalServerError {
-		return nil, fmt.Errorf("server error occurred. Status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("a server error occurred. Status code: %d", resp.StatusCode)
 	} else {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -215,20 +189,9 @@ func generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexVal
 	return body, nil
 }
 
-func LicenceBuy(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int) ([]byte, error) {
-	start := time.Now()
-	end := time.Now().AddDate(100, 0, 0)
-	return generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
-}
+// GetFreshLicense sends a request to the License Server and returns the fresh license to the caller
+func GetFreshLicense(lcpsv conf.LCPServerAccess, licenceId, email, textHint, hexValue string) ([]byte, error) {
 
-func LicenceLoan(pubUUID, userUUID, userEmail, textHint, hexValue string, printRights, copyRights int, start, end time.Time) ([]byte, error) {
-
-	return generateLicenceFromLcpServer(pubUUID, userUUID, userEmail, textHint, hexValue, printRights, copyRights, start, end)
-}
-
-func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue string) ([]byte, error) {
-
-	provider := "https://pubstore.edrlab.org"
 	user := User{
 		Email:     email,
 		Encrypted: []string{"email"},
@@ -243,8 +206,8 @@ func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue stri
 		UserKey: userKey,
 	}
 
-	licence := Licence{
-		Provider:   provider,
+	// TODO: adapt to the LCP Server v2
+	licence := LicenceRequestV1{
 		User:       user,
 		Encryption: encryption,
 	}
@@ -254,9 +217,9 @@ func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue stri
 		return nil, err
 	}
 
-	url := config.LCP_SERVER_URL + "/licenses/" + licenceId
-	username := config.LCP_SERVER_USERNAME
-	password := config.LCP_SERVER_PASSWORD
+	url := lcpsv.Url + "/licenses/" + licenceId
+	username := lcpsv.UserName
+	password := lcpsv.Password
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
@@ -284,7 +247,7 @@ func GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue stri
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -296,27 +259,29 @@ type LsdStatus struct {
 	StatusMessage      string
 	StatusCode         string
 	EndPotentialRights time.Time
-	PrintRights        int
-	CopyRights         int
+	PrintLimit         int
+	CopyLimit          int
 	StartDate          time.Time
 	EndDate            time.Time
 }
 
-func GetLsdStatus(licenceId, email, textHint, hexValue string) (*LsdStatus, error) {
+// GetStatusDocument sends a request to the License Server and returns a status document to the caller
+// For that we need to use the LCP Server v2.
+func GetStatusDocument(lcpsv conf.LCPServerAccess, licenceId, email, textHint, hexValue string) (*LsdStatus, error) {
 
-	licenceBytes, err := GenerateFreshLicenceFromLcpServer(licenceId, email, textHint, hexValue)
+	// TODO: avoid fetching the fresh license first, just to get the url to the status document.
+	licenceBytes, err := GetFreshLicense(lcpsv, licenceId, email, textHint, hexValue)
 	if err != nil {
 		return nil, err
-
 	}
 
-	_, _, publicationStatusHref, printRights, copyRights, startDate, endDate, err := ParseLicenceLCPL(licenceBytes)
+	_, _, publicationStatusHref, printRights, copyRights, startDate, endDate, err := ParseLicense(licenceBytes)
 	if err != nil {
 		return nil, err
 	}
 
 	// make a request on publicationStatusHref
-	lsd, err := getLsdStatusDocument(publicationStatusHref)
+	lsd, err := getStatusDocFromUrl(publicationStatusHref)
 	if err != nil {
 		return nil, err
 	}
@@ -329,8 +294,8 @@ func GetLsdStatus(licenceId, email, textHint, hexValue string) (*LsdStatus, erro
 		StatusMessage:      statusMessage,
 		StatusCode:         statusCode,
 		EndPotentialRights: endPotentialRights,
-		PrintRights:        printRights,
-		CopyRights:         copyRights,
+		PrintLimit:         printRights,
+		CopyLimit:          copyRights,
 		StartDate:          startDate,
 		EndDate:            endDate,
 	}, nil

@@ -73,7 +73,7 @@
         </div>
         <p id="summary" class="tabbed" style="display : block;">{{.description}}</p>
         <div class="tabbed" id="details" style="display:none;">
-            <p>Published on : {{.datePublication}}</p>
+            <p>Published on : {{.datePublished}}</p>
             <p>Publisher : {{range .publishers}}<a href="/catalog?publisher={{.}}" class="bold"> {{.}},</a>{{end}}</p>
             <p>Language : {{range .languages}}<a href="/catalog?language={{.}}" class="bold">{{.}},</a>{{end}}</p>
         </div>

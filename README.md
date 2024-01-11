@@ -1,5 +1,5 @@
 # pubstore
-A publication store which can be associated with an lcp-server
+A publication store, to be associated with an LCP Server.
 
 **Note: This project is for demonstration purposes only and should not be used in a production environment.**
 
@@ -39,25 +39,36 @@ or
 Access the PubStore API at http://localhost:8080 (or the appropriate base URL according to your configuration).
 
 
+### Configuration
 
-## Deployment
+The configuration of the server is kept both in a configudation file and in environment variable. 
+It is possible to mix both sets, as confidential information is better kept as environment variables. 
 
-it's currently deployed on Google Cloud Platform Cloud Run and Cloud SQL (postgresql:14)
+The server will use the PUBSTORE_CONFIG environment variable to find a configuration file. Its value must be a file path. 
 
-https://pubstore.edrlab.org
+Configuration properties are expressed in snake case in the configuration file, and screaming snake case prefiexed by `PUBSTORE` when expressed as environment variables. 
+As an example, the `port` conguration property becomes the `PUBSTORE_PORT` environment variable, `public_base_url` becomes `PUBSTORE_PUBLIC_BASE_URL`, 
+and the `version` property of the `lcp_server` section becomes `PUBSTORE_LCP_SERVER_VERSION`.
 
-### ENV Variable
+- `port`:tThe port on which the HTTP server will listen. Default value: `8080`.
+- `public_base_url`: the base URL for the pubstore server. Default value: `http://localhost:8080`.
+- `dsn`: the data source name, i.e. database connection string. Default value: `sqlite3://pubstore.sqlite`.
+- `oauth_seed`: a string used as a seed for OAuth2 server authorization. 
+- `root_dir`: the path to static files and views used by the web interface. Default value: current directory.
+- `resources`: the path to the cover images used by the Web interface.
+- `page_size`: the page size used  in the REST API and Web interface.
+- `print_limit`: the print limit set in LCP licenses generated from the associated LCP Server. 
+- `copy_limit`: the copy limit set in LCP licenses generated from the associated LCP Server. 
+- `username`: the Basic Auth username used to notify Pubstore of a new encrypted publication.
+- `password`: the Basic Auth password used to notify Pubstore of a new encrypted publication.
+- `lcp_server`: a section relative to the access to the associated LCP Server. 
 
-The following environment variables are used in the Dockerfile:
+The `lcp_server` section contains:
+- `url`: the URL of the LCP server.
+- `version`: the version of the LCP server: "v1" or "v2".
+- `username`: the username for the LCP server.
+- `password`: the password for the LCP server.
 
-- `BASE_URL`: The base URL for the pubstore application. Default value: `http://localhost:8080`.
-- `PORT`: The port on which the HTTP server will listen. Default value: `8080`.
-- `LCP_SERVER_URL`: The URL of the LCP server. Default value: `https://front-prod.edrlab.org/lcpserver`.
-- `LCP_SERVER_USERNAME`: The username for the LCP server. Default value: `adm_username`.
-- `LCP_SERVER_PASSWORD`: The password for the LCP server. Default value: `adm_password`.
-- `PUBSTORE_USERNAME`: The username for notifying Pubstore of a new encrypted publication. Default value: `adm_username`.
-- `PUBSTORE_PASSWORD`: The password for notifying Pubstore of a new encrypted publication. Default value: `adm_password`.
-- `DSN`: The database connection string. Default value: `""` (empty string).
 
 You can modify these environment variables according to your requirements. Make sure to set the appropriate values based on your deployment environment.
 
@@ -75,6 +86,11 @@ docker build -t pubstore .
 docker run -p 8080:8080 -e DSN="host=host.docker.internal user=postgres password=mysecretpassword dbname=postgres port=5432 sslmode=disable" pubstore
 ```
 
+## Deployment
+
+it's currently deployed on Google Cloud Platform Cloud Run and Cloud SQL (postgresql:14)
+
+https://pubstore.edrlab.org
 
 ## API
 
@@ -82,9 +98,7 @@ docker run -p 8080:8080 -e DSN="host=host.docker.internal user=postgres password
 
 Swagger documentation : https://pubstore.edrlab.org/api/v1/swagger/index.html
 
-to compile the swagger documentation
-
-you need to install https://github.com/swaggo/swag
+to compile the swagger documentation, you need to install https://github.com/swaggo/swag
 
 
 ```shell
@@ -92,99 +106,3 @@ make docs
 make build
 make run
 ```
-
-### User API
-
-The User API provides endpoints to manage user data.
-
-#### Create User
-
-Create a new user.
-
-- **URL:** `/user`
-- **Method:** `POST`
-- **Request Body:** User object
-- **Response:** Created User object
-- **Error Responses:**
-  - `400 Bad Request`: Invalid request payload or validation errors
-  - `500 Internal Server Error`: Failed to create user
-
-#### Get User
-
-Retrieve a user by ID.
-
-- **URL:** `/user/{id}`
-- **Method:** `GET`
-- **Response:** User object
-- **Error Responses:**
-  - `500 Internal Server Error`: Internal server error
-
-#### Update User
-
-Update a user by ID.
-
-- **URL:** `/user/{id}`
-- **Method:** `PUT`
-- **Request Body:** Updated User object
-- **Response:** Updated User object
-- **Error Responses:**
-  - `400 Bad Request`: Invalid request payload or validation errors
-  - `500 Internal Server Error`: Failed to update user
-
-#### Delete User
-
-Delete a user by ID.
-
-- **URL:** `/user/{id}`
-- **Method:** `DELETE`
-- **Response:** Success message
-- **Error Responses:**
-  - `500 Internal Server Error`: Failed to delete user
-
-### Publication API
-
-The Publication API provides endpoints to manage publication data.
-
-#### Create Publication
-
-Create a new publication.
-
-- **URL:** `/publications`
-- **Method:** `POST`
-- **Request Body:** Publication object
-- **Response:** Created Publication object
-- **Error Responses:**
-  - `400 Bad Request`: Invalid request payload or validation errors
-  - `500 Internal Server Error`: Failed to create publication
-
-#### Get Publication
-
-Retrieve a publication by ID.
-
-- **URL:** `/publications/{id}`
-- **Method:** `GET`
-- **Response:** Publication object
-- **Error Responses:**
-  - `500 Internal Server Error`: Internal server error
-
-#### Update Publication
-
-Update a publication by ID.
-
-- **URL:** `/publications/{id}`
-- **Method:** `PUT`
-- **Request Body:** Updated Publication object
-- **Response:** Updated Publication object
-- **Error Responses:**
-  - `400 Bad Request`: Invalid request payload or validation errors
-  - `500 Internal Server Error`: Failed to update publication
-
-#### Delete Publication
-
-Delete a publication by ID.
-
-- **URL:** `/publications/{id}`
-- **Method:** `DELETE`
-- **Response:** Success message
-- **Error Responses:**
-  - `500 Internal Server Error`: Failed to delete publication

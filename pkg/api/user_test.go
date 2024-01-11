@@ -1,3 +1,7 @@
+// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// specified in the Github project LICENSE file.
+
 package api
 
 import (
@@ -12,46 +16,45 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUserHandler(t *testing.T) {
-	// Initialize router
+	// Initialize the router
 	r := chi.NewRouter()
-	r.Group(api.Router)
+	r.Group(testapi.Router)
 
-	// Create a new user for testing
-	createdUser := &stor.User{
-		UUID:        gofakeit.UUID(),
-		Name:        "Pierre ler",
-		Email:       gofakeit.Email(),
-		Pass:        "password123",
-		LcpHintMsg:  "Hint",
-		LcpPassHash: "hash123",
-		SessionId:   uuid.New().String(),
+	// init an admin user, who will be able to create other users
+	// this user has no initial UUID and no session id
+	adminUser := &stor.User{
+		Name:       "Admin",
+		Email:      gofakeit.Email(),
+		Password:   "password",
+		TextHint:   "hint",
+		Passphrase: "passphrase",
 	}
 
-	// Create the user in the storage
-	err := api.stor.CreateUser(createdUser)
+	// create the user in the database, so that a token can be acquired
+	// note: the creation replace the clear password by its hash
+	err := testapi.Store.CreateUser(adminUser)
 	assert.NoError(t, err)
 
-	// Generate the bearer token by making a POST request to /api/v1/token
+	// generate a bearer token
 	tokenURL := "/api/v1/token"
 	tokenData := url.Values{
 		"grant_type": {"password"},
-		"username":   {createdUser.Email},
-		"password":   {"password123"},
+		"username":   {adminUser.Email},
+		"password":   {adminUser.Password},
 	}
-	tokenReq, err := http.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
-	assert.NoError(t, err)
+	tokenReq := httptest.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
 	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 	tokenRecorder := httptest.NewRecorder()
 	r.ServeHTTP(tokenRecorder, tokenReq)
-	assert.Equal(t, http.StatusOK, tokenRecorder.Code)
+	if !assert.Equal(t, http.StatusOK, tokenRecorder.Code) {
+		t.FailNow()
+	}
 
-	// Retrieve the access token from the response
+	// retrieve the access token from the response
 	var tokenResp struct {
 		Token string `json:"access_token"`
 	}
@@ -59,92 +62,105 @@ func TestUserHandler(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, tokenResp.Token)
 
-	// Try creating a user without any token
+	// init a test user
+	// this user has an initial UUID
 	newUser := &stor.User{
-		Name:        "Jean Mène",
-		Email:       gofakeit.Email(),
-		Pass:        "password123",
-		LcpHintMsg:  "Hint",
-		LcpPassHash: "hash123",
-		SessionId:   uuid.New().String(),
+		UUID:       gofakeit.UUID(),
+		Name:       gofakeit.Name(),
+		Email:      gofakeit.Email(),
+		Password:   "password",
+		TextHint:   "hint",
+		Passphrase: "passphrase",
 	}
-	newUserBytes, err := json.Marshal(newUser)
+	userBytes, err := json.Marshal(newUser)
 	assert.NoError(t, err)
-	req, err := http.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(newUserBytes))
-	assert.NoError(t, err)
+
+	// try creating the user with no token
+	req := httptest.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(userBytes))
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 	assert.NoError(t, err)
 
-	// Try creating a user with a token
-	// Test POST /api/v1/users
-	req, err = http.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(newUserBytes))
+	// create the user with a token
+	req = httptest.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(userBytes))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
-	assert.NoError(t, err)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusCreated, recorder.Code)
+	if !assert.Equal(t, http.StatusCreated, recorder.Code) {
+		t.FailNow()
+	}
 
-	// Unmarshal the response to get the created user
-	var createdUserFromPostRequest stor.User
-	err = json.Unmarshal(recorder.Body.Bytes(), &createdUserFromPostRequest)
+	// unmarshal the response to get the created user
+	var createdUser stor.User
+	err = json.Unmarshal(recorder.Body.Bytes(), &createdUser)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, createdUserFromPostRequest.UUID)
+	assert.NotEmpty(t, createdUser.UUID)
 
-	// Get the user previously created by its id
-	// Test GET /api/v1/users/{id}
-	getUserURL := "/api/v1/users/" + createdUser.UUID
-	req, err = http.NewRequest("GET", getUserURL, nil)
+	// get the user previously created by its id
+	getUserURL := "/api/v1/users/" + newUser.UUID
+	req = httptest.NewRequest("GET", getUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
-	assert.NoError(t, err)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
+
 	var retrievedUser stor.User
 	err = json.Unmarshal(recorder.Body.Bytes(), &retrievedUser)
 	assert.NoError(t, err)
 
-	// Check the retrieved user details
-	assert.Equal(t, createdUser.Name, retrievedUser.Name)
-	assert.Equal(t, createdUser.Email, retrievedUser.Email)
-	assert.Equal(t, "", retrievedUser.Pass)
-	assert.Equal(t, createdUser.LcpHintMsg, retrievedUser.LcpHintMsg)
-	assert.Equal(t, createdUser.LcpPassHash, retrievedUser.LcpPassHash)
+	// check the retrieved user details
+	assert.NotEqual(t, "", retrievedUser.UUID)
+	assert.Equal(t, newUser.Name, retrievedUser.Name)
+	assert.Equal(t, newUser.Email, retrievedUser.Email)
+	assert.Equal(t, newUser.TextHint, retrievedUser.TextHint)
+	// these are not returned (filtered on rendering)
+	assert.Equal(t, "", retrievedUser.Password)
+	assert.Equal(t, "", retrievedUser.HPassword)
+	assert.Equal(t, "", retrievedUser.Passphrase)
+	assert.Equal(t, "", retrievedUser.HPassphrase)
 	assert.Equal(t, "", retrievedUser.SessionId)
 
-	// Update the user
-	// Test PUT /api/v1/users/{id}
-	updateUserURL := "/api/v1/users/" + createdUser.UUID
-	updateUserData := map[string]interface{}{
-		"name": "Jane Doe",
-	}
-	updateUserDataBytes, err := json.Marshal(updateUserData)
+	// update the user
+	updateUserURL := "/api/v1/users/" + newUser.UUID
+	newUser.Name = "Jane Doe"
+	updateUserBytes, err := json.Marshal(newUser)
 	assert.NoError(t, err)
-	req, err = http.NewRequest("PUT", updateUserURL, bytes.NewBuffer(updateUserDataBytes))
+	req = httptest.NewRequest("PUT", updateUserURL, bytes.NewBuffer(updateUserBytes))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
-	assert.NoError(t, err)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
-	// Retrieve user by ID and validate updated name
-	userGetFromStor, err := api.stor.GetUserByUUID(createdUser.UUID)
+	// retrieve the user by ID and validate the updated name
+	userFromStor, err := testapi.Store.GetUser(newUser.UUID)
 	assert.NoError(t, err)
-	assert.Equal(t, "Jane Doe", userGetFromStor.Name)
+	assert.Equal(t, "Jane Doe", userFromStor.Name)
 
-	// Delete the user
-	// Test DELETE /api/v1/users/{id}
-	deleteUserURL := "/api/v1/users/" + createdUser.UUID
-	req, err = http.NewRequest("DELETE", deleteUserURL, nil)
+	// list users
+	listUserURL := "/api/v1/users"
+	req = httptest.NewRequest("GET", listUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
-	assert.NoError(t, err)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
-	// Retrieve user by ID and ensure it's not found
-	userDeleteFromStor, err := api.stor.GetUserByUUID(createdUser.UUID)
+	var retrievedUsers []stor.User
+	err = json.Unmarshal(recorder.Body.Bytes(), &retrievedUsers)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(retrievedUsers))
+	assert.Equal(t, "Admin", retrievedUsers[0].Name)
+	assert.Equal(t, "Jane Doe", retrievedUsers[1].Name)
+
+	// delete the user
+	deleteUserURL := "/api/v1/users/" + newUser.UUID
+	req = httptest.NewRequest("DELETE", deleteUserURL, nil)
+	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
+	recorder = httptest.NewRecorder()
+	r.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// retrieve user by ID and ensure it's not found
+	_, err = testapi.Store.GetUser(newUser.UUID)
 	assert.Error(t, err)
-	assert.Nil(t, userDeleteFromStor)
 }

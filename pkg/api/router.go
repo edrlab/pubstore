@@ -1,82 +1,41 @@
+// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Use of this source code is governed by a BSD-style license
+// specified in the Github project LICENSE file.
+
 package api
 
 import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/edrlab/pubstore/pkg/config"
+	"github.com/edrlab/pubstore/pkg/conf"
 	_ "github.com/edrlab/pubstore/pkg/docs"
+	"github.com/edrlab/pubstore/pkg/internal/auth"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/oauth"
-	"github.com/go-playground/validator/v10"
+	"github.com/go-chi/render"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"golang.org/x/crypto/bcrypt"
 )
 
-var validate *validator.Validate
-
 type Api struct {
-	stor *stor.Stor
+	*conf.Config
+	*stor.Store
 }
 
-func Init(s *stor.Stor) *Api {
-	return &Api{stor: s}
-}
-
-// TestUserVerifier provides user credentials verifier for testing.
-type UserVerifier struct {
-	stor *stor.Stor
-}
-
-// ValidateUser validates username and password returning an error if the user credentials are wrong
-func (u *UserVerifier) ValidateUser(username, password, scope string, r *http.Request) error {
-	user, err := u.stor.GetUserByEmail(username)
-	if err == nil && bcrypt.CompareHashAndPassword([]byte(user.Pass), []byte(password)) == nil {
-		return nil
+func Init(c *conf.Config, s *stor.Store) Api {
+	return Api{
+		Config: c,
+		Store:  s,
 	}
-
-	return errors.New("wrong user")
 }
 
-// ValidateClient validates clientID and secret returning an error if the client credentials are wrong
-func (*UserVerifier) ValidateClient(clientID, clientSecret, scope string, r *http.Request) error {
-	if clientID == "lcp-server" && clientSecret == "secret-123" {
-		return nil
-	}
-	return errors.New("wrong client")
-}
-
-// ValidateCode validates token ID
-func (*UserVerifier) ValidateCode(clientID, clientSecret, code, redirectURI string, r *http.Request) (string, error) {
-	return "", nil
-}
-
-// AddClaims provides additional claims to the token
-func (*UserVerifier) AddClaims(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
-	claims := make(map[string]string)
-	return claims, nil
-}
-
-// AddProperties provides additional information to the token response
-func (*UserVerifier) AddProperties(tokenType oauth.TokenType, credential, tokenID, scope string, r *http.Request) (map[string]string, error) {
-	props := make(map[string]string)
-	return props, nil
-}
-
-// ValidateTokenID validates token ID
-func (*UserVerifier) ValidateTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
-	return nil
-}
-
-// StoreTokenID saves the token id generated for the user
-func (*UserVerifier) StoreTokenID(tokenType oauth.TokenType, credential, tokenID, refreshTokenID string) error {
-	return nil
-}
+// -------------------------------------------
 
 // @title Pubstore API
 // @version 1.0
@@ -98,9 +57,7 @@ func (*UserVerifier) StoreTokenID(tokenType oauth.TokenType, credential, tokenID
 //	@scope.write							Grants write access
 //	@scope.admin							Grants read and write access to administrative information:w
 
-func (api *Api) Router(r chi.Router) {
-
-	validate = validator.New()
+func (a *Api) Router(r chi.Router) {
 
 	// https://github.com/go-chi/oauth/blob/master/example/authserver/main.go
 	r.Use(cors.Handler(cors.Options{
@@ -113,30 +70,31 @@ func (api *Api) Router(r chi.Router) {
 	}))
 
 	s := oauth.NewBearerServer(
-		config.OauthSeed,
+		a.Config.OAuthSeed,
 		time.Second*120,
-		&UserVerifier{stor: api.stor},
+		&auth.UserVerifier{Store: a.Store},
 		nil)
 
 	r.Get("/api/v1/swagger/*", httpSwagger.WrapHandler)
 
 	credentials := make(map[string]string)
-	credentials[config.PUBSTORE_USERNAME] = config.PUBSTORE_PASSWORD
+	credentials[a.Config.UserName] = a.Config.Password
 
 	// Create a publication using basic auth (used by the LCP encryption tool)
 	r.Route("/api/v1/notify", func(r chi.Router) {
 		r.Use(middleware.BasicAuth("restricted", credentials))
-		r.Post("/", api.createPublicationHandler)
+		r.Use(render.SetContentType(render.ContentTypeJSON))
+		r.Post("/", a.createPublication)
 	})
 
 	/*
-		 Generate Token using username & password
-			    	POST http://localhost:8080/api/v1/token
-					Content-Type: application/x-www-form-urlencoded
-					grant_type=password&username=user01&password=12345
+		 Generate a token using username & password
+			POST http://localhost:8080/api/v1/token
+			Content-Type: application/x-www-form-urlencoded
+			grant_type=password&username=user01&password=12345
 	*/
 	/*
-		RefreshTokenGrant Token
+		Refresh a token
 			POST http://localhost:8080/api/v1/token
 			Content-Type: application/x-www-form-urlencoded
 			grant_type=refresh_token&refresh_token={the refresh_token obtained in the previous response}
@@ -145,59 +103,178 @@ func (api *Api) Router(r chi.Router) {
 	r.Post("/api/v1/auth", s.ClientCredentials)
 
 	r.Route("/api/v1/publications", func(r chi.Router) {
+		r.Use(render.SetContentType(render.ContentTypeJSON))
+		r.With(paginate).Get("/", a.listPublications)
+		r.With(paginate).Get("/search", a.searchPublications)
 		r.Group(func(r chi.Router) {
-			r.Use(oauth.Authorize(config.OauthSeed, nil))
-			r.Post("/", api.createPublicationHandler)
+			r.Use(oauth.Authorize(a.Config.OAuthSeed, nil))
+			r.Post("/", a.createPublication)
 		})
 		r.Route("/{id}", func(r chi.Router) {
-			r.Use(api.publicationCtx)
-			r.Get("/", api.getPublicationHandler)
+			r.Use(a.publicationId)
+			r.Get("/", a.getPublication)
 			r.Group(func(r chi.Router) {
-				r.Use(oauth.Authorize(config.OauthSeed, nil))
-				r.Put("/", api.updatePublicationHandler)
-				r.Delete("/", api.deletePublicationHandler)
+				r.Use(oauth.Authorize(a.Config.OAuthSeed, nil))
+				r.Put("/", a.updatePublication)
+				r.Delete("/", a.deletePublication)
 			})
 		})
 	})
 	r.Route("/api/v1/users", func(r chi.Router) {
+		r.Use(render.SetContentType(render.ContentTypeJSON))
+		r.With(paginate).Get("/", a.listUsers)
 		r.Group(func(r chi.Router) {
-			r.Use(oauth.Authorize(config.OauthSeed, nil))
-			r.Post("/", api.createUserHandler)
+			r.Use(oauth.Authorize(a.Config.OAuthSeed, nil))
+			r.Post("/", a.createUser)
 		})
 		r.Route("/{id}", func(r chi.Router) {
-			r.Use(api.userCtx)
-			r.Get("/", api.getUserHandler)
+			r.Use(a.userId)
+			r.Get("/", a.getUser)
 			r.Group(func(r chi.Router) {
-				r.Use(oauth.Authorize(config.OauthSeed, nil))
-				r.Put("/", api.updateUserHandler)
-				r.Delete("/", api.deleteUserHandler)
+				r.Use(oauth.Authorize(a.Config.OAuthSeed, nil))
+				r.Put("/", a.updateUser)
+				r.Delete("/", a.deleteUser)
 			})
 		})
 	})
+
+	// License gateway
+	r.Route("/api/v1/licenses", func(r chi.Router) {
+		r.Use(render.SetContentType(render.ContentTypeJSON))
+		r.Route("/{id}", func(r chi.Router) {
+			r.Use(a.licenseId)
+			r.Get("/", a.getFreshLicense)
+		})
+	})
+
 }
 
-func (api *Api) userCtx(next http.Handler) http.Handler {
+// userId middleware,
+func (a *Api) userId(next http.Handler) http.Handler {
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := chi.URLParam(r, "id")
-		user, err := api.stor.GetUserByUUID(userID)
+		user, err := a.Store.GetUser(userID)
 		if err != nil {
-			http.Error(w, http.StatusText(404), 404)
+			render.Render(w, r, ErrNotFound)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user", user)
+		ctx := newUserContext(r.Context(), user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (api *Api) publicationCtx(next http.Handler) http.Handler {
+// publicationId middleware
+func (a *Api) publicationId(next http.Handler) http.Handler {
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pubID := chi.URLParam(r, "id")
-		pub, err := api.stor.GetPublicationByUUID(pubID)
+		pub, err := a.Store.GetPublication(pubID)
 		if err != nil {
-			http.Error(w, http.StatusText(404), 404)
+			render.Render(w, r, ErrNotFound)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "publication", pub)
+		ctx := newPubContext(r.Context(), pub)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// licenseId middleware
+func (a *Api) licenseId(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		licID := chi.URLParam(r, "id")
+		trans, err := a.Store.GetTransactionByLicence(licID)
+		if err != nil {
+			render.Render(w, r, ErrNotFound)
+			return
+		}
+		ctx := newTransContext(r.Context(), trans)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// Pagination defines a page and pageSize, used for api pagination
+type Pagination struct {
+	Page     int
+	PageSize int
+}
+
+// paginate middleware,
+func paginate(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var p Pagination
+		var err error
+
+		p.Page, err = strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			p.Page = 1 // default value
+		}
+		if p.Page < 1 {
+			render.Render(w, r, ErrInvalidRequest(errors.New("page must be 1 or more")))
+			return
+		}
+		p.PageSize, err = strconv.Atoi(r.URL.Query().Get("pageSize"))
+		if err != nil {
+			p.PageSize = 1000 // default value (limits the count of retrieved items)
+		}
+		if p.PageSize < 1 {
+			render.Render(w, r, ErrInvalidRequest(errors.New("pageSize must be 1 or more")))
+			return
+		}
+
+		ctx := newPaginateContext(r.Context(), &p)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+type key int
+
+var userKey key
+var pubKey key
+var paginateKey key
+
+// newUserContext returns a new Context that carries a User.
+func newUserContext(ctx context.Context, u *stor.User) context.Context {
+	return context.WithValue(ctx, userKey, u)
+}
+
+// fromUserContext returns the User value stored in ctx, if any.
+func fromUserContext(ctx context.Context) *stor.User {
+	u, _ := ctx.Value(userKey).(*stor.User)
+	return u
+}
+
+// newPubContext returns a new Context that carries a Publication.
+func newPubContext(ctx context.Context, p *stor.Publication) context.Context {
+	return context.WithValue(ctx, pubKey, p)
+}
+
+// fromPubContext returns the Publication value stored in ctx, if any.
+func fromPubContext(ctx context.Context) *stor.Publication {
+	p, _ := ctx.Value(pubKey).(*stor.Publication)
+	return p
+}
+
+// newTransContext returns a new Context that carries a Transaction.
+func newTransContext(ctx context.Context, p *stor.Transaction) context.Context {
+	return context.WithValue(ctx, pubKey, p)
+}
+
+// fromTransContext returns the Transaction value stored in ctx, if any.
+func fromTransContext(ctx context.Context) *stor.Transaction {
+	p, _ := ctx.Value(pubKey).(*stor.Transaction)
+	return p
+}
+
+// newPaginateContext returns a new Context that carries a Pagination.
+func newPaginateContext(ctx context.Context, p *Pagination) context.Context {
+	return context.WithValue(ctx, paginateKey, p)
+}
+
+// fromPaginateContext returns the Pagination value stored in ctx, if any.
+func fromPaginateContext(ctx context.Context) *Pagination {
+	p, _ := ctx.Value(paginateKey).(*Pagination)
+	return p
 }

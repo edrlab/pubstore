@@ -22,14 +22,21 @@ COPY views /app/views
 COPY static /app/static
 
 # Set the environment variables
-ENV BASE_URL="http://localhost:8080"
-ENV PORT=8080
-ENV LCP_SERVER_URL="https://front-prod.edrlab.org/lcpserver"
-ENV LCP_SERVER_USERNAME="adm_username"
-ENV LCP_SERVER_PASSWORD="adm_password"
+ENV PUBSTORE_PORT=8080
+ENV PUBSTORE_PUBLIC_BASE_URL="http://localhost:8080"
+ENV PUBSTORE_DSN=""
+ENV PUBSTORE_OAUTH_SEED="oauth-seed"
+ENV PUBSTORE_RESOURCES=""
+ENV PUBSTORE_PAGE_SIZE=""
+ENV PUBSTORE_PRINT_LIMIT="20"
+ENV PUBSTORE_COPY_LIMIT="2000"
 ENV PUBSTORE_USERNAME="adm_username"
 ENV PUBSTORE_PASSWORD="adm_password"
-ENV DSN=""
+ENV PUBSTORE_LCPSERVER_URL="https://front-prod.edrlab.org/lcpserver"
+ENV PUBSTORE_LCPSERVER_VERSION="v1"
+ENV PUBSTORE_LCPSERVER_PROVIDER="https://edrlab.org"
+ENV PUBSTORE_LCPSERVER_USERNAME="adm_username"
+ENV PUBSTORE_LCPSERVER_PASSWORD="adm_password"
 
 # Expose the port on which the HTTP server will listen
 EXPOSE $PORT

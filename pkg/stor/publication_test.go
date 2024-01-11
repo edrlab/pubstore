@@ -1,12 +1,28 @@
 package stor
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
+
+func checkPublicationEquality(a, b Publication) bool {
+	if a.ID != b.ID ||
+		a.UUID != b.UUID ||
+		a.Title != b.Title ||
+		a.ContentType != b.ContentType ||
+		a.DatePublished != b.DatePublished ||
+		a.Description != b.Description ||
+		!checkLanguageEquality(a.Language, b.Language) ||
+		!checkPublisherEquality(a.Publisher, b.Publisher) ||
+		!checkAuthorEquality(a.Author, b.Author) ||
+		!checkCategoryEquality(a.Category, b.Category) {
+		return false
+	}
+
+	return true
+}
 
 func checkLanguageEquality(a, b []Language) bool {
 	if len(a) != len(b) {
@@ -65,367 +81,295 @@ func checkCategoryEquality(a, b []Category) bool {
 }
 
 func TestPublicationCRUD(t *testing.T) {
-	// Test CreatePublication
 
-	pubUUID := uuid.New().String()
+	// start by checking categories where there are none
+	categories, err := store.GetCategories()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(categories))
+
+	// create a new publication
 	publication := &Publication{
-		Title:           "Test Publication",
-		UUID:            pubUUID,
-		DatePublication: time.Now(),
-		Description:     "Test description",
-		CoverUrl:        "http://example.com/cover.jpg",
+		UUID:          uuid.New().String(),
+		Title:         "Test Publication",
+		ContentType:   "application/zip",
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
+		CoverUrl:      "http://example.com/cover.jpg",
 		Language: []Language{
 			{Code: "en"},
 			{Code: "fr"},
 		},
 		Publisher: []Publisher{
-			{Name: "Test Publisher A"},
-			{Name: "Test Publisher B"},
+			{Name: "Publisher A"},
+			{Name: "Publisher B"},
 		},
 		Author: []Author{
-			{Name: "Test Author A"},
-			{Name: "Test Author B"},
+			{Name: "Author A"},
+			{Name: "Author B"},
 		},
 		Category: []Category{
-			{Name: "Test Category A"},
-			{Name: "Test Category B"},
+			{Name: "Category A"},
+			{Name: "Category B"},
 		},
 	}
 
-	err := stor.CreatePublication(publication)
-	if err != nil {
-		t.Errorf("Error creating publication: %s", err.Error())
+	err = store.CreatePublication(publication)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, publication.ID)
+
+	// validate the publication
+	err = publication.Validate()
+	assert.NoError(t, err)
+
+	// retrieve the user by uuid
+	storedPublication, err := store.GetPublication(publication.UUID)
+	assert.NoError(t, err)
+
+	// check equality
+	if !checkPublicationEquality(*publication, *storedPublication) {
+		t.Error("Fetched publication does not match the created publication")
 	}
 
-	// Test GetPublicationByID
-	fetchedPublication, err := stor.GetPublicationByUUID(pubUUID)
-	if err != nil {
-		t.Errorf("Error getting publication by ID: %s", err.Error())
-	} else {
-		// Ensure fetched publication matches the created publication
-		if fetchedPublication.ID != publication.ID ||
-			fetchedPublication.UUID != publication.UUID ||
-			!fetchedPublication.DatePublication.Equal(publication.DatePublication) ||
-			fetchedPublication.Description != publication.Description ||
-			!checkLanguageEquality(fetchedPublication.Language, publication.Language) ||
-			!checkPublisherEquality(fetchedPublication.Publisher, publication.Publisher) ||
-			!checkAuthorEquality(fetchedPublication.Author, publication.Author) ||
-			!checkCategoryEquality(fetchedPublication.Category, publication.Category) {
-			t.Error("Fetched publication does not match the created publication")
-		}
+	// update the title
+	storedPublication.Title = "Updated Test Publication"
+	err = store.UpdatePublication(storedPublication)
+	assert.NoError(t, err)
 
-	}
+	// retrieve the publication by ID and validate the updated title
+	updatedPublication, err := store.GetPublication(publication.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, updatedPublication.Title, storedPublication.Title)
 
-	// // Test GetPublicationByTitle
-	// fetchedPublication, _, err = stor.GetPublicationsByTitle(publication.Title, 1, 10)
-	// if err != nil {
-	// 	t.Errorf("Error getting publication by title: %s", err.Error())
-	// } else {
-	// 	// Ensure fetched publication matches the created publication
-	// 	if fetchedPublication.ID != publication.ID ||
-	// 		fetchedPublication.UUID != publication.UUID ||
-	// 		!fetchedPublication.DatePublication.Equal(publication.DatePublication) ||
-	// 		fetchedPublication.Description != publication.Description ||
-	// 		!checkLanguageEquality(fetchedPublication.Language, publication.Language) ||
-	// 		!checkPublisherEquality(fetchedPublication.Publisher, publication.Publisher) ||
-	// 		!checkAuthorEquality(fetchedPublication.Author, publication.Author) ||
-	// 		!checkCategoryEquality(fetchedPublication.Category, publication.Category) {
-	// 		t.Error("Fetched publication does not match the created publication")
-	// 	}
-	// }
+	// count publications
+	pubCount, err := store.CountPublications()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, int(pubCount))
 
-	// Test UpdatePublication
-	fetchedPublication.Title = "Updated Test Publication"
-	err = stor.UpdatePublication(fetchedPublication)
-	if err != nil {
-		t.Errorf("Error updating publication: %s", err.Error())
-	}
+	// delete the publication
+	err = store.DeletePublication(updatedPublication)
+	assert.NoError(t, err)
 
-	// Fetch the updated publication again to ensure the changes were saved
-	updatedPublication, err := stor.GetPublicationByUUID(pubUUID)
-	if err != nil {
-		t.Errorf("Error getting publication by ID: %s", err.Error())
-	} else {
-		if updatedPublication.Title != fetchedPublication.Title {
-			t.Error("Publication title was not updated")
-		}
-	}
+	// retrieve the publication by ID and ensure it's not found
+	_, err = store.GetPublication(publication.UUID)
+	assert.Error(t, err)
 
-	// Test DeletePublication
-	err = stor.DeletePublication(updatedPublication)
-	if err != nil {
-		t.Errorf("Error deleting publication: %s", err.Error())
-	}
+	// check publishers. They were not deleted.
+	publishers, err := store.GetPublishers()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(publishers))
 
-	// Ensure the publication is no longer present in the database
-	_, err = stor.GetPublicationByUUID(pubUUID)
-	if err == nil {
-		t.Error("Publication was not deleted")
-	}
 }
 
-func TestGetPublicationByCategory(t *testing.T) {
+func TestFindByCategory(t *testing.T) {
+
 	// Create test publications
 	publication1 := &Publication{
-		Title:           "Test Publication 1",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 1",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Category: []Category{
 			{Name: "Category A"},
 		},
 	}
 	publication2 := &Publication{
-		Title:           "Test Publication 2",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 2",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Category: []Category{
 			{Name: "Category B"},
 		},
 	}
 
-	err := stor.CreatePublication(publication1)
-	if err != nil {
-		t.Errorf("Error creating publication 1: %s", err.Error())
-	}
-	err = stor.CreatePublication(publication2)
-	if err != nil {
-		t.Errorf("Error creating publication 2: %s", err.Error())
-	}
+	err := store.CreatePublication(publication1)
+	assert.NoError(t, err)
 
-	// Test GetPublicationByCategory
-	publications, _, err := stor.GetPublicationsByCategory("Category B", 1, 10)
-	if err != nil {
-		t.Errorf("Error getting publications by category: %s", err.Error())
-	} else {
-		// Ensure the correct number of publications is retrieved
-		if len(publications) != 1 {
-			t.Errorf("Expected 1 publication, got %d", len(publications))
-		}
+	err = store.CreatePublication(publication2)
+	assert.NoError(t, err)
 
-		// Ensure the retrieved publication matches the created publication
-		if publications[0].Title != publication2.Title ||
-			publications[0].UUID != publication2.UUID ||
-			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
-			publications[0].Description != publication2.Description ||
-			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
-			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
-			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
-			!checkCategoryEquality(publications[0].Category, publication2.Category) {
-			t.Error("Fetched publication does not match the created publication")
-		}
+	// Test FindByCategory
+	publications, err := store.FindPublicationsByCategory("Category B", 1, 10)
+	assert.NoError(t, err)
+
+	// Ensure the correct number of publications is retrieved
+	if len(publications) != 1 {
+		t.Errorf("Expected 1 publication, got %d", len(publications))
 	}
 
-	// Clean up the test data
-	err = stor.DeletePublication(publication1)
+	if !checkPublicationEquality(publications[0], *publication2) {
+		t.Error("Fetched publication does not match the created publication")
+	}
+
+	// Clean up test data
+	err = store.DeletePublication(publication1)
 	if err != nil {
 		t.Errorf("Error deleting publication 1: %s", err.Error())
 	}
-	err = stor.DeletePublication(publication2)
+	err = store.DeletePublication(publication2)
 	if err != nil {
 		t.Errorf("Error deleting publication 2: %s", err.Error())
 	}
 }
 
 func TestGetPublicationByAuthor(t *testing.T) {
+
 	// Create test publications
 	publication1 := &Publication{
-		Title:           "Test Publication 1",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 1",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Author: []Author{
 			{Name: "Author A"},
 		},
 	}
 	publication2 := &Publication{
-		Title:           "Test Publication 2",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 2",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Author: []Author{
 			{Name: "Author B"},
 		},
 	}
 
-	err := stor.CreatePublication(publication1)
-	if err != nil {
-		t.Errorf("Error creating publication 1: %s", err.Error())
-	}
-	err = stor.CreatePublication(publication2)
-	if err != nil {
-		t.Errorf("Error creating publication 2: %s", err.Error())
+	err := store.CreatePublication(publication1)
+	assert.NoError(t, err)
+
+	err = store.CreatePublication(publication2)
+	assert.NoError(t, err)
+
+	publications, err := store.FindPublicationsByAuthor("Author B", 1, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(publications))
+
+	// Ensure the retrieved publication matches the created publication
+	if !checkPublicationEquality(*publication2, publications[0]) {
+		t.Error("Fetched publication does not match the created publication")
 	}
 
-	// Test GetPublicationByAuthor
-	publications, _, err := stor.GetPublicationsByAuthor("Author B", 1, 10)
-	if err != nil {
-		t.Errorf("Error getting publications by author: %s", err.Error())
-	} else {
-		// Ensure the correct number of publications is retrieved
-		if len(publications) != 1 {
-			t.Errorf("Expected 1 publication, got %d", len(publications))
-		}
+	// check authors
+	authors, err := store.GetAuthors()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(authors))
 
-		// Ensure the retrieved publication matches the created publication
-		if publications[0].Title != publication2.Title ||
-			publications[0].UUID != publication2.UUID ||
-			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
-			publications[0].Description != publication2.Description ||
-			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
-			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
-			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
-			!checkCategoryEquality(publications[0].Category, publication2.Category) {
-			t.Error("Fetched publication does not match the created publication")
-		}
-	}
+	// Clean up test data
+	err = store.DeletePublication(publication1)
+	assert.NoError(t, err)
 
-	// Clean up the test data
-	err = stor.DeletePublication(publication1)
-	if err != nil {
-		t.Errorf("Error deleting publication 1: %s", err.Error())
-	}
-	err = stor.DeletePublication(publication2)
-	if err != nil {
-		t.Errorf("Error deleting publication 2: %s", err.Error())
-	}
+	err = store.DeletePublication(publication2)
+	assert.NoError(t, err)
 }
 
-func TestGetPublicationByPublisher(t *testing.T) {
+func TestFindByPublisher(t *testing.T) {
+
 	// Create test publications
 	publication1 := &Publication{
-		Title:           "Test Publication 1",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 1",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Publisher: []Publisher{
 			{Name: "Publisher A"},
 		},
 	}
 	publication2 := &Publication{
-		Title:           "Test Publication 2",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 2",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Publisher: []Publisher{
 			{Name: "Publisher B"},
 		},
 	}
 
-	err := stor.CreatePublication(publication1)
-	if err != nil {
-		t.Errorf("Error creating publication 1: %s", err.Error())
-	}
-	err = stor.CreatePublication(publication2)
-	if err != nil {
-		t.Errorf("Error creating publication 2: %s", err.Error())
+	err := store.CreatePublication(publication1)
+	assert.NoError(t, err)
+
+	err = store.CreatePublication(publication2)
+	assert.NoError(t, err)
+
+	publications, err := store.FindPublicationsByPublisher("Publisher B", 1, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(publications))
+
+	// check publishers
+	publishers, err := store.GetPublishers()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(publishers))
+
+	// Ensure the retrieved publication matches the created publication
+	if !checkPublicationEquality(*publication2, publications[0]) {
+		t.Error("Fetched publication does not match the created publication")
 	}
 
-	// Test GetPublicationByPublisher
-	publications, _, err := stor.GetPublicationsByPublisher("Publisher B", 1, 10)
-	if err != nil {
-		t.Errorf("Error getting publications by publisher: %s", err.Error())
-	} else {
-		// Ensure the correct number of publications is retrieved
-		if len(publications) != 1 {
-			t.Errorf("Expected 1 publication, got %d", len(publications))
-		}
+	// Clean up test data
+	err = store.DeletePublication(publication1)
+	assert.NoError(t, err)
 
-		// Ensure the retrieved publication matches the created publication
-		if publications[0].Title != publication2.Title ||
-			publications[0].UUID != publication2.UUID ||
-			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
-			publications[0].Description != publication2.Description ||
-			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
-			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
-			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
-			!checkCategoryEquality(publications[0].Category, publication2.Category) {
-			t.Error("Fetched publication does not match the created publication")
-		}
-	}
-
-	// Clean up the test data
-	err = stor.DeletePublication(publication1)
-	if err != nil {
-		t.Errorf("Error deleting publication 1: %s", err.Error())
-	}
-	err = stor.DeletePublication(publication2)
-	if err != nil {
-		t.Errorf("Error deleting publication 2: %s", err.Error())
-	}
+	err = store.DeletePublication(publication2)
+	assert.NoError(t, err)
 }
 
-func TestGetPublicationByLanguage(t *testing.T) {
+func TestFindByLanguage(t *testing.T) {
+
 	// Create test publications
 	publication1 := &Publication{
-		Title:           "Test Publication 1",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 1",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Language: []Language{
-			{Code: "aa"},
+			{Code: "en"},
 		},
 	}
 	publication2 := &Publication{
-		Title:           "Test Publication 2",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 2",
+		UUID:          uuid.New().String(),
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Language: []Language{
-			{Code: "bb"},
+			{Code: "fr"},
 		},
 	}
 
-	err := stor.CreatePublication(publication1)
-	if err != nil {
-		t.Errorf("Error creating publication 1: %s", err.Error())
-	}
-	err = stor.CreatePublication(publication2)
-	if err != nil {
-		t.Errorf("Error creating publication 2: %s", err.Error())
+	err := store.CreatePublication(publication1)
+	assert.NoError(t, err)
+
+	err = store.CreatePublication(publication2)
+	assert.NoError(t, err)
+
+	publications, err := store.FindPublicationsByLanguage("en", 1, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(publications))
+
+	// check languages
+	languages, err := store.GetLanguages()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(languages))
+
+	// Ensure the retrieved publication matches the created publication
+	if !checkPublicationEquality(*publication1, publications[0]) {
+		t.Error("Fetched publication does not match the created publication")
 	}
 
-	// Test GetPublicationByLanguage
-	publications, _, err := stor.GetPublicationsByLanguage("bb", 1, 10)
-	if err != nil {
-		t.Errorf("Error getting publications by language: %s", err.Error())
-	} else {
-		// Ensure the correct number of publications is retrieved
-		if len(publications) != 1 {
-			t.Errorf("Expected 1 publication, got %d", len(publications))
-		}
+	// Clean up test data
+	err = store.DeletePublication(publication1)
+	assert.NoError(t, err)
 
-		// Ensure the retrieved publication matches the created publication
-		if publications[0].Title != publication2.Title ||
-			publications[0].UUID != publication2.UUID ||
-			!publications[0].DatePublication.Equal(publication2.DatePublication) ||
-			publications[0].Description != publication2.Description ||
-			!checkLanguageEquality(publications[0].Language, publication2.Language) ||
-			!checkPublisherEquality(publications[0].Publisher, publication2.Publisher) ||
-			!checkAuthorEquality(publications[0].Author, publication2.Author) ||
-			!checkCategoryEquality(publications[0].Category, publication2.Category) {
-			t.Error("Fetched publication does not match the created publication")
-		}
-	}
-
-	// Clean up the test data
-	err = stor.DeletePublication(publication1)
-	if err != nil {
-		t.Errorf("Error deleting publication 1: %s", err.Error())
-	}
-	err = stor.DeletePublication(publication2)
-	if err != nil {
-		t.Errorf("Error deleting publication 2: %s", err.Error())
-	}
+	err = store.DeletePublication(publication2)
+	assert.NoError(t, err)
 }
 
 func TestCreate2PublicationsWithSameCategory(t *testing.T) {
+
 	publication := &Publication{
-		Title:           "Test Publication",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 1",
+		UUID:          uuid.New().String(),
+		ContentType:   "application/epub+zip",
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Language: []Language{
 			{Code: "en"},
 			{Code: "fr"},
@@ -445,50 +389,52 @@ func TestCreate2PublicationsWithSameCategory(t *testing.T) {
 	}
 
 	publication2 := &Publication{
-		Title:           "Test Publication",
-		UUID:            uuid.New().String(),
-		DatePublication: time.Now(),
-		Description:     "Test description",
+		Title:         "Test Publication 2",
+		UUID:          uuid.New().String(),
+		ContentType:   "text/plain",
+		DatePublished: "2022-12-31",
+		Description:   "Test description",
 		Language: []Language{
 			{Code: "en"},
 			{Code: "fr"},
 		},
 		Publisher: []Publisher{
-			{Name: "Test Publisher A"},
-			{Name: "Test Publisher B"},
+			{Name: "Publisher A"},
+			{Name: "Publisher B"},
 		},
 		Author: []Author{
-			{Name: "Test Author A"},
-			{Name: "Test Author B"},
+			{Name: "Author A"},
+			{Name: "Author B"},
 		},
 		Category: []Category{
-			{Name: "Test Category A"},
-			{Name: "Test Category B"},
+			{Name: "Category A"},
+			{Name: "Category B"},
 		},
 	}
 
-	err := stor.CreatePublication(publication)
-	if err != nil {
-		t.Errorf("Error creating publication: %s", err.Error())
-	}
+	// create both publications
+	err := store.CreatePublication(publication)
+	assert.NoError(t, err)
 
-	err = stor.CreatePublication(publication2)
-	if err != nil {
-		t.Errorf("Error creating publication: %s", err.Error())
-	}
+	err = store.CreatePublication(publication2)
+	assert.NoError(t, err)
 
-	categories, err2 := stor.GetCategories()
-	if err2 != nil {
-		t.Errorf("Error getting categories: %s", err.Error())
-	}
+	// list publications
+	publications, err := store.ListPublications(1, 5)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(publications))
+
+	// get categories
+	categories, err := store.GetCategories()
+	assert.NoError(t, err)
 
 	// Ensure the correct number of categories is retrieved
 	// if len(categories) != 2 {
 	// 	t.Errorf("Expected 2 categories, got %d", len(categories))
 	// }
 
-	category1 := Category{Name: "Test Category A"}
-	category2 := Category{Name: "Test Category B"}
+	category1 := Category{Name: "Category A"}
+	category2 := Category{Name: "Category B"}
 
 	// Ensure the retrieved categories match the created categories
 	foundCategory1 := false
@@ -504,67 +450,20 @@ func TestCreate2PublicationsWithSameCategory(t *testing.T) {
 		t.Error("Not all created categories were retrieved")
 	}
 
-	// Clean up the test data
-	err = stor.DeletePublication(publication)
-	if err != nil {
-		t.Errorf("Error deleting publication 1: %s", err.Error())
-	}
-	err = stor.DeletePublication(publication2)
-	if err != nil {
-		t.Errorf("Error deleting publication 2: %s", err.Error())
-	}
+	// find by type
+	publications, err = store.FindPublicationsByType("text/plain", 1, 5)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(publications))
 
-}
+	// find by title
+	publications, err = store.FindPublicationsByTitle("Test Publication 1", 1, 5)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(publications))
 
-func TestGetPublicationByUUID(t *testing.T) {
-	// Create test publications
+	// Clean up test data
+	err = store.DeletePublication(publication)
+	assert.NoError(t, err)
 
-	pubUUID := uuid.New().String()
-	publication := &Publication{
-		Title:           "Test Publication",
-		UUID:            pubUUID,
-		DatePublication: time.Now(),
-		Description:     "Test description",
-		Language: []Language{
-			{Code: "en"},
-			{Code: "fr"},
-		},
-		Publisher: []Publisher{
-			{Name: "Test Publisher A"},
-			{Name: "Test Publisher B"},
-		},
-		Author: []Author{
-			{Name: "Test Author A"},
-			{Name: "Test Author B"},
-		},
-		Category: []Category{
-			{Name: "Test Category A"},
-			{Name: "Test Category B"},
-		},
-	}
-
-	err := stor.CreatePublication(publication)
-	if err != nil {
-		t.Errorf("Error creating publication 1: %s", err.Error())
-	}
-
-	fetchedPublication, _ := stor.GetPublicationByUUID(pubUUID)
-	fmt.Println(fetchedPublication)
-	// Ensure fetched publication matches the created publication
-	if fetchedPublication.ID != publication.ID ||
-		fetchedPublication.UUID != publication.UUID ||
-		!fetchedPublication.DatePublication.Equal(publication.DatePublication) ||
-		fetchedPublication.Description != publication.Description ||
-		!checkLanguageEquality(fetchedPublication.Language, publication.Language) ||
-		!checkPublisherEquality(fetchedPublication.Publisher, publication.Publisher) ||
-		!checkAuthorEquality(fetchedPublication.Author, publication.Author) ||
-		!checkCategoryEquality(fetchedPublication.Category, publication.Category) {
-		t.Error("Fetched publication does not match the created publication")
-	}
-
-	// Clean up the test data
-	err = stor.DeletePublication(publication)
-	if err != nil {
-		t.Errorf("Error deleting publication 1: %s", err.Error())
-	}
+	err = store.DeletePublication(publication2)
+	assert.NoError(t, err)
 }
