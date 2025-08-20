@@ -35,9 +35,11 @@ func (web *Web) createLicense(w http.ResponseWriter, r *http.Request) {
 	var start, end time.Time
 	var err error
 	if print, err = strconv.Atoi(printParam); err != nil {
+		fmt.Println(err.Error())
 		print = web.Config.PrintLimit
 	}
 	if copy, err = strconv.Atoi(copyParam); err != nil {
+		fmt.Println(err.Error())
 		copy = web.Config.CopyLimit
 	}
 	// start & end params may be empty strings. In this case their time representation keep a zero value
