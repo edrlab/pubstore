@@ -466,7 +466,7 @@ const docTemplate = `{
         "OAuth2Password": {
             "type": "oauth2",
             "flow": "password",
-            "tokenUrl": "https://pubstore.edrlab.org/api/v1/token",
+            "tokenUrl": "https://pubstore.edrlab.org/api/token",
             "scopes": {
                 "admin": "\t\t\t\t\t\t\tGrants read and write access to administrative information:w",
                 "read": "\t\t\t\t\t\t\t\tGrants read access",
@@ -480,7 +480,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "pubstore.edrlab.org",
-	BasePath:         "/api/v1",
+	BasePath:         "/api",
 	Schemes:          []string{},
 	Title:            "Pubstore API",
 	Description:      "Pubstore API.",

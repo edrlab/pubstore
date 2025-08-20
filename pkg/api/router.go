@@ -49,10 +49,10 @@ func Init(c *conf.Config, s *stor.Store) Api {
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host pubstore.edrlab.org
-// @BasePath /api/v1
+// @BasePath /api
 
 //	@securitydefinitions.oauth2.password	OAuth2Password
-//	@tokenUrl								https://pubstore.edrlab.org/api/v1/token
+//	@tokenUrl								https://pubstore.edrlab.org/api/token
 //	@scope.read								Grants read access
 //	@scope.write							Grants write access
 //	@scope.admin							Grants read and write access to administrative information:w
@@ -75,13 +75,13 @@ func (a *Api) Router(r chi.Router) {
 		&auth.UserVerifier{Store: a.Store},
 		nil)
 
-	r.Get("/api/v1/swagger/*", httpSwagger.WrapHandler)
+	r.Get("/api/swagger/*", httpSwagger.WrapHandler)
 
 	credentials := make(map[string]string)
 	credentials[a.Config.UserName] = a.Config.Password
 
 	// Create a publication using basic auth (used by the LCP encryption tool)
-	r.Route("/api/v1/notify", func(r chi.Router) {
+	r.Route("/api/notify", func(r chi.Router) {
 		r.Use(middleware.BasicAuth("restricted", credentials))
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 		r.Post("/", a.createPublication)
@@ -89,20 +89,20 @@ func (a *Api) Router(r chi.Router) {
 
 	/*
 		 Generate a token using username & password
-			POST http://localhost:8080/api/v1/token
+			POST http://localhost:8080/api/token
 			Content-Type: application/x-www-form-urlencoded
 			grant_type=password&username=user01&password=12345
 	*/
 	/*
 		Refresh a token
-			POST http://localhost:8080/api/v1/token
+			POST http://localhost:8080/api/token
 			Content-Type: application/x-www-form-urlencoded
 			grant_type=refresh_token&refresh_token={the refresh_token obtained in the previous response}
 	*/
-	r.Post("/api/v1/token", s.UserCredentials)
-	r.Post("/api/v1/auth", s.ClientCredentials)
+	r.Post("/api/token", s.UserCredentials)
+	r.Post("/api/auth", s.ClientCredentials)
 
-	r.Route("/api/v1/publications", func(r chi.Router) {
+	r.Route("/api/publications", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 		r.With(paginate).Get("/", a.listPublications)
 		r.With(paginate).Get("/search", a.searchPublications)
@@ -120,7 +120,7 @@ func (a *Api) Router(r chi.Router) {
 			})
 		})
 	})
-	r.Route("/api/v1/users", func(r chi.Router) {
+	r.Route("/api/users", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 		r.With(paginate).Get("/", a.listUsers)
 		r.Group(func(r chi.Router) {
@@ -139,7 +139,7 @@ func (a *Api) Router(r chi.Router) {
 	})
 
 	// License gateway
-	r.Route("/api/v1/licenses", func(r chi.Router) {
+	r.Route("/licenses", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 		r.Route("/{id}", func(r chi.Router) {
 			r.Use(a.licenseId)

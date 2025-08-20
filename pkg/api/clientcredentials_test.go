@@ -21,7 +21,7 @@ func TestClientHandler(t *testing.T) {
 	r.Group(testapi.Router)
 
 	// Generate the bearer token for the client
-	tokenURL := "/api/v1/auth"
+	tokenURL := "/api/auth"
 	tokenData := url.Values{
 		"grant_type":    {"client_credentials"},
 		"client_id":     {"lcp-server"},
@@ -59,7 +59,7 @@ func TestClientHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	// create a user with a client token
-	req := httptest.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(newUserBytes))
+	req := httptest.NewRequest("POST", "/api/users", bytes.NewBuffer(newUserBytes))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
@@ -71,7 +71,7 @@ func TestClientHandler(t *testing.T) {
 	assert.Equal(t, 1, int(userCount))
 
 	// delete the user
-	req = httptest.NewRequest("DELETE", "/api/v1/users/"+newUser.UUID, nil)
+	req = httptest.NewRequest("DELETE", "/api/users/"+newUser.UUID, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)

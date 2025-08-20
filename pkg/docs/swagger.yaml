@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /api
 definitions:
   api.Author:
     properties:
@@ -306,6 +306,6 @@ securityDefinitions:
       admin: "\t\t\t\t\t\t\tGrants read and write access to administrative information:w"
       read: "\t\t\t\t\t\t\t\tGrants read access"
       write: "\t\t\t\t\t\t\tGrants write access"
-    tokenUrl: https://pubstore.edrlab.org/api/v1/token
+    tokenUrl: https://pubstore.edrlab.org/api/token
     type: oauth2
 swagger: "2.0"

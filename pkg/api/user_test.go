@@ -40,7 +40,7 @@ func TestUserHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	// generate a bearer token
-	tokenURL := "/api/v1/token"
+	tokenURL := "/api/token"
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {adminUser.Email},
@@ -76,14 +76,14 @@ func TestUserHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	// try creating the user with no token
-	req := httptest.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(userBytes))
+	req := httptest.NewRequest("POST", "/api/users", bytes.NewBuffer(userBytes))
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 	assert.NoError(t, err)
 
 	// create the user with a token
-	req = httptest.NewRequest("POST", "/api/v1/users", bytes.NewBuffer(userBytes))
+	req = httptest.NewRequest("POST", "/api/users", bytes.NewBuffer(userBytes))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
@@ -98,7 +98,7 @@ func TestUserHandler(t *testing.T) {
 	assert.NotEmpty(t, createdUser.UUID)
 
 	// get the user previously created by its id
-	getUserURL := "/api/v1/users/" + newUser.UUID
+	getUserURL := "/api/users/" + newUser.UUID
 	req = httptest.NewRequest("GET", getUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
@@ -122,7 +122,7 @@ func TestUserHandler(t *testing.T) {
 	assert.Equal(t, "", retrievedUser.SessionId)
 
 	// update the user
-	updateUserURL := "/api/v1/users/" + newUser.UUID
+	updateUserURL := "/api/users/" + newUser.UUID
 	newUser.Name = "Jane Doe"
 	updateUserBytes, err := json.Marshal(newUser)
 	assert.NoError(t, err)
@@ -138,7 +138,7 @@ func TestUserHandler(t *testing.T) {
 	assert.Equal(t, "Jane Doe", userFromStor.Name)
 
 	// list users
-	listUserURL := "/api/v1/users"
+	listUserURL := "/api/users"
 	req = httptest.NewRequest("GET", listUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
@@ -153,7 +153,7 @@ func TestUserHandler(t *testing.T) {
 	assert.Equal(t, "Jane Doe", retrievedUsers[1].Name)
 
 	// delete the user
-	deleteUserURL := "/api/v1/users/" + newUser.UUID
+	deleteUserURL := "/api/users/" + newUser.UUID
 	req = httptest.NewRequest("DELETE", deleteUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()

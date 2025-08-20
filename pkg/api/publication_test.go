@@ -55,7 +55,7 @@ func TestPublicationHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	// try creating a publication with no token
-	req := httptest.NewRequest("POST", "/api/v1/publications", bytes.NewBuffer([]byte(pubBytes)))
+	req := httptest.NewRequest("POST", "/api/publications", bytes.NewBuffer([]byte(pubBytes)))
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -74,7 +74,7 @@ func TestPublicationHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	// generate the bearer token
-	tokenURL := "/api/v1/token"
+	tokenURL := "/api/token"
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {newUser.Email},
@@ -97,7 +97,7 @@ func TestPublicationHandler(t *testing.T) {
 	assert.NotEmpty(t, tokenResp.Token)
 
 	// create a publication
-	req = httptest.NewRequest("POST", "/api/v1/publications", bytes.NewBuffer([]byte(pubBytes)))
+	req = httptest.NewRequest("POST", "/api/publications", bytes.NewBuffer([]byte(pubBytes)))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
@@ -114,7 +114,7 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, "Test description", createdPublication.Description)
 
 	// get the publication previously created by its id
-	getPubURL := "/api/v1/publications/" + newPublication.UUID
+	getPubURL := "/api/publications/" + newPublication.UUID
 	req = httptest.NewRequest("GET", getPubURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
@@ -138,7 +138,7 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, newPublication.Category[0].Name, retrievedPub.Category[0].Name)
 
 	// update the publication
-	updatePubURL := "/api/v1/publications/" + newPublication.UUID
+	updatePubURL := "/api/publications/" + newPublication.UUID
 	newPublication.Title = "Update Test Publication"
 	updatePubBytes, err := json.Marshal(newPublication)
 	assert.NoError(t, err)
@@ -160,7 +160,7 @@ func TestPublicationHandler(t *testing.T) {
 	pubBytes, err = json.Marshal(newPublication)
 	assert.NoError(t, err)
 
-	req = httptest.NewRequest("POST", "/api/v1/publications", bytes.NewBuffer([]byte(pubBytes)))
+	req = httptest.NewRequest("POST", "/api/publications", bytes.NewBuffer([]byte(pubBytes)))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
@@ -169,7 +169,7 @@ func TestPublicationHandler(t *testing.T) {
 	}
 
 	// list publications
-	req = httptest.NewRequest("GET", "/api/v1/publications?page=1&pageSize=5", bytes.NewBuffer([]byte(pubBytes)))
+	req = httptest.NewRequest("GET", "/api/publications?page=1&pageSize=5", bytes.NewBuffer([]byte(pubBytes)))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
@@ -183,7 +183,7 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, 2, len(retrievedPubs))
 
 	// search publications
-	req = httptest.NewRequest("GET", "/api/v1/publications/search?format=epub&page=1&pageSize=5", bytes.NewBuffer([]byte(pubBytes)))
+	req = httptest.NewRequest("GET", "/api/publications/search?format=epub&page=1&pageSize=5", bytes.NewBuffer([]byte(pubBytes)))
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
@@ -196,7 +196,7 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, 1, len(retrievedPubs))
 
 	// delete the publication
-	deleteUserURL := "/api/v1/publications/" + newPublication.UUID
+	deleteUserURL := "/api/publications/" + newPublication.UUID
 	req = httptest.NewRequest("DELETE", deleteUserURL, nil)
 	req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 	recorder = httptest.NewRecorder()
