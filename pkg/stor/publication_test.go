@@ -440,9 +440,10 @@ func TestCreate2PublicationsWithSameCategory(t *testing.T) {
 	foundCategory1 := false
 	foundCategory2 := false
 	for _, category := range categories {
-		if category.Name == category1.Name {
+		switch category.Name {
+		case category1.Name:
 			foundCategory1 = true
-		} else if category.Name == category2.Name {
+		case category2.Name:
 			foundCategory2 = true
 		}
 	}
