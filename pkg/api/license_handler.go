@@ -24,8 +24,7 @@ func (a *Api) getFreshLicense(w http.ResponseWriter, r *http.Request) {
 
 	transaction := fromTransContext(r.Context())
 
-	licenceBytes, err := lcp.GetFreshLicense(a.Config.LCPServer, transaction.LicenceId,
-		transaction.User.Email, transaction.User.TextHint, transaction.User.HPassphrase)
+	licenceBytes, err := lcp.GetFreshLicense(a.Config.LCPServer, transaction)
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
 		return

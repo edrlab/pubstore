@@ -54,7 +54,7 @@ func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Re
 	var licenceBytes []byte
 	var publicationTitle string
 
-	licenceBytes, err = lcp.GetFreshLicense(web.Config.LCPServer, transaction.LicenceId, user.Email, user.TextHint, user.HPassphrase)
+	licenceBytes, err = lcp.GetFreshLicense(web.Config.LCPServer, transaction)
 
 	if err == nil {
 		_, publicationTitle, _, _, _, _, _, err = lcp.ParseLicense(licenceBytes)

@@ -100,13 +100,13 @@ func (o *Opds) GetPublication(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		transactions, err := o.getTransactionFromUserAndPubUUID(user, storPublication.UUID)
+		transaction, err := o.getTransactionFromUserAndPubUUID(user, storPublication.UUID)
 		if err != nil {
 			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
 			return
 		}
 
-		lsdStatus, err := lcp.GetStatusDocument(o.Config.LCPServer, transactions.LicenceId, user.Email, user.TextHint, user.HPassphrase)
+		lsdStatus, err := lcp.GetStatusDocument(o.Config.LCPServer, transaction)
 		if err != nil {
 			lsdStatus = &lcp.LsdStatus{}
 		}
@@ -195,7 +195,7 @@ func (o *Opds) GetPublicationLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	licenceBytes, err := lcp.GetFreshLicense(o.Config.LCPServer, transaction.LicenceId, user.Email, user.TextHint, user.HPassphrase)
+	licenceBytes, err := lcp.GetFreshLicense(o.Config.LCPServer, transaction)
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
 		return

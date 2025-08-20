@@ -5,9 +5,11 @@
 package stor
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"log"
 
-	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -51,7 +53,8 @@ func (u *User) BeforeSave(tx *gorm.DB) error {
 	}
 	// generate a hash of the lcp passphrase
 	if u.Passphrase != "" {
-		u.HPassphrase = lcp.HashPassphrase(u.Passphrase)
+		hash := sha256.Sum256([]byte(u.Passphrase))
+		u.HPassphrase = hex.EncodeToString(hash[:])
 	}
 	return nil
 }
@@ -113,6 +116,14 @@ func (s *Store) GetUserByEmail(email string) (*User, error) {
 
 // DeleteUser deletes a user
 func (s *Store) DeleteUser(user *User) error {
+	// check if the user has associated transactions
+	transactions, err := s.FindTransactionsByUser(user.ID)
+	if err != nil {
+		return err
+	}
+	if len(*transactions) > 0 {
+		log.Println(len(*transactions), " transactions")
+	}
 	return s.db.Delete(user).Error
 }
 

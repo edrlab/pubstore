@@ -32,7 +32,7 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 	}
 
 	// TODO: avoid fetching the Status Document in this function
-	lsdStatus, err := lcp.GetStatusDocument(view.Config.LCPServer, transaction.LicenceId, transaction.User.Email, transaction.User.TextHint, transaction.User.HPassphrase)
+	lsdStatus, err := lcp.GetStatusDocument(view.Config.LCPServer, transaction)
 	if err != nil {
 		fmt.Println("LSD STATUS Error from (" + transaction.LicenceId + ")")
 		lsdStatus = &lcp.LsdStatus{}

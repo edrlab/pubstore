@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/conf"
+	"github.com/edrlab/pubstore/pkg/stor"
 )
 
 // LicenseRequest contains every parameter required for requesting a
@@ -139,7 +140,6 @@ func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) ([]b
 	// License Server V1
 	if lcpsv.Version == "v1" {
 		url = fmt.Sprintf(lcpsv.Url+"/contents/%s/license", licenseReq.PublicationID)
-
 		v1req := v1Request(licenseReq)
 		payload, err = json.Marshal(v1req)
 		if err != nil {
@@ -190,36 +190,53 @@ func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) ([]b
 }
 
 // GetFreshLicense sends a request to the License Server and returns the fresh license to the caller
-func GetFreshLicense(lcpsv conf.LCPServerAccess, licenceId, email, textHint, hexValue string) ([]byte, error) {
+func GetFreshLicense(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) ([]byte, error) {
 
-	user := User{
-		Email:     email,
-		Encrypted: []string{"email"},
+	var url string
+	var payload []byte
+	var err error
+
+	// License Server V1
+	if lcpsv.Version == "v1" {
+		url = lcpsv.Url + "/licenses/" + transaction.LicenceId
+
+		user := User{
+			Email:     transaction.User.Email,
+			Encrypted: []string{"email"},
+		}
+		userKey := UserKey{
+			TextHint: transaction.User.TextHint,
+			HexValue: transaction.User.HPassphrase,
+		}
+		encryption := Encryption{
+			UserKey: userKey,
+		}
+		licence := LicenceRequestV1{
+			User:       user,
+			Encryption: encryption,
+		}
+		payload, err = json.Marshal(licence)
+		if err != nil {
+			return nil, err
+		}
+
+		// License Server V2
+	} else {
+		url = lcpsv.Url + "/licenses/" + transaction.LicenceId
+
+		licenseReq := LicenseRequest{
+			PublicationID: transaction.Publication.UUID,
+			UserID:        transaction.User.UUID,
+			UserEmail:     transaction.User.Email,
+			UserEncrypted: []string{"email"},
+			TextHint:      transaction.User.TextHint,
+			PassHash:      transaction.User.HPassphrase,
+		}
+		payload, err = json.Marshal(licenseReq)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	userKey := UserKey{
-		TextHint: textHint,
-		HexValue: hexValue,
-	}
-
-	encryption := Encryption{
-		UserKey: userKey,
-	}
-
-	// TODO: adapt to the LCP Server v2
-	licence := LicenceRequestV1{
-		User:       user,
-		Encryption: encryption,
-	}
-
-	payload, err := json.Marshal(licence)
-	if err != nil {
-		return nil, err
-	}
-
-	url := lcpsv.Url + "/licenses/" + licenceId
-	username := lcpsv.UserName
-	password := lcpsv.Password
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
@@ -227,7 +244,7 @@ func GetFreshLicense(lcpsv conf.LCPServerAccess, licenceId, email, textHint, hex
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(lcpsv.UserName, lcpsv.Password)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -238,7 +255,7 @@ func GetFreshLicense(lcpsv conf.LCPServerAccess, licenceId, email, textHint, hex
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		fmt.Println("License created successfully.")
+		fmt.Println("Fresh License successfully fetched.")
 	} else if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
 		return nil, fmt.Errorf("client error occurred. Status code: %d", resp.StatusCode)
 	} else if resp.StatusCode == http.StatusInternalServerError {
@@ -266,11 +283,10 @@ type LsdStatus struct {
 }
 
 // GetStatusDocument sends a request to the License Server and returns a status document to the caller
-// For that we need to use the LCP Server v2.
-func GetStatusDocument(lcpsv conf.LCPServerAccess, licenceId, email, textHint, hexValue string) (*LsdStatus, error) {
+func GetStatusDocument(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) (*LsdStatus, error) {
 
 	// TODO: avoid fetching the fresh license first, just to get the url to the status document.
-	licenceBytes, err := GetFreshLicense(lcpsv, licenceId, email, textHint, hexValue)
+	licenceBytes, err := GetFreshLicense(lcpsv, transaction)
 	if err != nil {
 		return nil, err
 	}

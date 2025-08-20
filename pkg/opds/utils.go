@@ -226,13 +226,13 @@ func (opds *Opds) GenerateBookshelfFeed(credential string) (Root, error) {
 
 	var publicationOpdsView []Publication = make([]Publication, len(*transactions))
 	var lsdStatus []*lcp.LsdStatus = make([]*lcp.LsdStatus, len(*transactions))
-	for i, transactionStor := range *transactions {
+	for i, transaction := range *transactions {
 		// TODO: try to find a better solution than a loop on http requests
-		lsdStatus[i], err = lcp.GetStatusDocument(opds.Config.LCPServer, transactionStor.LicenceId, transactionStor.User.Email, transactionStor.User.TextHint, transactionStor.User.HPassphrase)
+		lsdStatus[i], err = lcp.GetStatusDocument(opds.Config.LCPServer, &transaction)
 		if err != nil {
 			lsdStatus[i] = &lcp.LsdStatus{}
 		}
-		publicationOpdsView[i], err = convertToOpdsPublication(&transactionStor.Publication)
+		publicationOpdsView[i], err = convertToOpdsPublication(&transaction.Publication)
 		if err != nil {
 			publicationOpdsView[i] = Publication{}
 		}
