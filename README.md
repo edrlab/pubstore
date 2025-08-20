@@ -96,7 +96,7 @@ https://pubstore.edrlab.org
 
 ### Swagger
 
-Swagger documentation : https://pubstore.edrlab.org/api/v1/swagger/index.html
+Swagger documentation : https://pubstore.edrlab.org/api/swagger/index.html
 
 to compile the swagger documentation, you need to install https://github.com/swaggo/swag
 
