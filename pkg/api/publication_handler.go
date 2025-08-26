@@ -6,6 +6,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/edrlab/pubstore/pkg/stor"
@@ -40,6 +41,7 @@ func (a *Api) createPublication(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrServer(err))
 		return
 	}
+	fmt.Println("Publication created successfully")
 
 	render.Status(r, http.StatusCreated)
 	if err := render.Render(w, r, NewPublicationResponse(publication)); err != nil {
