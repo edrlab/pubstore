@@ -41,12 +41,11 @@ Access the PubStore API at http://localhost:8080 (or the appropriate base URL ac
 
 ### Configuration
 
-The configuration of the server is kept both in a configudation file and in environment variable. 
-It is possible to mix both sets, as confidential information is better kept as environment variables. 
+The configuration of the server is kept both in a configuration file and in environment variables. It is possible to mix both sets;  environment variables are expressly recommended for confidential information. 
 
 The server will use the PUBSTORE_CONFIG environment variable to find a configuration file. Its value must be a file path. 
 
-Configuration properties are expressed in snake case in the configuration file, and screaming snake case prefiexed by `PUBSTORE` when expressed as environment variables. 
+Configuration properties are expressed in snake case in the configuration file, and screaming snake case prefixed by `PUBSTORE` when expressed as environment variables. 
 As an example, the `port` conguration property becomes the `PUBSTORE_PORT` environment variable, `public_base_url` becomes `PUBSTORE_PUBLIC_BASE_URL`, 
 and the `version` property of the `lcp_server` section becomes `PUBSTORE_LCP_SERVER_VERSION`.
 
