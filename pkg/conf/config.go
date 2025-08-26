@@ -9,7 +9,7 @@ import (
 )
 
 // Pubstore configuration
-// split_words true is how envconfig maps e.g. the PUBFRONT_PUBLIC_BASE_URL environment variable to PublicBaseUrl
+// split_words true is how envconfig maps e.g. the PUBSTORE_PUBLIC_BASE_URL environment variable to PublicBaseUrl
 type Config struct {
 	// Port on which the server is running
 	Port int `yaml:"port"`
@@ -20,7 +20,7 @@ type Config struct {
 	// OAuth seed
 	OAuthSeed string `yaml:"oauth_seed" envconfig:"OAUTH_SEED"`
 	// Path to static files and views
-	RootDir string `yaml:"root_dir" envconfig:"ROOT_DIR"`
+	RootDir string `yaml:"root_dir" split_words:"true"`
 	// Path to resources, especially cover images
 	Resources string `yaml:"resources"`
 	// Page size used in the REST API and Web interface
@@ -46,6 +46,8 @@ type LCPServerAccess struct {
 func Init(configFile string) (Config, error) {
 
 	var cfg Config
+
+	log.Printf("Loading configuration from %s ...", configFile)
 
 	f, err := os.Open(configFile)
 	if err != nil {
