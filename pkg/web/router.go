@@ -261,8 +261,8 @@ func (web *Web) Router(r chi.Router) {
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(filesDir)))
 
 	// Serve resources from a configurable directory (used for cover images)
-	r.Handle("/resources/*", http.StripPrefix("/resources/", http.FileServer(http.Dir(web.Config.Resources))))
-	fmt.Println("Resources fetched from ", web.Config.Resources)
+	//r.Handle("/resources/*", http.StripPrefix("/resources/", http.FileServer(http.Dir(web.Config.Resources))))
+	//fmt.Println("Resources fetched from ", web.Config.Resources)
 
 	// Public Routes
 	r.Group(func(r chi.Router) {
