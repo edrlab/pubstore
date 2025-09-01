@@ -110,6 +110,7 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 	// Implementation for the catalog handler
 	// This function will handle the "/catalog" route
 
+	format := r.URL.Query().Get("format")
 	author := r.URL.Query().Get("author")
 	language := r.URL.Query().Get("language")
 	publisher := r.URL.Query().Get("publisher")
@@ -138,6 +139,9 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 	if len(queryStr) > 0 {
 		facet = "search"
 		value = queryStr
+	} else if len(format) > 0 {
+		facet = "format"
+		value = format
 	} else if len(author) > 0 {
 		facet = "author"
 		value = author
@@ -224,6 +228,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 			"licenseFoundAndActive": licenseOK,
 			"title":                 publicationView.Title,
 			"uuid":                  publicationView.UUID,
+			"format":                publicationView.Format,
 			"datePublished":         publicationView.DatePublished,
 			"description":           publicationView.Description,
 			"coverUrl":              publicationView.CoverUrl,
