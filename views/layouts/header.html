@@ -1,39 +1,97 @@
-<div class="header-infos">
-    <div class="header-infos-title">
-        <a href="/index"><img src="/static/images/edrlab-logo.jpeg" alt="logo" class="logo"/></a>
-        <h1>PubStore</h1>
+<div class="header">
+    <div class="header-title">
+        <a href="/index">
+            <img src="/static/images/edrlab-logo.jpeg" alt="logo" class="logo"/>
+            <h1>PubStore</h1>
+        </a>
     </div>
-    <div class="header-options">
-        <div class="header-options_settings">
+    <nav>
+        <ul>
+            <li><a href="/catalog">Catalog</a></li>
             {{ if .userIsAuthenticated}}
-            <p id="user-options">Hello {{.userName}}</p>
-            <p>|</p>
-            <a href="/signout">Sign Out</a>
-            {{ else }}
-            <a href="/signin" id="login-button">Sign In</a>
-            <a href="/signup" id="signup-button">Sign Up</a>
+            <li><a href="/user/bookshelf">My Books</a></li>
+            {{else }}
+            <li><a href="/signin" class="inactive">My Books</a></li>
             {{ end }}
+        </ul>
+    </nav>
+    <div class="header-infos">
+        <form class="header-options_searchbar">
+            <input
+                    type="search"
+                    id="searchBar"
+                    name="q"
+                    placeholder="Search a publication"
+            />
+            <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
+        <div class="header-options">
+            <div class="header-options_settings">
+                {{ if .userIsAuthenticated}}
+                <p id="user-options">Hello {{.userName}}</p>
+                <p>|</p>
+                <a href="/signout">Sign Out</a>
+                {{ else }}
+                <a href="/signin" id="login-button">Sign In</a>
+                <a href="/signup" id="signup-button">Sign Up</a>
+                {{ end }}
+            </div>
         </div>
     </div>
+     <div class="burger-menu" onclick="toggleMobileMenu()">
+            <div class="burger-line"></div>
+            <div class="burger-line"></div>
+            <div class="burger-line"></div>
+        </div>
+
+        <!-- Menu mobile -->
+        <div class="mobile-menu" id="mobileMenu">
+            <nav>
+                <ul>
+                    <li><a href="/catalog">Catalog</a></li>
+                    <li><a href="/user/bookshelf">My Books</a></li>
+                </ul>
+            </nav>
+            <form class="header-options_searchbar">
+                <input
+                    type="search"
+                    name="q"
+                    placeholder="Search a publication"
+                />
+                <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </form>
+            <div class="header-options_settings">
+                {{ if .userIsAuthenticated}}
+                <p id="user-options">Hello {{.userName}}</p>
+                <p>|</p>
+                <a href="/signout">Sign Out</a>
+                {{ else }}
+                <a href="/signin" id="login-button">Sign In</a>
+                <a href="/signup" id="signup-button">Sign Up</a>
+                {{ end }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const burgerMenu = document.querySelector('.burger-menu');
+            
+            mobileMenu.classList.toggle('active');
+            burgerMenu.classList.toggle('active');
+        }
+
+        // Fermer le menu si on clique ailleurs
+        document.addEventListener('click', function(event) {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const burgerMenu = document.querySelector('.burger-menu');
+            const header = document.querySelector('.header');
+            
+            if (!header.contains(event.target)) {
+                mobileMenu.classList.remove('active');
+                burgerMenu.classList.remove('active');
+            }
+        });
+    </script>
 </div>
-<nav>
-    <ul>
-        <li><a href="/catalog">Catalog</a></li>
-        {{ if .userIsAuthenticated}}
-        <li><a href="/user/bookshelf">Bookshelf</a></li>
-        {{else }}
-        <li><a href="/signin" class="inactive">Bookshelf</a></li>
-        {{ end }}
-    </ul>
-    <form class="header-options_searchbar">
-        <input
-                type="search"
-                id="searchBar"
-                name="q"
-                placeholder="Search a publication"
-        />
-        <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
-    </form>
-</nav>
-<section id="Banner">
-</section>
