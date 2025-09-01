@@ -54,7 +54,7 @@ and the `version` property of the `lcp_server` section becomes `PUBSTORE_LCP_SER
 - `dsn`: the data source name, i.e. database connection string. Default value: `sqlite3://pubstore.sqlite`.
 - `oauth_seed`: a string used as a seed for OAuth2 server authorization. 
 - `root_dir`: the path to static files and views used by the web interface. Default value: current directory.
-- `resources`: the path to the cover images used by the Web interface.
+//- `resources`: the path to the cover images used by the Web interface.
 - `page_size`: the page size used  in the REST API and Web interface.
 - `print_limit`: the print limit set in LCP licenses generated from the associated LCP Server. 
 - `copy_limit`: the copy limit set in LCP licenses generated from the associated LCP Server. 

@@ -15,6 +15,7 @@ type PublicationCatalogView struct {
 	Title     string
 	Author    string
 	UUID      string
+	Format    string
 }
 
 type FacetsView struct {
@@ -84,14 +85,23 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 	var err error
 
 	switch facet {
-
+	case "format":
+		contentType := formatToContentType(value)
+		if pubs, err = view.Store.FindPublicationsByType(contentType, page, pageSize); contentType != "" && err != nil {
+			publications = make([]PublicationCatalogView, 0)
+		} else {
+			publications = make([]PublicationCatalogView, len(pubs))
+			for i, element := range pubs {
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID, Format: value}
+			}
+		}
 	case "author":
 		if pubs, err = view.Store.FindPublicationsByAuthor(value, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID, Format: contentTypeToFormat(element.ContentType)}
 			}
 		}
 
@@ -105,7 +115,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID, Format: contentTypeToFormat(element.ContentType)}
 			}
 		}
 
@@ -119,7 +129,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID, Format: contentTypeToFormat(element.ContentType)}
 			}
 		}
 
@@ -133,7 +143,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID, Format: contentTypeToFormat(element.ContentType)}
 			}
 		}
 
@@ -147,7 +157,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID, Format: contentTypeToFormat(element.ContentType)}
 			}
 		}
 
@@ -161,7 +171,7 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 				if len(element.Author) > 0 {
 					author = element.Author[0].Name
 				}
-				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID, Format: contentTypeToFormat(element.ContentType)}
 			}
 		}
 	}
@@ -179,8 +189,38 @@ func GetCatalogView(pubs *[]PublicationCatalogView, facets *FacetsView) *Catalog
 	catalogView.Publishers = facets.Publishers
 	catalogView.Publications = make([]PublicationCatalogView, len(*pubs))
 	for i, element := range *pubs {
-		catalogView.Publications[i] = PublicationCatalogView{CoverHref: element.CoverHref, Title: element.Title, Author: element.Author, UUID: element.UUID}
+		catalogView.Publications[i] = PublicationCatalogView{CoverHref: element.CoverHref, Title: element.Title, Author: element.Author, UUID: element.UUID, Format: element.Format}
 	}
 
 	return &catalogView
+}
+
+func contentTypeToFormat(contentType string) string {
+	switch contentType {
+	case "application/epub+zip":
+		return "epub"
+	case "application/pdf+lcp":
+		return "pdf"
+	case "application/audiobook+lcp":
+		return "audiobook"
+	case "application/divina+lcp":
+		return "divina"
+	default:
+		return "unknown"
+	}
+}
+
+func formatToContentType(format string) string {
+	switch format {
+	case "epub":
+		return "application/epub+zip"
+	case "pdf":
+		return "application/pdf+lcp"
+	case "audiobook":
+		return "application/audiobook+lcp"
+	case "divina":
+		return "application/divina+lcp"
+	default:
+		return "unknown"
+	}
 }

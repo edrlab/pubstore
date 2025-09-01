@@ -10,6 +10,7 @@ type PublicationView struct {
 	DatePublished string
 	Description   string
 	CoverUrl      string
+	Format        string
 	Author        []string
 	Publisher     []string
 	Category      []string
@@ -24,6 +25,9 @@ func (view *View) GetPublicationViewFromPublicationStor(originalPublication *sto
 		Description:   originalPublication.Description,
 		CoverUrl:      originalPublication.CoverUrl,
 	}
+
+	// Convert content type to format label
+	convertedPublication.Format = contentTypeToFormat(originalPublication.ContentType)
 
 	// Convert Language slice
 	for _, language := range originalPublication.Language {

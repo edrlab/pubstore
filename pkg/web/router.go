@@ -110,6 +110,7 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 	// Implementation for the catalog handler
 	// This function will handle the "/catalog" route
 
+	format := r.URL.Query().Get("format")
 	author := r.URL.Query().Get("author")
 	language := r.URL.Query().Get("language")
 	publisher := r.URL.Query().Get("publisher")
@@ -138,6 +139,9 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 	if len(queryStr) > 0 {
 		facet = "search"
 		value = queryStr
+	} else if len(format) > 0 {
+		facet = "format"
+		value = format
 	} else if len(author) > 0 {
 		facet = "author"
 		value = author
@@ -224,6 +228,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 			"licenseFoundAndActive": licenseOK,
 			"title":                 publicationView.Title,
 			"uuid":                  publicationView.UUID,
+			"format":                publicationView.Format,
 			"datePublished":         publicationView.DatePublished,
 			"description":           publicationView.Description,
 			"coverUrl":              publicationView.CoverUrl,
@@ -261,8 +266,8 @@ func (web *Web) Router(r chi.Router) {
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(filesDir)))
 
 	// Serve resources from a configurable directory (used for cover images)
-	r.Handle("/resources/*", http.StripPrefix("/resources/", http.FileServer(http.Dir(web.Config.Resources))))
-	fmt.Println("Resources fetched from ", web.Config.Resources)
+	//r.Handle("/resources/*", http.StripPrefix("/resources/", http.FileServer(http.Dir(web.Config.Resources))))
+	//fmt.Println("Resources fetched from ", web.Config.Resources)
 
 	// Public Routes
 	r.Group(func(r chi.Router) {
