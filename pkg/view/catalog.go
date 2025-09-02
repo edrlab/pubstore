@@ -87,12 +87,16 @@ func (view *View) GetCatalogPublicationsView(facet string, value string, page in
 	switch facet {
 	case "format":
 		contentType := formatToContentType(value)
-		if pubs, err = view.Store.FindPublicationsByType(contentType, page, pageSize); contentType != "" && err != nil {
+		if pubs, err = view.Store.FindPublicationsByType(contentType, page, pageSize); err != nil {
 			publications = make([]PublicationCatalogView, 0)
 		} else {
 			publications = make([]PublicationCatalogView, len(pubs))
 			for i, element := range pubs {
-				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: element.Author[0].Name, UUID: element.UUID, Format: value}
+				var author string
+				if len(element.Author) > 0 {
+					author = element.Author[0].Name
+				}
+				publications[i] = PublicationCatalogView{CoverHref: element.CoverUrl, Title: element.Title, Author: author, UUID: element.UUID, Format: value}
 			}
 		}
 	case "author":
