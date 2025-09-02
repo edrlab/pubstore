@@ -1,6 +1,9 @@
 package view
 
 import (
+	"regexp"
+	"time"
+
 	"github.com/edrlab/pubstore/pkg/stor"
 )
 
@@ -28,6 +31,20 @@ func (view *View) GetPublicationViewFromPublicationStor(originalPublication *sto
 
 	// Convert content type to format label
 	convertedPublication.Format = contentTypeToFormat(originalPublication.ContentType)
+
+	// Override a yyyy-mm-dd date string as a human readable formatted string
+	matched, _ := regexp.MatchString(`^\d{4}-\d{2}-\d{2}$`, originalPublication.DatePublished)
+	if matched {
+		date, err := time.Parse("2006-01-02", originalPublication.DatePublished)
+		if err == nil {
+			convertedPublication.DatePublished = date.Format("02 Jan 2006")
+		}
+	}
+
+	// Convert Language slice
+	for _, language := range originalPublication.Language {
+		convertedPublication.Language = append(convertedPublication.Language, language.Code)
+	}
 
 	// Convert Language slice
 	for _, language := range originalPublication.Language {
