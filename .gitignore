@@ -24,3 +24,7 @@ go.work
 build
 .idea
 pubstore.db
+pubstore.sqlite
+pubstore.sqlite-shm
+pubstore.sqlite-wal
+.DS_Store

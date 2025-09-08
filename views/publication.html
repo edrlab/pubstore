@@ -31,23 +31,8 @@
 {{end}}
 <div class="pub-container">
     <div class="pub-left-side">
-        <img src="{{.coverUrl}}" alt="book cover"/>
-        <div class="pub-actions">
-            {{ if .userIsAuthenticated}}
-            {{if .licenseFoundAndActive}}
-            <a href="/catalog/publication/{{.uuid}}/license">Download <i class="fa-solid fa-cloud-arrow-down"></i></a>
-            <a href="thorium://{{.host}}/catalog/publication/{{.uuid}}/license">Download in Thorium <img src="/static/images/ThoriumLogo.png" class="thorium-logo"></a>
-            {{else}}
-            <button id="buy">Buy</button>
-            <button id="loan">Borrow</button>
-            {{ end }}
-            {{ else }}
-            <div class="login">
-                <a href="/signin" id="login-button">Sign In</a>
-                <p>or</p>
-                <a href="/signup" id="signup-button">Sign Up</a>
-            </div>
-            {{ end }}
+        <div class="book-cover-container">
+            <img src="{{.coverUrl}}" alt="book cover"/>
         </div>
     </div>
     <div class="pub-right-side">
@@ -58,55 +43,83 @@
             <a href="/catalog?author={{.}}">{{.}}</a>
             {{end}}
         </div>
-        <div class="pub-categories-tags">
+        <div class="pub-actions">
+            {{ if .userIsAuthenticated }}
+                {{ if and .licenseFound .IsBookshelfPage }}
+                    <a href="/bookshelf/publication/{{.uuid}}/license" class="download-action">
+                        Download <i class="fa-solid fa-cloud-arrow-down"></i>
+                    </a>
+                    <a href="thorium://{{.host}}/bookshelf/publication/{{.uuid}}/license" class="download-action">
+                        Open in Thorium <img src="/static/images/ThoriumLogo.png" class="thorium-logo">
+                    </a>
+                {{ else }}
+                    <button id="buy">Buy</button>
+                    <button id="loan">Borrow</button>
+                {{ end }}
+                {{ if and .licenseFound (ne .IsBookshelfPage true) }}
+                    <a href="/bookshelf/publication/{{.uuid}}">Get your LCP license and check LCP details</a>
+                {{end}}
+            {{ else }}
+                <p>Please sign-in to generate a license.</p>
+            {{ end }}
+        </div>
+        <!-- <div class="pub-categories-tags">
             {{ range .categories}}
             <a href="/catalog?category={{.}}" class="tag">{{.}}</a>
             {{end}}
-        </div>
+        </div> -->
         <div class="tab-bar">
-            <button class="tab tab--active" data-for="summary">Summary</button>
-            <button class="tab" data-for="details">Details</button>
-            <button class="tab" data-for="accessibility">Accessibility</button>
-            {{ if .licenseFound}}
-            <button class="tab" data-for="lcp-infos">LCP Infos</button>
+            {{ if and .licenseFound .IsBookshelfPage }}
+                <button class="tab tab--active" data-for="lcp-infos">LCP Infos</button>
+                <button class="tab" data-for="summary">Summary</button>
+                {{else}}
+                <button class="tab tab--active" data-for="summary">Summary</button>
             {{end}}
+            <button class="tab" data-for="details">Details</button>
+            <!-- <button class="tab" data-for="accessibility">Accessibility</button> -->
         </div>
-        <p id="summary" class="tabbed" style="display : block;">{{.description}}</p>
+        {{ if and .licenseFound .IsBookshelfPage }}
+            <div class="lcp-infos tabbed" id="lcp-infos" style="display : block;">
+                <p>Copy : {{.transaction.PublicationCopyRights}}</p>
+                <p>Print : {{.transaction.PublicationPrintRights}}</p>
+                {{if ne .transaction.PublicationStartDate "0001-01-01 00:00:00"}}
+                    <p>Start Date : {{.transaction.PublicationStartDate}}</p>
+                {{end}}
+                {{if ne .transaction.PublicationEndDate "0001-01-01 00:00:00"}}
+                    <p>End Date : {{.transaction.PublicationEndDate}}</p>
+                {{end}}
+                {{if ne .transaction.LicenseEndPotentialRights "0001-01-01 00:00:00"}}
+                    <p>End Potential Rights : {{.transaction.LicenseEndPotentialRights}}</p>
+                {{end}}
+                <p>License Status : <span class="status {{.transaction.LicenseStatusCode}}">{{.transaction.LicenseStatusMessage}}</span></p>
+                <button type="submit">Revoke this license</button>
+            </div>
+            <p id="summary" class="tabbed" style="display : none;">{{.description}}</p>
+            {{else}}
+            <p id="summary" class="tabbed" style="display : block;">{{.description}}</p>
+        {{end}}
         <div class="tabbed" id="details" style="display:none;">
             <p>Format : {{.format}}</p>
             <p>Published on : {{.datePublished}}</p>
-            <p>Publisher : {{range .publishers}}<a href="/catalog?publisher={{.}}" class="bold"> {{.}},</a>{{end}}</p>
-            <p>Language : {{range .languages}}<a href="/catalog?language={{.}}" class="bold">{{.}},</a>{{end}}</p>
-        </div>
-        <div class="lcp-infos tabbed" id="lcp-infos" style="display : none;">
-            <p>Copy : {{.transaction.PublicationCopyRights}}</p>
-            <p>Print : {{.transaction.PublicationPrintRights}}</p>
-            <p>Start Date : {{.transaction.PublicationStartDate}}</p>
-            <p>End Date : {{.transaction.PublicationEndDate}}</p>
-            <p>End Potential Rights : {{.transaction.LicenseEndPotentialRights}}</p>
-            <p>License Status : <span class="status {{.transaction.LicenseStatusCode}}">{{.transaction.LicenseStatusMessage}}</span></p>
+            <p>Publisher : 
+            {{range $index, $lang := .publishers}}
+                {{if $index}}, {{end}}<a href="/catalog?publisher={{.}}" class="bold">{{.}}</a>
+            {{end}}
+            </p>
+            <p>Language : 
+            {{range $index, $lang := .languages}}
+                {{if $index}}, {{end}}<a href="/catalog?language={{$lang}}" class="bold">{{$lang}}</a>
+            {{end}}
+            </p>
         </div>
         <p id="accessibility" class="tabbed" style="display: none;">-There is not data available yet.</p>
     </div>
 </div>
-<!--<div class="related">
-    <h4>More from this author</h4>
-    <div class="related-pub">
-        <a href="#"><img src="" class="related-pub-cover"/></a>
-        <a href="#"><img src="" class="related-pub-cover"/></a>
-        <a href="#"><img src="" class="related-pub-cover"/></a>
-    </div>
-</div>-->
-
 
 <div class="fade" id="modal-window" tabindex="-1" style="display: none;" aria-hidden="true">
     <aside id="modal" class="modal" aria-hidden="true" aria-labelledby="modal">
         <div class="modal-wrapper js-modal-stop">
             <div class="modal-body-publications">
-                <form>
-                    <input>
-                    <button type="submit"></button>
-                </form>
                 <form  id="buyForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/buy" method="GET">
                     <div class="select-global-options">
                         <label for="copyRights">Characters to be copied</label>
@@ -115,8 +128,9 @@
                         <input id="printRights" name="printRights" type="number" value="10">
                     </div>
                     <div class="modal-loan-buttons">
-                        <button class="modal-button back-button" id="backButtonBuy"><i class="fa-solid fa-rotate-left"></i> Back</button>
-                        <button type="submit" value="Buy"  class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
+                        <button id="submitBuy" type="submit" value="Buy" class="modal-button">
+                            <i class="fa-solid fa-check"></i> Validate
+                        </button>
                     </div>
                 </form>
                 <form  id="loanForm" class="modal-form-options" action="/catalog/publication/{{.uuid}}/loan" method="GET" onsubmit="location.reload()">
@@ -135,8 +149,9 @@
                         <input id="endDate" name="endDate" type="text" hidden>
                     </div>
                     <div class="modal-loan-buttons">
-                        <button class="modal-button back-button" id="backButtonLoan"><i class="fa-solid fa-rotate-left"></i> Back</button>
-                        <button type="submit" value="Loan" class="modal-button"><i class="fa-solid fa-check"></i> Validate</button>
+                        <button id="submitLoan" type="submit" value="Loan" class="modal-button">
+                            <i class="fa-solid fa-check"></i> Validate
+                        </button>
                     </div>
                 </form>
             </div>

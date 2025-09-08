@@ -47,7 +47,7 @@ func (web *Web) publicationFreshLicenceHandler(w http.ResponseWriter, r *http.Re
 	user := web.getUserByCookie(r)
 	transaction, err := web.Store.GetTransactionByUserAndPublication(user.ID, publication.ID)
 	if err != nil {
-		http.Redirect(w, r, "/catalog/publication/"+pubUUID, http.StatusFound)
+		http.Redirect(w, r, "/bookshelf/publication/"+pubUUID, http.StatusFound)
 		return
 	}
 
@@ -201,6 +201,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 	errLcp := r.URL.Query().Get("err")
 	userStor := web.getUserByCookie(r)
 	licenseOK := false
+	IsBookshelfPage := false
 
 	if publicationStor, err := web.Store.GetPublication(pubUUID); err != nil {
 		http.ServeFile(w, r, "static/404.html")
@@ -215,6 +216,9 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 				viewTransaction = *web.View.GetTransactionViewFromTransactionStor(transaction)
 				if viewTransaction.LicenseStatusCode == "ready" || viewTransaction.LicenseStatusCode == "active" {
 					licenseOK = true
+				}
+				if strings.Contains(r.URL.Path, "bookshelf") {
+					IsBookshelfPage = true
 				}
 			}
 		}
@@ -239,6 +243,7 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 			"categories":            publicationView.Category,
 			"licenseFound":          bool(viewTransaction.PublicationUUID != ""),
 			"transaction":           viewTransaction,
+			"IsBookshelfPage":	IsBookshelfPage,
 		}
 		err = goview.Render(w, http.StatusOK, "publication", goviewModel)
 		if err != nil {
@@ -293,6 +298,7 @@ func (web *Web) Router(r chi.Router) {
 		})
 		r.Get("/catalog", web.catalogHandler)
 		r.Get("/catalog/publication/{id}", web.publicationHandler)
+		r.Get("/bookshelf/publication/{id}", web.publicationHandler)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, "static/404.html")
 			w.WriteHeader(http.StatusNotFound)
@@ -316,6 +322,6 @@ func (web *Web) Router(r chi.Router) {
 		r.Get("/user/bookshelf", web.bookshelfHandler)
 		r.Get("/catalog/publication/{id}/buy", web.createLicense)
 		r.Get("/catalog/publication/{id}/loan", web.createLicense)
-		r.Get("/catalog/publication/{id}/license", web.publicationFreshLicenceHandler)
+		r.Get("/bookshelf/publication/{id}/license", web.publicationFreshLicenceHandler)
 	})
 }

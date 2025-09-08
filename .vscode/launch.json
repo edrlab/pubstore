@@ -18,7 +18,7 @@
       "mode": "debug",
       "program": "${workspaceFolder}/cmd/pubstore",
       "env": {
-        "PUBSTORE_CONFIG":"/Users/laurentlemeur/work/lcpconfig/pubstore-config.yaml",
+        "PUBSTORE_CONFIG":"/Users/laurent/work/lcpconfig/pubstore-config.yaml",
         "PUBSTORE_OAUTH_SEED":"EDRLab-Rocks",
         "PUBSTORE_USERNAME":"laurent",
         "PUBSTORE_PASSWORD":"laurent",

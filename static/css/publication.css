@@ -1,5 +1,5 @@
 .pub-container {
-    padding: 0 10%;
+    padding: 5% 10%;
     display: flex;
     justify-content: space-around;
     border-bottom: 1px solid black;
@@ -13,8 +13,44 @@
     flex: 1;
 }
 
-.pub-left-side img {
+.pub-left-side .book-cover-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+    list-style: none;
+    border: 1px solid black;
+    position: relative;
+    overflow: hidden;
+    background-color: #DDDBDD;
+    cursor: pointer;
+    aspect-ratio: 0.67;
+}
+
+.pub-left-side .book-cover-container img  {
     width: 300px;
+}
+
+.pub-left-side .cover-wrapper {
+        position: relative;
+        align-items: center;
+        background-color: var(--color-extralight-grey);
+        border: 1px solid var(--color-light-grey);
+        border-radius: 6px;
+        margin: auto;
+    }
+
+.pub-left-side .cover-wrapper img {
+    min-height: 250px;
+    height: 100%;
+    min-width: 167px;
+    max-width: 300px;
+    max-height: 450px;
+}
+
+/* .pub-left-side img {
+    aspect-ratio: 0.67;
+    max-width: 300px;
     height: 450px;
     display: flex;
     align-items: center;
@@ -25,7 +61,7 @@
     position: relative;
     overflow: hidden;
     background-color: #DDDBDD;
-}
+} */
 
 .pub-left-side img:after {
     position: absolute;
@@ -39,11 +75,36 @@
     content: '';
 }
 
-.pub-left-side .pub-actions {
+.pub-actions {
+    padding-top: 10px;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    flex-wrap: wrap;
+    justify-content: start;
     align-items: center;
+}
+
+.pub-actions #buy, .pub-actions #loan {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+    color: black;
+}
+
+.pub-actions #buy {
+    background-color: #f8f9fa;
+}
+
+.pub-actions #loan {
+    background-color: #007bff;
+    color: white !important;
+}
+
+.pub-actions #buy:hover {
+    background-color: #e9ecef;
+}
+
+.pub-actions #loan:hover {
+    background-color: #0056b3;
 }
 
 .pub-left-side .thorium-logo {
@@ -52,25 +113,57 @@
     border: none;
 }
 
-.pub-left-side .pub-actions button,
-.pub-left-side .pub-actions > a {
-    padding: 10px 5px;
+.pub-actions img {
+    width: 50px;
+}
+
+.pub-actions button,
+.pub-actions > a {
+    padding: 5px 10px;
     font-size: 18px;
-    background-color: white;
-    color: black;
     border-radius: 25px;
     cursor: pointer;
-    width: 250px;
+    width: fit-content;
     text-align: center;
-    transition: 200ms;
+    transition: 100ms;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
     margin: 5px;
+    border: 1px solid transparent;
 }
 
-.pub-left-side .pub-actions .login {
+/* .pub-actions button {
+     flex: 1 1 50%;
+} */
+
+.pub-actions a:last-child:not(.download-action) {
+    flex: 1 1 100%; 
+    align-items: start;
+    justify-content: start;
+}
+
+.pub-actions > a:not(.download-action) {
+    text-decoration: underline;
+}
+
+.pub-actions a:hover {
+    color: blue;
+}
+
+.download-action {
+    background-color: #a7c6f8;
+    color: white;
+}
+
+.pub-actions > a:first-child {
+    border-color: black;
+    color: black;
+    background-color: transparent;
+}
+
+.pub-actions .login {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -78,7 +171,7 @@
 }
 
 
-.pub-left-side .pub-actions .login a {
+.pub-actions .login a {
     height: 20px;
     width: 100px;
     border: 1px solid black;
@@ -87,18 +180,23 @@
     line-height: 20px;
 }
 
-.pub-left-side .pub-actions button:hover,
-.pub-left-side .pub-actions > a:hover{
-    box-shadow: 5px 5px 5px grey;
-    background: #a7c6f8;
+.pub-actions button:hover,
+.pub-actions > .download-action:hover{
+    color: white;
+    background-color: #619bff;
+    border-color: #a7c6f8;
 }
 
-.pub-left-side .pub-actions > a:hover .thorium-logo {
-    background: #a7c6f8;
+.pub-actions .thorium-logo {
+    width: 30px;
 }
 
-.pub-left-side .pub-actions button:active,
-.pub-left-side .pub-actions > a:active {
+.pub-actions > a:hover .thorium-logo {
+    background: #619bff;
+}
+
+.pub-actions button:active,
+.pub-actions > a:active {
     scale: 0.9;
 }
 

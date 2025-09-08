@@ -7,10 +7,18 @@
 {{end}}
 
 {{define "content"}}
+<div style="width: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+        <div class="main-content-header">
+            <h2>My Books</h2>
+            <!--        <p>Page {{.currentPage}}</p>-->
+            <h3>{{.currentFacetValue}}</h3>
+            <!--        <p>Results by page : {{.currentPageSize}}</p>-->
+            <p>{{.publicationCount}} results found</p>
+        </div>
 <ul class="book-list bs-list" id="searchList">
     {{range .transactions}}
     <li>
-        <a href="/catalog/publication/{{.PublicationUUID}}">
+        <a href="/bookshelf/publication/{{.PublicationUUID}}">
             <div class="book-cover-container">
                 <img class="book-cover" src="{{.PublicationCoverUrl}}">
                 <span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span>
@@ -21,4 +29,5 @@
     </li>
     {{end}}
 </ul>
+</div>
 {{end}}
