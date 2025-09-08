@@ -1,27 +1,29 @@
 <div class="header">
-    <div class="header-title">
-        <a href="/index">
-            <img src="/static/images/edrlab-logo.jpeg" alt="logo" class="logo"/>
-            <h1>PubStore</h1>
-        </a>
+    <div style="display: flex; align-items: center; gap: 40px;">
+        <div class="header-title">
+            <a href="/index">
+                <img src="/static/images/edrlab-logo.jpeg" alt="logo" class="logo"/>
+                <h1>PubStore</h1>
+            </a>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/catalog">Catalog</a></li>
+                {{ if .userIsAuthenticated}}
+                <li><a href="/user/bookshelf">My Books</a></li>
+                {{else }}
+                <li><a href="/signin" class="inactive">My Books</a></li>
+                {{ end }}
+            </ul>
+        </nav>
     </div>
-    <nav>
-        <ul>
-            <li><a href="/catalog">Catalog</a></li>
-            {{ if .userIsAuthenticated}}
-            <li><a href="/user/bookshelf">My Books</a></li>
-            {{else }}
-            <li><a href="/signin" class="inactive">My Books</a></li>
-            {{ end }}
-        </ul>
-    </nav>
     <div class="header-infos">
-        <form class="header-options_searchbar">
+        <form class="header-options_searchbar" action="/catalog" method="get">
             <input
-                    type="search"
-                    id="searchBar"
-                    name="q"
-                    placeholder="Search a publication"
+                type="search"
+                name="q"
+                id="searchBar"
+                placeholder="Search a publication title"
             />
             <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
         </form>
@@ -52,11 +54,11 @@
                     <li><a href="/user/bookshelf">My Books</a></li>
                 </ul>
             </nav>
-            <form class="header-options_searchbar">
+            <form class="header-options_searchbar" action="/catalog" method="get">
                 <input
                     type="search"
                     name="q"
-                    placeholder="Search a publication"
+                    placeholder="Search a publication title"
                 />
                 <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
             </form>
@@ -93,5 +95,18 @@
                 burgerMenu.classList.remove('active');
             }
         });
+
+        function closeMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const burgerMenu = document.querySelector('.burger-menu');
+
+            if (mobileMenu.classList.contains("active") && window.innerWidth > 980) {
+                mobileMenu.classList.remove('active');
+                burgerMenu.classList.remove('active');
+                console.log(window.innerWidth, "CLOSED")
+            }
+        }
+
+        window.addEventListener("resize", closeMobileMenu);
     </script>
 </div>
