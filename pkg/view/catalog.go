@@ -19,6 +19,7 @@ type PublicationCatalogView struct {
 }
 
 type FacetsView struct {
+	Formats    []string
 	Authors    []string
 	Publishers []string
 	Languages  []string
@@ -34,6 +35,16 @@ type CatalogView struct {
 
 func (view *View) GetCatalogFacetsView() *FacetsView {
 	var facets FacetsView
+
+	if contentTypeArray, err := view.Store.GetContentTypes(); err != nil {
+		fmt.Println(err)
+		facets.Formats = make([]string, 0)
+	} else {
+		facets.Formats = make([]string, len(contentTypeArray))
+		for i, element := range contentTypeArray {
+			facets.Formats[i] = contentTypeToFormat(element)
+		}
+	}
 
 	if authorArray, err := view.Store.GetAuthors(); err != nil {
 		fmt.Println(err)
@@ -187,6 +198,7 @@ func GetCatalogView(pubs *[]PublicationCatalogView, facets *FacetsView) *Catalog
 
 	var catalogView CatalogView
 
+	catalogView.Formats = facets.Formats
 	catalogView.Authors = facets.Authors
 	catalogView.Categories = facets.Categories
 	catalogView.Languages = facets.Languages

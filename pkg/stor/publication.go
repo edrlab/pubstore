@@ -231,3 +231,15 @@ func (s *Store) GetLanguages() ([]Language, error) {
 	var languages []Language
 	return languages, s.db.Order(clause.OrderByColumn{Column: clause.Column{Name: "code"}, Desc: false}).Find(&languages).Error
 }
+
+// GetContentTypes lists available content types
+func (s *Store) GetContentTypes() ([]string, error) {
+	var contentTypes []string
+
+	// Find distinct content types in publications
+	err := s.db.Model(&Publication{}).Distinct("content_type").Pluck("content_type", &contentTypes).Error
+	if err != nil {
+		return contentTypes, err
+	}
+	return contentTypes, nil
+}
