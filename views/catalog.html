@@ -24,6 +24,16 @@
             <ul>
                 <li class="dropdown">
                     <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Format" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .formats}}
+                        <li><a href="/catalog?format={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
                         <input type="text" class="textBox" placeholder="Authors" readonly>
                     </div>
                     <ul class="option">

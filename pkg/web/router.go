@@ -180,6 +180,7 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 		"currentPage":         fmt.Sprintf("%d", pageInt),
 		"pageRange":           pageRange,
 		"publicationCount":    fmt.Sprintf("%d", count),
+		"formats":             (*catalogView).Formats,
 		"authors":             (*catalogView).Authors,
 		"publishers":          (*catalogView).Publishers,
 		"languages":           (*catalogView).Languages,
