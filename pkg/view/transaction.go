@@ -13,6 +13,7 @@ type TransactionView struct {
 	PublicationUUID           string
 	PublicationTitle          string
 	PublicationAuthor         string
+	PublicationContentType    string
 	PublicationCoverUrl       string
 	PublicationPrintRights    string
 	PublicationCopyRights     string
@@ -21,6 +22,7 @@ type TransactionView struct {
 	LicenseStatusMessage      string
 	LicenseStatusCode         string
 	LicenseEndPotentialRights string
+	LicenseId 				  string
 }
 
 func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transaction) *TransactionView {
@@ -41,6 +43,8 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 	return &TransactionView{
 		PublicationUUID:           transaction.Publication.UUID,
 		PublicationTitle:          transaction.Publication.Title,
+		PublicationContentType:    transaction.Publication.ContentType,
+		LicenseId: 				   transaction.LicenceId,
 		PublicationAuthor:         publicationAuthor,
 		PublicationCoverUrl:       publication.CoverUrl,
 		PublicationPrintRights:    fmt.Sprintf("%d", lsdStatus.PrintLimit),

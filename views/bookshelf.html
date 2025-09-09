@@ -4,30 +4,221 @@
 <link href="/static/css/catalog.css" rel="stylesheet">
 <script type="module" src="/static/js/main.js"></script>
 <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
+<script type="module" defer>
+    const dropdown = document.querySelectorAll('.dropdown');
+
+    dropdown.forEach(input => input.addEventListener('click', function () {
+        input.classList.toggle('active')
+    }));
+</script>
 {{end}}
 
 {{define "content"}}
-<div style="width: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+<div style="width: 100%; display: flex">
+    <div class="backdrop"></div>
+    <aside class="categories">
+        <ul>
+            <li class="dropdown">
+                <div class="filter-title" data-open="false">
+                    <input type="text" class="textBox" placeholder="Format" readonly>
+                </div>
+                <ul class="option">
+                    <form method="GET" action="/user/bookshelf">
+                        {{range .uniqueFormats}}
+                            <ul>
+                                <li>
+                                    <input type="checkbox" id="format-{{.}}" name="format" value="{{.}}" 
+                                        {{if index $.formatFilters .}}checked{{end}} onchange="this.form.submit()" />
+                                    <label for="format-{{.}}">{{.}}</label>
+                                </li>
+                            </ul>
+                        {{end}}
+                    </form>
+                </ul>
+            </li>
+            <li class="dropdown">
+                <div class="filter-title" data-open="false">
+                    <input type="text" class="textBox" placeholder="Status" readonly>
+                </div>
+                <form method="GET" action="/user/bookshelf" class="filter-state option">
+                    <ul>
+                        <li>
+                            <input type="checkbox" id="ready" name="ready" value="on" {{if index .filters "ready"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="ready">Ready</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="active" name="active" value="on" {{if index .filters "active"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="active">Active</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="expired" name="expired" value="on" {{if index .filters "expired"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="expired">Expired</label>
+                        </li>
+                    </ul>
+                </form>
+            </li>
+            <li class="dropdown">
+                <div class="filter-title" data-open="false">
+                    <input type="text" class="textBox" placeholder="Transaction" readonly>
+                </div>
+                <ul class="option">
+                    <form method="GET" action="/user/bookshelf">
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="buy" name="buy" value="on" {{if index .transactionTypes "buy"
+                                    }}checked{{end}} onchange="this.form.submit()" />
+                                <label for="buy">Buy</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="loan" name="loan" value="on" {{if index .transactionTypes "loan"
+                                    }}checked{{end}} onchange="this.form.submit()" />
+                                <label for="loan">Loan</label>
+                            </li>
+                        </ul>
+                    </form>
+                </ul>
+            </li>
+        </ul>
+         {{if .bookshelfFilterActive}}
+        <a href="/user/bookshelf" class="reset">Clear Filter</a>
+        {{end}}
+    </aside>
+    <button id="mobile-status-button" class="mobile-status-button" onclick="togglemobileStatus()">
+        <img src="/static/images/filter.svg" />
+    </button>
+    <div class="mobile-status" id="mobile-status">
+        <button id="mobile-status-close-button" class="mobile-status-close-button" onclick="togglemobileStatus()">
+            <img src="/static/images/close.svg" />
+        </button>
+                <ul>
+            <li class="dropdown">
+                <div class="filter-title" data-open="false">
+                    <input type="text" class="textBox" placeholder="Format" readonly>
+                </div>
+                <ul class="option">
+                    <form method="GET" action="/user/bookshelf">
+                        {{range .uniqueFormats}}
+                            <ul>
+                                <li>
+                                    <input type="checkbox" id="format-{{.}}" name="format" value="{{.}}" 
+                                        {{if index $.formatFilters .}}checked{{end}} onchange="this.form.submit()" />
+                                    <label for="format-{{.}}">{{.}}</label>
+                                </li>
+                            </ul>
+                        {{end}}
+                    </form>
+                </ul>
+            </li>
+            <li class="dropdown">
+                <div class="filter-title" data-open="false">
+                    <input type="text" class="textBox" placeholder="Status" readonly>
+                </div>
+                <form method="GET" action="/user/bookshelf" class="filter-state option">
+                    <ul>
+                        <li>
+                            <input type="checkbox" id="ready" name="ready" value="on" {{if index .filters "ready"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="ready">Ready</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="active" name="active" value="on" {{if index .filters "active"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="active">Active</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="expired" name="expired" value="on" {{if index .filters "expired"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="expired">Expired</label>
+                        </li>
+                    </ul>
+                </form>
+            </li>
+                        <li class="dropdown">
+                <div class="filter-title" data-open="false">
+                    <input type="text" class="textBox" placeholder="Transaction" readonly>
+                </div>
+                <ul class="option">
+                    <form method="GET" action="/user/bookshelf">
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="buy" name="buy" value="on" {{if index .transactionTypes "buy"
+                                    }}checked{{end}} onchange="this.form.submit()" />
+                                <label for="buy">Buy</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="loan" name="loan" value="on" {{if index .transactionTypes "loan"
+                                    }}checked{{end}} onchange="this.form.submit()" />
+                                <label for="loan">Loan</label>
+                            </li>
+                        </ul>
+                    </form>
+                </ul>
+            </li>
+        </ul>
+        {{if .bookshelfFilterActive}}
+        <a href="/user/bookshelf" class="reset">Clear Filter</a>
+        {{end}}
+    </div>
+    <div style="display: flex; flex-direction: column; width: 100%;">
         <div class="main-content-header">
             <h2>My Books</h2>
             <!--        <p>Page {{.currentPage}}</p>-->
-            <h3>{{.currentFacetValue}}</h3>
+            <h3>{{.activeFiltersStr}}</h3>
             <!--        <p>Results by page : {{.currentPageSize}}</p>-->
-            <p>{{.publicationCount}} results found</p>
+            <p>{{.transactionsCount}} results found</p>
         </div>
-<ul class="book-list bs-list" id="searchList">
-    {{range .transactions}}
-    <li>
-        <a href="/bookshelf/publication/{{.PublicationUUID}}">
-            <div class="book-cover-container">
-                <img class="book-cover" src="{{.PublicationCoverUrl}}">
-                <span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span>
-            </div>
-            <p class="book-title">{{.PublicationTitle}}</p>
-            <p class="book-author">{{.PublicationAuthor}}</p>
-        </a>
-    </li>
-    {{end}}
-</ul>
+        <ul class="book-list bs-list" id="searchList">
+            {{range .transactions}}
+            <li class="publication" data-status="{{.LicenseStatusCode}}">
+                <a href="/bookshelf/publication/{{.PublicationUUID}}">
+                    <div class="book-cover-container">
+                        <img class="book-cover" src="{{.PublicationCoverUrl}}">
+                        <span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span>
+                    </div>
+                    <p class="book-title">{{.PublicationTitle}}</p>
+                    <p class="book-author">{{.PublicationAuthor}}</p>
+                </a>
+            </li>
+            {{end}}
+        </ul>
+    </div>
+    <script>
+        function togglemobileStatus() {
+            const mobileStatus = document.getElementById('mobile-status');
+            const mobileStatusButton = document.querySelector('.mobile-status-button');
+            const backdrop = document.querySelector(".backdrop");
+
+            mobileStatus.classList.toggle('active');
+            mobileStatusButton.classList.toggle('active');
+            backdrop.classList.toggle('active');
+        }
+
+        function closeMobileMenu() {
+            const mobileStatus = document.getElementById('mobile-status');
+            const mobileStatusButton = document.querySelector('.mobile-status-button');
+            const backdrop = document.querySelector(".backdrop");
+
+            if (mobileStatus.classList.contains("active") && window.innerWidth > 980) {
+                mobileStatus.classList.remove('active');
+                mobileStatusButton.classList.remove('active');
+                backdrop.classList.remove('active');
+            }
+        }
+
+        window.addEventListener("resize", closeMobileMenu);
+
+        const mobileStatus = document.getElementById('mobile-status');
+        const mobileStatusButton = document.querySelector('.mobile-status-button');
+        const backdrop = document.querySelector(".backdrop");
+
+        backdrop.addEventListener('click', event => {
+            mobileStatus.classList.remove('active');
+            mobileStatusButton.classList.remove('active');
+            backdrop.classList.remove('active');
+        })
+    </script>
 </div>
 {{end}}

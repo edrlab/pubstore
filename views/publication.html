@@ -45,14 +45,14 @@
         </div>
         <div class="pub-actions">
             {{ if .userIsAuthenticated }}
-                {{ if and .licenseFound .IsBookshelfPage }}
+                {{ if and .licenseFoundAndActive .IsBookshelfPage }}
                     <a href="/bookshelf/publication/{{.uuid}}/license" class="download-action">
                         Download <i class="fa-solid fa-cloud-arrow-down"></i>
                     </a>
                     <a href="thorium://{{.host}}/bookshelf/publication/{{.uuid}}/license" class="download-action">
                         Open in Thorium <img src="/static/images/ThoriumLogo.png" class="thorium-logo">
                     </a>
-                {{ else }}
+                {{ else if not .licenseFoundAndActive}}
                     <button id="buy">Buy</button>
                     <button id="loan">Borrow</button>
                 {{ end }}
@@ -79,20 +79,31 @@
             <!-- <button class="tab" data-for="accessibility">Accessibility</button> -->
         </div>
         {{ if and .licenseFound .IsBookshelfPage }}
-            <div class="lcp-infos tabbed" id="lcp-infos" style="display : block;">
-                <p>Copy : {{.transaction.PublicationCopyRights}}</p>
-                <p>Print : {{.transaction.PublicationPrintRights}}</p>
-                {{if ne .transaction.PublicationStartDate "0001-01-01 00:00:00"}}
-                    <p>Start Date : {{.transaction.PublicationStartDate}}</p>
-                {{end}}
-                {{if ne .transaction.PublicationEndDate "0001-01-01 00:00:00"}}
-                    <p>End Date : {{.transaction.PublicationEndDate}}</p>
-                {{end}}
-                {{if ne .transaction.LicenseEndPotentialRights "0001-01-01 00:00:00"}}
-                    <p>End Potential Rights : {{.transaction.LicenseEndPotentialRights}}</p>
-                {{end}}
-                <p>License Status : <span class="status {{.transaction.LicenseStatusCode}}">{{.transaction.LicenseStatusMessage}}</span></p>
-                <button type="submit">Revoke this license</button>
+            <div class="lcp-infos tabbed" id="lcp-infos">
+                <div>
+                    <p>id: {{.transaction.LicenseId}}</p>
+                    <p>Copy : {{.transaction.PublicationCopyRights}}</p>
+                    <p>Print : {{.transaction.PublicationPrintRights}}</p>
+                    {{if ne .transaction.PublicationStartDate "0001-01-01 00:00:00"}}
+                        <p>Start Date : {{.transaction.PublicationStartDate}}</p>
+                    {{end}}
+                    {{if ne .transaction.PublicationEndDate "0001-01-01 00:00:00"}}
+                        <p>End Date : {{.transaction.PublicationEndDate}}</p>
+                    {{end}}
+                    {{if ne .transaction.LicenseEndPotentialRights "0001-01-01 00:00:00"}}
+                        <p>End Potential Rights : {{.transaction.LicenseEndPotentialRights}}</p>
+                    {{end}}
+                    <p>License Status : <span class="status {{.transaction.LicenseStatusCode}}">{{.transaction.LicenseStatusMessage}}</span></p>
+                </div>
+                <div class="handleLicenseStatusContainer">
+                    {{if and .licenseFoundAndActive (ne .transaction.PublicationStartDate "0001-01-01 00:00:00")}}
+                    <button type="submit" class="handleLicenseStatusButton renew">Renew this license</button>
+                    <button type="submit" class="handleLicenseStatusButton renew">Return this license</button>
+                    {{end}}
+                    {{if .licenseFoundAndActive}}
+                        <button type="submit" class="handleLicenseStatusButton revoke">Revoke this license</button>
+                    {{end}}
+                </div>
             </div>
             <p id="summary" class="tabbed" style="display : none;">{{.description}}</p>
             {{else}}
