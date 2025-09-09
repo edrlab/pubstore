@@ -2,6 +2,7 @@
     display: grid;
     gap: 20px;
     max-width: 1920px;
+    margin-bottom: 0;
 }
 
 .book-list {
@@ -23,6 +24,11 @@
 .book-list li,
 .book-list-latest li {
     list-style-type: none;
+    justify-self: center;
+}
+
+.book-list li p {
+    max-width: 200px;
 }
 
 .book-list li div,
@@ -261,7 +267,8 @@
     color: black;
 }
 
-.mobile-facets-button, .mobile-facets-close-button {
+.mobile-facets-button, .mobile-facets-close-button,
+.mobile-status-button, .mobile-status-close-button {
     width: 40px;
     height: 40px;
     padding: 5px 0 0;
@@ -275,7 +282,8 @@
     background-color: #DDDD;
 }
 
-.mobile-facets-close-button {
+.mobile-facets-close-button,
+.mobile-status-close-button {
     display: none;
     padding-left: 30px;
     position: absolute;
@@ -287,15 +295,18 @@
     background-color: unset;
 }
 
-.mobile-facets-close-button img, .mobile-facets-button img {
+.mobile-facets-close-button img, .mobile-facets-button img,
+.mobile-status-close-button img, .mobile-status-button img {
     width: 30px;
  }
 
-.mobile-facets-button {
+.mobile-facets-button,
+.mobile-status-button {
     display: none;
 }
 
-.mobile-facets {
+.mobile-facets,
+.mobile-status {
     transform: translateX(-100%);
     transition: 400ms;
     position: absolute;
@@ -309,22 +320,26 @@
     display: none;
 }
 
-.mobile-facets > ul {
+.mobile-facets > ul,
+.mobile-status > ul {
     padding-left: 10px;
     overflow-y: scroll;
     max-height: calc(100vh - 100px);
 }
 
-.mobile-facets .option {
+.mobile-facets .option,
+.mobile-status .option {
     background-color: white;
 }
 
-.mobile-facets.active {
+.mobile-facets.active,
+.mobile-status.active {
     transform: translateX(0);
     left: 0;
 }
 
-.mobile-facets.active .mobile-facets-close-button {
+.mobile-facets.active .mobile-facets-close-button,
+.mobile-status.active .mobile-status-close-button {
     display: block;
 }
 
@@ -338,7 +353,8 @@
     .categories {
         display: none;
     } 
-    .mobile-facets-button {
+    .mobile-facets-button,
+    .mobile-status-button {
         display: block;
     }
     .categories ul {

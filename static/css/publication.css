@@ -1,6 +1,7 @@
 .pub-container {
     padding: 5% 10%;
     display: flex;
+    align-items: start;
     justify-content: space-around;
     border-bottom: 1px solid black;
 }
@@ -118,7 +119,7 @@
 }
 
 .pub-actions button,
-.pub-actions > a {
+.pub-actions > a, .handleLicenseStatusButton {
     padding: 5px 10px;
     font-size: 18px;
     border-radius: 25px;
@@ -138,11 +139,11 @@
      flex: 1 1 50%;
 } */
 
-.pub-actions a:last-child:not(.download-action) {
+/* .pub-actions a:last-child:not(.download-action) {
     flex: 1 1 100%; 
     align-items: start;
     justify-content: start;
-}
+} */
 
 .pub-actions > a:not(.download-action) {
     text-decoration: underline;
@@ -157,7 +158,7 @@
     color: white;
 }
 
-.pub-actions > a:first-child {
+.pub-actions > a:first-child:is(.download-action) {
     border-color: black;
     color: black;
     background-color: transparent;
@@ -181,7 +182,8 @@
 }
 
 .pub-actions button:hover,
-.pub-actions > .download-action:hover{
+.pub-actions > .download-action:hover,
+.handleLicenseStatusButton:hover {
     color: white;
     background-color: #619bff;
     border-color: #a7c6f8;
@@ -309,9 +311,9 @@
 
 .pub-right-side .lcp-infos {
     display: flex;
-    gap: 50px;
+    justify-content: space-between;
+    flex-direction: column;
 }
-
 
 .pub-right-side .status {
     border-radius: 10px;
@@ -369,6 +371,30 @@
     content: '';
 }
 
+.handleLicenseStatusContainer {
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    width: 100%;
+    gap: 40px;
+    /* padding-top: 40px; */
+}
+
+.handleLicenseStatusButton.revoke {
+    color: #f61717;
+    border-color: #f61717;
+}
+
+.handleLicenseStatusButton.revoke:hover {
+    background-color: #f61717;
+    color: white;
+}
+
+.handleLicenseStatusButton {
+    border: 1px solid black;
+    background-color: transparent;
+}
+
 @media screen and (max-width: 1200px) {
     .pub-container {
         gap: 20px;
@@ -378,15 +404,23 @@
     @media screen and (max-width: 900px) {
     .pub-container {
         flex-direction: column;
+        align-items: center;
     }
-    .pub-left-side .pub-actions {
+    .pub-actions {
         flex-direction: row;
+        justify-content: center;
     }
     .pub-right-side {
         text-align: center;
     }
     .pub-right-side .authors,
     .pub-right-side .pub-categories-tags {
+        justify-content: center;
+    }
+    .handleLicenseStatusContainer {
+        justify-content: center;
+    }
+    .tab-bar {
         justify-content: center;
     }
 }

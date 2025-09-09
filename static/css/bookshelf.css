@@ -71,4 +71,10 @@
 .book-cover-container .status i:hover {
     color: black;
 }
+.dropdown.active {
+    background-color: transparent;
+}
 
+.option li {
+    list-style-type: none;
+}
