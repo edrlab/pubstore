@@ -174,8 +174,6 @@ type UserResponse struct {
 	CreatedAt   omit `json:"CreatedAt,omitempty"`
 	UpdatedAt   omit `json:"UpdatedAt,omitempty"`
 	DeletedAt   omit `json:"DeletedAt,omitempty"`
-	Password    omit `json:"password,omitempty"`
-	Passphrase  omit `json:"passphrase,omitempty"`
 	HPassword   omit `json:"hpassword,omitempty"`
 	HPassphrase omit `json:"hpassphrase,omitempty"`
 }

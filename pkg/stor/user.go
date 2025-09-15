@@ -5,14 +5,10 @@
 package stor
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"log"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -22,13 +18,11 @@ type User struct {
 	UUID        string `json:"uuid" validate:"omitempty,uuid4_rfc4122" gorm:"uniqueIndex"`
 	Name        string `json:"name"`
 	Email       string `json:"email" gorm:"index"`
-	Password    string `json:"password" gorm:"-"`
 	HPassword   string `json:"hpassword"`
-	TextHint    string `json:"text_hint"`
-	Passphrase  string `json:"passphrase" gorm:"-"`
 	HPassphrase string `json:"hpassphrase"`
+	TextHint    string `json:"text_hint"`
 	SessionId   string `json:"-" gorm:"index"`
-	// does not work : `gorm:"uniqueIndex:idx_name_not_empty,where:name IS NOT NULL"`
+	// TODO: does not work: `gorm:"uniqueIndex:idx_name_not_empty,where:name IS NOT NULL"`
 	// sessionId is empty at first and then filed with a unique UUID v4 when the user is connecting
 }
 
@@ -38,39 +32,17 @@ func (u *User) Validate() error {
 	return validate.Struct(u)
 }
 
-// BeforeSave creates a hash of the user password and lcp passphrase.
-// This applies only if the password and/or passphrase are set.
-// Note: the clear password and passphrase are not saved.
-func (u *User) BeforeSave(tx *gorm.DB) error {
-
-	// generate a hash of the user password
-	if u.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return errors.New("failed to hash the user password; " + err.Error())
-		}
-		u.HPassword = string(hashedPassword)
-	}
-	// generate a hash of the lcp passphrase
-	if u.Passphrase != "" {
-		hash := sha256.Sum256([]byte(u.Passphrase))
-		u.HPassphrase = hex.EncodeToString(hash[:])
-	}
-	return nil
-}
-
 // BeforeCreate creates user uuid if missing
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 
-	if u.Password == "" {
+	if u.HPassword == "" {
 		return errors.New("missing user authentication password")
 	}
-	if u.Passphrase == "" {
+	if u.HPassphrase == "" {
 		return errors.New("missing user LCP passphrase")
 	}
-	// generate a user UUID if empty
 	if u.UUID == "" {
-		u.UUID = uuid.New().String()
+		return errors.New("missing user UUID")
 	}
 	return nil
 }

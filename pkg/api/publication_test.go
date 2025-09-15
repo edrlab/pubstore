@@ -6,6 +6,8 @@ package api
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +18,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -61,13 +64,24 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 	assert.NoError(t, err)
 
+	// generate a hash of the user password
+	userPassword := "user-password"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userPassword), bcrypt.DefaultCost)
+	assert.NoError(t, err)
+
+	// generate a hash of the lcp passphrase
+	var hashedPassphrase string
+	hash := sha256.Sum256([]byte("lcpPassphrase"))
+	hashedPassphrase = hex.EncodeToString(hash[:])
+
 	// init a new user for testing
 	newUser := &stor.User{
-		Name:       "Albert ler",
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
+		UUID:        gofakeit.UUID(),
+		Name:        "Albert ler",
+		Email:       gofakeit.Email(),
+		HPassword:   string(hashedPassword),
+		HPassphrase: hashedPassphrase,
+		TextHint:    "hint",
 	}
 	// create the user in the database
 	err = testapi.CreateUser(newUser)
@@ -78,7 +92,7 @@ func TestPublicationHandler(t *testing.T) {
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {newUser.Email},
-		"password":   {newUser.Password},
+		"password":   {userPassword},
 	}
 	tokenReq := httptest.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
 	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")

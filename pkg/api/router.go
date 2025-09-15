@@ -184,7 +184,7 @@ func (a *Api) licenseId(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		licID := chi.URLParam(r, "id")
-		trans, err := a.Store.GetTransactionByLicence(licID)
+		trans, err := a.Store.GetTransactionByLicense(licID)
 		if err != nil {
 			render.Render(w, r, ErrNotFound)
 			return

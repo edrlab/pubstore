@@ -1,28 +1,27 @@
 package view
 
 import (
-	"fmt"
+	"strconv"
 
-	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
 )
 
 type TransactionView struct {
 	// TransactionID             string
 	// TransactionDate           time.Time
-	PublicationUUID           string
-	PublicationTitle          string
-	PublicationAuthor         string
-	PublicationContentType    string
-	PublicationCoverUrl       string
-	PublicationPrintRights    string
-	PublicationCopyRights     string
-	PublicationStartDate      string
-	PublicationEndDate        string
-	LicenseStatusMessage      string
-	LicenseStatusCode         string
-	LicenseEndPotentialRights string
-	LicenseId 				  string
+	PublicationUUID        string
+	PublicationTitle       string
+	PublicationAuthor      string
+	PublicationFormat      string
+	PublicationCoverUrl    string
+	PublicationPrintRights string
+	PublicationCopyRights  string
+	PublicationStartDate   string
+	PublicationEndDate     string
+	LicenseStatusMessage   string
+	LicenseStatus          string
+	LicenseMaxEnd          string
+	LicenseId              string
 }
 
 func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transaction) *TransactionView {
@@ -33,26 +32,40 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 		publicationAuthor = publication.Author[0].Name
 	}
 
-	// TODO: avoid fetching the Status Document in this function
-	lsdStatus, err := lcp.GetStatusDocument(view.Config.LCPServer, transaction)
-	if err != nil {
-		fmt.Println("LSD STATUS Error from (" + transaction.LicenceId + ")")
-		lsdStatus = &lcp.LsdStatus{}
+	var start, end, copy, print string
+	unknown := "unknown"
+	if transaction.Start != nil {
+		start = transaction.Start.Format("2006-01-02 15:04:05")
+	} else {
+		start = unknown
+	}
+	if transaction.End != nil {
+		end = transaction.End.Format("2006-01-02 15:04:05")
+	} else {
+		end = unknown
+	}
+	if transaction.Copy >= 0 {
+		copy = strconv.Itoa(int(transaction.Copy))
+	} else {
+		copy = unknown
+	}
+	if transaction.Print >= 0 {
+		print = strconv.Itoa(int(transaction.Print))
+	} else {
+		print = unknown
 	}
 
 	return &TransactionView{
-		PublicationUUID:           transaction.Publication.UUID,
-		PublicationTitle:          transaction.Publication.Title,
-		PublicationContentType:    transaction.Publication.ContentType,
-		LicenseId: 				   transaction.LicenceId,
-		PublicationAuthor:         publicationAuthor,
-		PublicationCoverUrl:       publication.CoverUrl,
-		PublicationPrintRights:    fmt.Sprintf("%d", lsdStatus.PrintLimit),
-		PublicationCopyRights:     fmt.Sprintf("%d", lsdStatus.CopyLimit),
-		PublicationStartDate:      lsdStatus.StartDate.Format("2006-01-02 15:04:05"),
-		PublicationEndDate:        lsdStatus.EndDate.Format("2006-01-02 15:04:05"),
-		LicenseStatusMessage:      lsdStatus.StatusMessage,
-		LicenseStatusCode:         lsdStatus.StatusCode,
-		LicenseEndPotentialRights: lsdStatus.EndPotentialRights.Format("2006-01-02 15:04:05"),
+		PublicationUUID:        transaction.Publication.UUID,
+		PublicationTitle:       transaction.Publication.Title,
+		PublicationFormat:      contentTypeToFormat(transaction.Publication.ContentType),
+		LicenseId:              transaction.LicenseId,
+		PublicationAuthor:      publicationAuthor,
+		PublicationCoverUrl:    publication.CoverUrl,
+		PublicationPrintRights: print,
+		PublicationCopyRights:  copy,
+		PublicationStartDate:   start,
+		PublicationEndDate:     end,
+		LicenseStatus:          transaction.Status,
 	}
 }

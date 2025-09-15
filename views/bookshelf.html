@@ -172,11 +172,11 @@
         </div>
         <ul class="book-list bs-list" id="searchList">
             {{range .transactions}}
-            <li class="publication" data-status="{{.LicenseStatusCode}}">
-                <a href="/bookshelf/publication/{{.PublicationUUID}}">
+            <li class="publication" data-status="{{.LicenseStatus}}">
+                <a href="/bookshelf/publications/{{.PublicationUUID}}">
                     <div class="book-cover-container">
                         <img class="book-cover" src="{{.PublicationCoverUrl}}">
-                        <span class="status {{.LicenseStatusCode}}">{{.LicenseStatusMessage}}</span>
+                        <span class="status {{.LicenseStatus}}">{{.LicenseStatusMessage}}</span>
                     </div>
                     <p class="book-title">{{.PublicationTitle}}</p>
                     <p class="book-author">{{.PublicationAuthor}}</p>

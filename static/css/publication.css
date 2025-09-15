@@ -331,8 +331,13 @@
     background: #1c7430;
 }
 
-.expired {
+.expired,
+.cancelled {
     background: #a2a1a1;
+}
+
+.revoked {
+    background: #f35b5b;
 }
 
 .related {

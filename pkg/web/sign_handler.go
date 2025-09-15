@@ -1,6 +1,8 @@
 package web
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"time"
@@ -124,27 +126,40 @@ func (web *Web) signup(w http.ResponseWriter, r *http.Request) {
 	name := r.Form.Get("name")
 	email := r.Form.Get("email")
 	password := r.Form.Get("password")
-	lcpPass := r.Form.Get("lcpPass")
+	lcpPassphrase := r.Form.Get("lcpPass")
 	lcpHint := r.Form.Get("lcpHint")
-
-	// create a new User instance
-	newUser := stor.User{
-		UUID:       uuid.New().String(),
-		Name:       name,
-		Email:      email,
-		Password:   password,
-		TextHint:   lcpHint,
-		Passphrase: lcpPass,
-	}
 
 	// perform validation.
 	// the minimum length of the passphrase is 3 characters
-	if utf8.RuneCountInString(newUser.Passphrase) < 3 {
+	if utf8.RuneCountInString(lcpPassphrase) < 3 {
 		signupGoview(w, true)
 		return
 	}
 
-	// save newUser to the database using your storage function
+	// generate a hash of the user password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Failed to hash the user password", http.StatusBadRequest)
+		return
+	}
+	// generate a hash of the lcp passphrase
+	var hashedPassphrase string
+	if lcpPassphrase != "" {
+		hash := sha256.Sum256([]byte(lcpPassphrase))
+		hashedPassphrase = hex.EncodeToString(hash[:])
+	}
+
+	// create a new User instance
+	newUser := stor.User{
+		UUID:        uuid.New().String(),
+		Name:        name,
+		Email:       email,
+		TextHint:    lcpHint,
+		HPassword:   string(hashedPassword),
+		HPassphrase: hashedPassphrase,
+	}
+
+	// create newUser in the database
 	err = web.Store.CreateUser(&newUser)
 	if err != nil {
 		signupGoview(w, true)

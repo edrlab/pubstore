@@ -16,7 +16,7 @@ import (
 
 // publicationAcquisitionLinkChoice
 // choice is "authentified" || "notAuthentified" || "authentifiedAndBorrowed"
-func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHashedPassphrase string, startDate, endDate time.Time) Link {
+func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHashedPassphrase string, startDate, endDate *time.Time) Link {
 
 	if choice == "authentified" {
 		return Link{
@@ -70,8 +70,8 @@ func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHas
 		Properties: &Properties{
 			Availability: &Availability{
 				Status:    statusCode,
-				StartDate: &startDate,
-				EndDate:   &endDate,
+				StartDate: startDate,
+				EndDate:   endDate,
 			},
 			LcpHashedPassphrase: lcpHashedPassphrase,
 			IndirectAcquisition: []Link{
@@ -258,7 +258,7 @@ func (opds *Opds) GenerateBookshelfFeed(credential string) (Root, error) {
 	}
 
 	for i, status := range lsdStatus {
-		root.Publications[i].Links = append(root.Publications[i].Links, publicationAcquisitionLinkChoice("authentified", root.Publications[i].Metadata.Identifier, status.StatusCode, user.HPassphrase, status.StartDate, status.EndDate))
+		root.Publications[i].Links = append(root.Publications[i].Links, publicationAcquisitionLinkChoice("authentified", root.Publications[i].Metadata.Identifier, status.StatusCode, user.HPassphrase, status.Start, status.End))
 	}
 
 	return root, nil

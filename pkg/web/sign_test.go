@@ -1,6 +1,8 @@
 package web
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +15,7 @@ import (
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/edrlab/pubstore/pkg/view"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/stretchr/testify/assert"
@@ -46,17 +49,27 @@ func TestSign(t *testing.T) {
 	r := chi.NewRouter()
 	r.Group(web.Router)
 
+	// generate a hash of the user password
+	userPassword := "user-password"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userPassword), bcrypt.DefaultCost)
+	assert.NoError(t, err)
+
+	// generate a hash of the lcp passphrase
+	var hashedPassphrase string
+	hash := sha256.Sum256([]byte("lcpPassphrase"))
+	hashedPassphrase = hex.EncodeToString(hash[:])
+
 	// create a new user, directly in the store
 	testUser := &stor.User{
-		UUID:       gofakeit.UUID(),
-		Name:       "Pierre ler",
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
+		UUID:        gofakeit.UUID(),
+		Name:        "Pierre ler",
+		Email:       gofakeit.Email(),
+		HPassword:   string(hashedPassword),
+		HPassphrase: hashedPassphrase,
+		TextHint:    "hint",
 	}
 
-	err := web.Store.CreateUser(testUser)
+	err = web.Store.CreateUser(testUser)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, testUser.ID)
 
@@ -67,7 +80,7 @@ func TestSign(t *testing.T) {
 	// signin requires an email and a password
 	form := url.Values{}
 	form.Add("email", testUser.Email)
-	form.Add("password", testUser.Password)
+	form.Add("password", userPassword)
 
 	// sign in the user
 	req := httptest.NewRequest("POST", "/signin", strings.NewReader(form.Encode()))

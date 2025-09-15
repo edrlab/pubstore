@@ -5,16 +5,25 @@
 package stor
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
 type Transaction struct {
 	gorm.Model
-	UserID        uint // implicit foreign key to the related user
-	User          User
-	PublicationID uint // implicit foreign key to the related publication
-	Publication   Publication
-	LicenceId     string
+	UserID         uint `gorm:"index"` // implicit foreign key to the related user
+	User           User
+	PublicationID  uint `gorm:"index"` // implicit foreign key to the related publication
+	Publication    Publication
+	LicenseId      string     `gorm:"index"` // in practice UUID
+	Print          int32      // number of pages allowed to print
+	Copy           int32      // number of characters allowed to copy
+	Start          *time.Time // start date of the license validity period
+	End            *time.Time // end date of the license validity period
+	StatusDocLink  string     // URL of the status document
+	Status         string     // current status of the license: ready, active, returned, expired, revoked, cancelled
+	LicenseUpdated time.Time  // last time the license was updated
 }
 
 // CreateTransaction creates a new transaction
@@ -28,9 +37,9 @@ func (s *Store) UpdateTransaction(transaction *Transaction) error {
 }
 
 // GetTransactionByLicense retrieves a transaction using its licenseID
-func (s *Store) GetTransactionByLicence(licenseID string) (*Transaction, error) {
+func (s *Store) GetTransactionByLicense(licenseID string) (*Transaction, error) {
 	var transaction Transaction
-	return &transaction, s.db.Preload("User").Preload("Publication").Where("licence_id = ?", licenseID).First(&transaction).Error
+	return &transaction, s.db.Preload("User").Preload("Publication").Where("license_id = ?", licenseID).First(&transaction).Error
 }
 
 // GetTransactionByUserAndPublication retrieves a transaction using its userID and publicationID

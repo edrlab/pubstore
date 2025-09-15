@@ -25,6 +25,8 @@ type Config struct {
 	//Resources string `yaml:"resources"`
 	// Page size used in the REST API and Web interface
 	PageSize int `yaml:"page_size"  split_words:"true"`
+	// LCP Encryption Profile
+	EncryptionProfile string `yaml:"encryption_profile" split_words:"true"`
 	// LCP print and copy limits set in LCP licenses generated from the associated LCP Server
 	PrintLimit int `yaml:"print_limit"  split_words:"true"`
 	CopyLimit  int `yaml:"copy_limit"  split_words:"true"`

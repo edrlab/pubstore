@@ -11,13 +11,13 @@ func TestUserCRUD(t *testing.T) {
 
 	// create a new user
 	user := &User{
-		UUID:       gofakeit.UUID(),
-		Name:       "Pierre ler",
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
-		SessionId:  gofakeit.UUID(),
+		UUID:        gofakeit.UUID(),
+		Name:        "Pierre ler",
+		Email:       gofakeit.Email(),
+		HPassword:   "hashed-password",
+		HPassphrase: "hashed-passphrase",
+		TextHint:    "hint",
+		SessionId:   gofakeit.UUID(),
 	}
 
 	err := store.CreateUser(user)
@@ -59,7 +59,7 @@ func TestUserCRUD(t *testing.T) {
 		UUID:      gofakeit.UUID(),
 		Name:      "Pierre ler",
 		Email:     gofakeit.Email(),
-		Password:  "password",
+		HPassword: "hashed-password",
 		TextHint:  "hint",
 		SessionId: gofakeit.UUID(),
 	}
@@ -69,7 +69,7 @@ func TestUserCRUD(t *testing.T) {
 	assert.Error(t, err)
 
 	// add the passphrase
-	user2.Passphrase = "passphrase"
+	user2.HPassphrase = "hashed-passphrase"
 
 	err = store.CreateUser(user2)
 	assert.NoError(t, err)

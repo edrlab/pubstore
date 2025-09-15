@@ -210,33 +210,3 @@ func GetCatalogView(pubs *[]PublicationCatalogView, facets *FacetsView) *Catalog
 
 	return &catalogView
 }
-
-func contentTypeToFormat(contentType string) string {
-	switch contentType {
-	case "application/epub+zip":
-		return "epub"
-	case "application/pdf+lcp":
-		return "pdf"
-	case "application/audiobook+lcp":
-		return "audiobook"
-	case "application/divina+lcp":
-		return "divina"
-	default:
-		return "unknown"
-	}
-}
-
-func formatToContentType(format string) string {
-	switch format {
-	case "epub":
-		return "application/epub+zip"
-	case "pdf":
-		return "application/pdf+lcp"
-	case "audiobook":
-		return "application/audiobook+lcp"
-	case "divina":
-		return "application/divina+lcp"
-	default:
-		return "unknown"
-	}
-}
