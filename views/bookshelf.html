@@ -57,6 +57,16 @@
                                 }}checked{{end}} onchange="this.form.submit()" />
                             <label for="expired">Expired</label>
                         </li>
+                         <li>
+                            <input type="checkbox" id="cancelled" name="cancelled" value="on" {{if index .filters "cancelled"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="cancelled">Cancelled</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="revoked" name="revoked" value="on" {{if index .filters "revoked"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="revoked">Revoked</label>
+                        </li>
                     </ul>
                 </form>
             </li>
@@ -132,6 +142,16 @@
                             <input type="checkbox" id="expired" name="expired" value="on" {{if index .filters "expired"
                                 }}checked{{end}} onchange="this.form.submit()" />
                             <label for="expired">Expired</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="cancelled" name="cancelled" value="on" {{if index .filters "cancelled"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="cancelled">Cancelled</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="revoked" name="revoked" value="on" {{if index .filters "revoked"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="revoked">Revoked</label>
                         </li>
                     </ul>
                 </form>

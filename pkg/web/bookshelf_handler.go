@@ -47,6 +47,8 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	ready := r.URL.Query().Get("ready") == "on"
 	active := r.URL.Query().Get("active") == "on"
 	expired := r.URL.Query().Get("expired") == "on"
+	cancelled := r.URL.Query().Get("cancelled") == "on"
+	revoked := r.URL.Query().Get("revoked") == "on"
 	buy := r.URL.Query().Get("buy") == "on"
 	loan := r.URL.Query().Get("loan") == "on"
 
@@ -59,7 +61,7 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	var filteredTransactions []*view.TransactionView
 	for _, tv := range allTransactionViews {
 		statusMatch := true
-		if ready || active || expired {
+		if ready || active || expired || cancelled || revoked {
 			statusMatch = false
 			switch tv.LicenseStatus {
 			case "ready":
@@ -68,6 +70,10 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 				statusMatch = active
 			case "expired":
 				statusMatch = expired
+			case "cancelled":
+				statusMatch = cancelled
+			case "revoked":
+				statusMatch = revoked
 			}
 		}
 
@@ -103,6 +109,12 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	if expired {
 		activeFilters = append(activeFilters, "Expired")
 	}
+	if cancelled {
+		activeFilters = append(activeFilters, "Cancelled")
+	}
+	if revoked {
+		activeFilters = append(activeFilters, "Revoked")
+	}
 	if buy {
 		activeFilters = append(activeFilters, "Buy")
 	}
@@ -131,6 +143,8 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 			"ready":   ready,
 			"active":  active,
 			"expired": expired,
+			"cancelled": cancelled,
+			"revoked": revoked,
 		},
 		"formatFilters": formatFilters,
 		"transactionTypes": map[string]bool{
