@@ -53,7 +53,7 @@ type ErrResponse struct {
 }
 
 // GetStatusDocument sends a request to the License Server and returns a status document to the caller
-func GetStatusDocument(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) (*LsdStatus, error) {
+func GetStatusDocument(lcpsv conf.LCPServer, transaction *stor.Transaction) (*LsdStatus, error) {
 
 	// fetch the status document
 	statusDoc, err := getStatusDocFromUrl(transaction.StatusDocLink)
@@ -144,7 +144,7 @@ func getStatusDocFromUrl(url string) (StatusDoc, error) {
 }
 
 // ExecuteAction executes register, renew, return and revoke actions
-func ExecuteAction(lcpsv conf.LCPServerAccess, transaction *stor.Transaction, action string) error {
+func ExecuteAction(lcpsv conf.LCPServer, transaction *stor.Transaction, action string) error {
 
 	// select the http method
 	var method string

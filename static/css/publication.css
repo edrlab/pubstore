@@ -332,8 +332,9 @@
 }
 
 .expired,
+.returned,
 .cancelled {
-    background: #a2a1a1;
+    background: #a19349;
 }
 
 .revoked {

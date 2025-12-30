@@ -15,13 +15,12 @@ type MetadataFeed struct {
 	Title string `json:"title"`
 }
 
-// TODO: an OPDS Publication supports x languages as an array -> update the model and mapping
 type Metadata struct {
 	Type       string `json:"@type"`
 	Title      string `json:"title"`
 	Author     string `json:"author,omitempty"`
 	Identifier string `json:"identifier,omitempty"`
-	Language   string `json:"language,omitempty"`
+	AltId      string `json:"altId,omitempty"`
 	Published  string `json:"published,omitempty"`
 }
 

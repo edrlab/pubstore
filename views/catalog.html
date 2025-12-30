@@ -14,7 +14,7 @@
 {{define "content"}}
 <div class="catalog-content">
     <div class="backdrop"></div>
-    <aside class="categories">
+    <aside class="filters">
         <ul>
             <li class="dropdown">
                 <div class="filter-title" data-open="false">
@@ -23,46 +23,6 @@
                 <ul class="option">
                     {{range .formats}}
                     <li><a href="/catalog?format={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Authors" readonly>
-                </div>
-                <ul class="option">
-                    {{range .authors}}
-                    <li><a href="/catalog?author={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Categories" readonly>
-                </div>
-                <ul class="option">
-                    {{range .categories}}
-                    <li><a href="/catalog?category={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Languages" readonly>
-                </div>
-                <ul class="option">
-                    {{range .languages}}
-                    <li><a href="/catalog?language={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Publishers" readonly>
-                </div>
-                <ul class="option">
-                    {{range .publishers}}
-                    <li><a href="/catalog?publisher={{.}}">{{.}}</a></li>
                     {{end}}
                 </ul>
             </li>
@@ -86,46 +46,6 @@
                 <ul class="option">
                     {{range .formats}}
                     <li><a href="/catalog?format={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Authors" readonly>
-                </div>
-                <ul class="option">
-                    {{range .authors}}
-                    <li><a href="/catalog?author={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Categories" readonly>
-                </div>
-                <ul class="option">
-                    {{range .categories}}
-                    <li><a href="/catalog?category={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Languages" readonly>
-                </div>
-                <ul class="option">
-                    {{range .languages}}
-                    <li><a href="/catalog?language={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Publishers" readonly>
-                </div>
-                <ul class="option">
-                    {{range .publishers}}
-                    <li><a href="/catalog?publisher={{.}}">{{.}}</a></li>
                     {{end}}
                 </ul>
             </li>

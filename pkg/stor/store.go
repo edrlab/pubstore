@@ -68,7 +68,7 @@ func Init(dsn string) (Store, error) {
 
 	// db = db.Session(&gorm.Session{FullSaveAssociations: true})
 
-	err = db.AutoMigrate(&Language{}, &Publisher{}, &Author{}, &Category{}, &Publication{}, &User{}, &Transaction{})
+	err = db.AutoMigrate(&Publication{}, &User{}, &Transaction{}, &SyncInfo{})
 	if err != nil {
 		log.Printf("Failed performing database automigrate: %v", err)
 		return str, err

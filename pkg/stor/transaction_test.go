@@ -30,25 +30,11 @@ func TestTransactionCRUD(t *testing.T) {
 	publication := &Publication{
 		Title:         "Test Publication",
 		UUID:          gofakeit.UUID(),
-		DatePublished: "2022-12-31",
+		AltId:         "test-alt-id-6",
 		Description:   "Test description",
 		CoverUrl:      "http://example.com/cover.jpg",
-		Language: []Language{
-			{Code: "en"},
-			{Code: "fr"},
-		},
-		Publisher: []Publisher{
-			{Name: "Test Publisher A"},
-			{Name: "Test Publisher B"},
-		},
-		Author: []Author{
-			{Name: "Test Author A"},
-			{Name: "Test Author B"},
-		},
-		Category: []Category{
-			{Name: "Test Category A"},
-			{Name: "Test Category B"},
-		},
+		Publishers:    "Test Publisher A, Test Publisher B",
+		Authors:       "Test Author A, Test Author B",
 	}
 
 	err = store.CreatePublication(publication)

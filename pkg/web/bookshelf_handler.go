@@ -47,6 +47,9 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	ready := r.URL.Query().Get("ready") == "on"
 	active := r.URL.Query().Get("active") == "on"
 	expired := r.URL.Query().Get("expired") == "on"
+	returned := r.URL.Query().Get("returned") == "on"
+	revoked := r.URL.Query().Get("revoked") == "on"
+	cancelled := r.URL.Query().Get("cancelled") == "on"
 	buy := r.URL.Query().Get("buy") == "on"
 	loan := r.URL.Query().Get("loan") == "on"
 
@@ -59,7 +62,7 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	var filteredTransactions []*view.TransactionView
 	for _, tv := range allTransactionViews {
 		statusMatch := true
-		if ready || active || expired {
+		if ready || active || expired || returned || revoked || cancelled {
 			statusMatch = false
 			switch tv.LicenseStatus {
 			case "ready":
@@ -68,14 +71,19 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 				statusMatch = active
 			case "expired":
 				statusMatch = expired
+			case "returned":
+				statusMatch = returned
+			case "revoked":
+				statusMatch = revoked
+			case "cancelled":
+				statusMatch = cancelled
 			}
 		}
 
 		transactionTypesMatch := true
 		if buy || loan {
 			transactionTypesMatch = false
-			// Amélioration : vérifier que PublicationEndDate n'est pas nil/vide
-			if tv.PublicationEndDate != "" && tv.PublicationEndDate != "0001-01-01 00:00:00" {
+			if tv.PublicationEndDate != "unknown" {
 				transactionTypesMatch = loan
 			} else {
 				transactionTypesMatch = buy
@@ -102,6 +110,15 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if expired {
 		activeFilters = append(activeFilters, "Expired")
+	}
+	if returned {
+		activeFilters = append(activeFilters, "Returned")
+	}
+	if revoked {
+		activeFilters = append(activeFilters, "Revoked")
+	}
+	if cancelled {
+		activeFilters = append(activeFilters, "Cancelled")
 	}
 	if buy {
 		activeFilters = append(activeFilters, "Buy")
@@ -131,6 +148,9 @@ func (web *Web) bookshelfHandler(w http.ResponseWriter, r *http.Request) {
 			"ready":   ready,
 			"active":  active,
 			"expired": expired,
+			"returned": returned,
+			"revoked": revoked,
+			"cancelled": cancelled,
 		},
 		"formatFilters": formatFilters,
 		"transactionTypes": map[string]bool{

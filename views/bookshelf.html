@@ -16,7 +16,7 @@
 {{define "content"}}
 <div style="width: 100%; display: flex">
     <div class="backdrop"></div>
-    <aside class="categories">
+    <aside class="filters">
         <ul>
             <li class="dropdown">
                 <div class="filter-title" data-open="false">
@@ -56,6 +56,21 @@
                             <input type="checkbox" id="expired" name="expired" value="on" {{if index .filters "expired"
                                 }}checked{{end}} onchange="this.form.submit()" />
                             <label for="expired">Expired</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="returned" name="returned" value="on" {{if index .filters "returned"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="returned">Returned</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="revoked" name="revoked" value="on" {{if index .filters "revoked"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="revoked">Revoked</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="cancelled" name="cancelled" value="on" {{if index .filters "cancelled"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="cancelled">Cancelled</label>
                         </li>
                     </ul>
                 </form>
@@ -133,6 +148,21 @@
                                 }}checked{{end}} onchange="this.form.submit()" />
                             <label for="expired">Expired</label>
                         </li>
+                        <li>
+                            <input type="checkbox" id="returned" name="returned" value="on" {{if index .filters "returned"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="returned">Returned</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="revoked" name="revoked" value="on" {{if index .filters "revoked"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="revoked">Revoked</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="cancelled" name="cancelled" value="on" {{if index .filters "cancelled"
+                                }}checked{{end}} onchange="this.form.submit()" />
+                            <label for="cancelled">Cancelled</label>
+                        </li>
                     </ul>
                 </form>
             </li>
@@ -173,7 +203,7 @@
         <ul class="book-list bs-list" id="searchList">
             {{range .transactions}}
             <li class="publication" data-status="{{.LicenseStatus}}">
-                <a href="/bookshelf/publications/{{.PublicationUUID}}">
+                <a href="/bookshelf/publications/{{.PublicationUUID}}?license={{.LicenseId}}">
                     <div class="book-cover-container">
                         <img class="book-cover" src="{{.PublicationCoverUrl}}">
                         <span class="status {{.LicenseStatus}}">{{.LicenseStatusMessage}}</span>

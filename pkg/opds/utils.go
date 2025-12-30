@@ -7,7 +7,6 @@ package opds
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/edrlab/pubstore/pkg/lcp"
@@ -18,7 +17,9 @@ import (
 // choice is "authentified" || "notAuthentified" || "authentifiedAndBorrowed"
 func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHashedPassphrase string, startDate, endDate *time.Time) Link {
 
-	if choice == "authentified" {
+	switch choice {
+
+	case "authentified":
 		return Link{
 			Type: "application/vnd.readium.lcp.license.v1.0+json",
 			Rel:  "http://opds-spec.org/acquisition/borrow",
@@ -40,7 +41,7 @@ func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHas
 			},
 		}
 
-	} else if choice == "notAuthentified" {
+	case "notAuthentified":
 		return Link{
 			Type: "application/opds-publication+json",
 			Rel:  "http://opds-spec.org/acquisition/borrow",
@@ -61,32 +62,33 @@ func publicationAcquisitionLinkChoice(choice string, pubUUID, statusCode, lcpHas
 				},
 			},
 		}
-
-	}
-	return Link{
-		Type: "application/vnd.readium.lcp.license.v1.0+json",
-		Rel:  "http://opds-spec.org/acquisition",
-		Href: publicBaseUrl + "/opds/publication/" + pubUUID + "/license",
-		Properties: &Properties{
-			Availability: &Availability{
-				Status:    statusCode,
-				StartDate: startDate,
-				EndDate:   endDate,
-			},
-			LcpHashedPassphrase: lcpHashedPassphrase,
-			IndirectAcquisition: []Link{
-				{
-					Type: "application/vnd.readium.lcp.license.v1.0+json",
-					Child: []Link{
-						{
-							Type: "application/epub+zip",
+	case "authentifiedAndBorrowed":
+		return Link{
+			Type: "application/vnd.readium.lcp.license.v1.0+json",
+			Rel:  "http://opds-spec.org/acquisition",
+			Href: publicBaseUrl + "/opds/publication/" + pubUUID + "/license",
+			Properties: &Properties{
+				Availability: &Availability{
+					Status:    statusCode,
+					StartDate: startDate,
+					EndDate:   endDate,
+				},
+				LcpHashedPassphrase: lcpHashedPassphrase,
+				IndirectAcquisition: []Link{
+					{
+						Type: "application/vnd.readium.lcp.license.v1.0+json",
+						Child: []Link{
+							{
+								Type: "application/epub+zip",
+							},
 						},
 					},
 				},
 			},
-		},
+		}
+	default:
+		return Link{}
 	}
-
 }
 
 // convertToOpdsPublication converts a stored Publication to an OPDS Publication
@@ -99,10 +101,9 @@ func convertToOpdsPublication(storPublication *stor.Publication) (Publication, e
 		Metadata: Metadata{
 			Type:       "http://schema.org/Book",
 			Title:      storPublication.Title,
-			Author:     getAuthorNames(storPublication.Author),
+			Author:     storPublication.Authors,
 			Identifier: storPublication.UUID,
-			Language:   getLanguageCode(storPublication.Language),
-			Published:  storPublication.DatePublished,
+			AltId:      storPublication.AltId,
 		},
 		Links: []Link{
 			{
@@ -115,28 +116,6 @@ func convertToOpdsPublication(storPublication *stor.Publication) (Publication, e
 	}
 
 	return publication, nil
-}
-
-// getAuthorNames creates a comma separated string out of an array of authors
-func getAuthorNames(authors []stor.Author) string {
-	var names []string
-	for _, author := range authors {
-		names = append(names, author.Name)
-	}
-	return strings.Join(names, ", ")
-}
-
-// getLanguageCode returns the first language
-// TODO: an OPDS Publication supports x languages as an array -> update the model and mapping
-func getLanguageCode(languages []stor.Language) string {
-	var codes []string
-	for _, language := range languages {
-		codes = append(codes, language.Code)
-	}
-	if len(codes) > 0 {
-		return codes[0]
-	}
-	return ""
 }
 
 // getImages returns an Image object out of cover info

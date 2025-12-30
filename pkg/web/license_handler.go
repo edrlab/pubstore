@@ -137,7 +137,7 @@ func (web *Web) createLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/bookshelf/publications/"+pubUUID, http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s?license=%s&success=%s", pubUUID, license.ID, url.QueryEscape("License created successfully")), http.StatusFound)
 }
 
 // acquisitionFailure is a helper function that redirects to the publication page with an error message

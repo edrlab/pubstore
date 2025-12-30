@@ -146,7 +146,7 @@ func v1Request(licenseReq LicenseRequest) LicenseRequestV1 {
 }
 
 // GenerateLicense sends a request to the License Server and returns a new license to the caller
-func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) (LCPLicense, []byte, error) {
+func GenerateLicense(lcpsv conf.LCPServer, licenseReq LicenseRequest) (LCPLicense, []byte, error) {
 
 	var license LCPLicense
 	var url string
@@ -177,7 +177,7 @@ func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) (LCP
 }
 
 // GetFreshLicense sends a request to the License Server and returns the fresh license to the caller
-func GetFreshLicense(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) (LCPLicense, []byte, error) {
+func GetFreshLicense(lcpsv conf.LCPServer, transaction *stor.Transaction) (LCPLicense, []byte, error) {
 
 	var license LCPLicense
 	var url string
@@ -231,7 +231,7 @@ func GetFreshLicense(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) 
 }
 
 // executeLicenseRequest sends a request to the License Server and returns the license
-func executeLicenseRequest(lcpsv conf.LCPServerAccess, url string, payload []byte) (LCPLicense, []byte, error) {
+func executeLicenseRequest(lcpsv conf.LCPServer, url string, payload []byte) (LCPLicense, []byte, error) {
 
 	var license LCPLicense
 	var err error

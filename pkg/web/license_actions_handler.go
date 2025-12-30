@@ -63,7 +63,7 @@ func (web *Web) executeAction(w http.ResponseWriter, r *http.Request, action str
 	if err != nil {
 		log.Printf("%s: %v", action, err)
 		message := url.QueryEscape(err.Error())
-		http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s?err=%s", publicationUUID, message), http.StatusFound)
+		http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s?license=%s&err=%s", publicationUUID, licenseID, message), http.StatusFound)
 		return
 	}
 
@@ -80,11 +80,23 @@ func (web *Web) executeAction(w http.ResponseWriter, r *http.Request, action str
 		if err != nil {
 			log.Printf("%v", err)
 			message := url.QueryEscape("Failed to update transaction: " + err.Error())
-			http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s?err=%s", publicationUUID, message), http.StatusFound)
+			http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s?license=%s&err=%s", publicationUUID, licenseID, message), http.StatusFound)
 			return
 		}
 	}
 
-	// re-direct to the bookshelf publication page
-	http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s", publicationUUID), http.StatusFound)
+	// re-direct to the bookshelf publication page with success message
+	var successMessage string
+	switch action {
+	case "register":
+		successMessage = "License registered successfully"
+	case "renew":
+		successMessage = "License renewed successfully"
+	case "return":
+		successMessage = "License returned successfully"
+	case "revoke":
+		successMessage = "License revoked successfully"
+	}
+	message := url.QueryEscape(successMessage)
+	http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s?license=%s&success=%s", publicationUUID, licenseID, message), http.StatusFound)
 }

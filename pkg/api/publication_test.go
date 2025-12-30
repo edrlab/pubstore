@@ -33,25 +33,11 @@ func TestPublicationHandler(t *testing.T) {
 		UUID:          gofakeit.UUID(),
 		Title:         "Test Publication",
 		ContentType:   "application/epub+zip",
-		DatePublished: "2022-12-31",
+		AltId:         "test-alt-id-7",
 		Description:   "Test description",
 		CoverUrl:      "http://example.com/cover.jpg",
-		Language: []stor.Language{
-			{Code: "en"},
-			{Code: "fr"},
-		},
-		Publisher: []stor.Publisher{
-			{Name: "Publisher A"},
-			{Name: "Publisher B"},
-		},
-		Author: []stor.Author{
-			{Name: "Author A"},
-			{Name: "Author B"},
-		},
-		Category: []stor.Category{
-			{Name: "Category A"},
-			{Name: "Category B"},
-		},
+		Publishers:    "Publisher A, Publisher B",
+		Authors:       "Author A, Author B",
 	}
 
 	pubBytes, err := json.Marshal(newPublication)
@@ -143,13 +129,11 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, newPublication.UUID, retrievedPub.UUID)
 	assert.Equal(t, newPublication.Title, retrievedPub.Title)
 	assert.Equal(t, newPublication.ContentType, retrievedPub.ContentType)
-	assert.Equal(t, newPublication.DatePublished, retrievedPub.DatePublished)
+	assert.Equal(t, newPublication.AltId, retrievedPub.AltId)
 	assert.Equal(t, newPublication.Description, retrievedPub.Description)
 	assert.Equal(t, newPublication.CoverUrl, retrievedPub.CoverUrl)
-	assert.Equal(t, newPublication.Language[0].Code, retrievedPub.Language[0].Code)
-	assert.Equal(t, newPublication.Publisher[0].Name, retrievedPub.Publisher[0].Name)
-	assert.Equal(t, newPublication.Author[0].Name, retrievedPub.Author[0].Name)
-	assert.Equal(t, newPublication.Category[0].Name, retrievedPub.Category[0].Name)
+	assert.Equal(t, newPublication.Publishers, retrievedPub.Publishers)
+	assert.Equal(t, newPublication.Authors, retrievedPub.Authors)
 
 	// update the publication
 	updatePubURL := "/api/publications/" + newPublication.UUID

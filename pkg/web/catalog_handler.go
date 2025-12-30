@@ -19,9 +19,7 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 
 	format := r.URL.Query().Get("format")
 	author := r.URL.Query().Get("author")
-	language := r.URL.Query().Get("language")
 	publisher := r.URL.Query().Get("publisher")
-	category := r.URL.Query().Get("category")
 	page := r.URL.Query().Get("page")
 	pageSize := r.URL.Query().Get("pageSize")
 
@@ -55,12 +53,6 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 	} else if len(publisher) > 0 {
 		facet = "publisher"
 		value = publisher
-	} else if len(language) > 0 {
-		facet = "language"
-		value = language
-	} else if len(category) > 0 {
-		facet = "category"
-		value = category
 	}
 
 	facetsView := web.View.GetCatalogFacetsView()
@@ -88,10 +80,6 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 		"pageRange":           pageRange,
 		"publicationCount":    fmt.Sprintf("%d", count),
 		"formats":             (*catalogView).Formats,
-		"authors":             (*catalogView).Authors,
-		"publishers":          (*catalogView).Publishers,
-		"languages":           (*catalogView).Languages,
-		"categories":          (*catalogView).Categories,
 		"publications":        (*catalogView).Publications,
 	}
 

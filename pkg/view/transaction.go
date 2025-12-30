@@ -7,8 +7,7 @@ import (
 )
 
 type TransactionView struct {
-	// TransactionID             string
-	// TransactionDate           time.Time
+	//TransactionID          uint
 	PublicationUUID        string
 	PublicationTitle       string
 	PublicationAuthor      string
@@ -26,10 +25,12 @@ type TransactionView struct {
 
 func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transaction) *TransactionView {
 
-	var publicationAuthor string
 	publication, err := view.Store.GetPublication(transaction.Publication.UUID)
-	if err == nil && len(publication.Author) > 0 {
-		publicationAuthor = publication.Author[0].Name
+	if err != nil {
+		return &TransactionView{}
+	}
+	if publication == nil {
+		return &TransactionView{}
 	}
 
 	var start, end, copy, print string
@@ -60,7 +61,7 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 		PublicationTitle:       transaction.Publication.Title,
 		PublicationFormat:      contentTypeToFormat(transaction.Publication.ContentType),
 		LicenseId:              transaction.LicenseId,
-		PublicationAuthor:      publicationAuthor,
+		PublicationAuthor:      publication.Authors,
 		PublicationCoverUrl:    publication.CoverUrl,
 		PublicationPrintRights: print,
 		PublicationCopyRights:  copy,

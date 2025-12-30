@@ -22,7 +22,10 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 
 	pubUUID := chi.URLParam(r, "id")
 	errLcp := r.URL.Query().Get("err")
-	licenseOK := false
+	successMsg := r.URL.Query().Get("success")
+	licenseID := r.URL.Query().Get("license")
+	licenseReady := false
+	licenseUsable := false
 	IsBookshelfPage := false
 
 	publicationStor, err := web.Store.GetPublication(pubUUID)
@@ -42,17 +45,24 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		user := web.getUserByCookie(r)
 		userName = user.Name
 
-		// get the transaction for this user and publication (if any)
-		transaction, err := web.Store.GetTransactionByUserAndPublication(user.ID, publicationStor.ID)
+		// get the transaction ID from the query parameter
+		if licenseID == "" {
+			message := url.QueryEscape("No license ID provided")
+			http.Error(w, message, 400)
+			return
+		}
+
+		// get the transaction for this license (if any)
+		transaction, err := web.Store.GetTransactionByLicense(licenseID)
 		if err != nil {
-			message := url.QueryEscape("Failed to get transaction by user and publication: " + err.Error())
+			message := url.QueryEscape("Failed to get transaction by license id: " + err.Error())
 			http.Error(w, message, 500)
 			return
 		}
 
 		currentLicenseUpdated := transaction.LicenseUpdated
 		currentStatus := transaction.Status
-		log.Println("The status of the license is " + currentStatus)
+		log.Println("Transaction", transaction.ID, "with license", licenseID, "has current status", currentStatus)
 
 		// request the status document
 		lsdStatus, err := lcp.GetStatusDocument(web.Config.LCPServer, transaction)
@@ -72,8 +82,11 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		viewTransaction.LicenseMaxEnd = maxEnd
 
+		if transaction.Status == "ready" {
+			licenseReady = true
+		}
 		if transaction.Status == "ready" || transaction.Status == "active" {
-			licenseOK = true
+			licenseUsable = true
 		}
 		if currentStatus != transaction.Status || transaction.LicenseUpdated.After(currentLicenseUpdated) {
 			// store the updated transaction
@@ -93,18 +106,18 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		"userIsAuthenticated":   web.userIsAuthenticated(r),
 		"userName":              userName,
 		"errLcp":                errLcp,
+		"successMsg":            successMsg,
 		"title":                 publicationView.Title,
 		"uuid":                  publicationView.UUID,
+		"altId":                 publicationView.AltId,
 		"format":                publicationView.Format,
-		"datePublished":         publicationView.DatePublished,
 		"description":           publicationView.Description,
 		"coverUrl":              publicationView.CoverUrl,
-		"authors":               publicationView.Author,
-		"publishers":            publicationView.Publisher,
-		"languages":             publicationView.Language,
-		"categories":            publicationView.Category,
+		"authors":               publicationView.Authors,
+		"publishers":            publicationView.Publishers,
 		"licenseFound":          bool(viewTransaction.PublicationUUID != ""),
-		"licenseFoundAndActive": licenseOK,
+		"licenseReady":          licenseReady,
+		"licenseFoundAndUsable": licenseUsable,
 		"transaction":           viewTransaction,
 		"IsBookshelfPage":       IsBookshelfPage,
 	}
