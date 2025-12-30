@@ -14,7 +14,7 @@ import (
 
 // @Summary Get a fresh license
 // @Description Get a fresh licen from a license id
-// @Tags licences
+// @Tags licenses
 // @Accept -
 // @Produce json
 // @Param user body User true "User object"
@@ -24,13 +24,13 @@ func (a *Api) getFreshLicense(w http.ResponseWriter, r *http.Request) {
 
 	transaction := fromTransContext(r.Context())
 
-	licenceBytes, err := lcp.GetFreshLicense(a.Config.LCPServer, transaction)
+	_, data, err := lcp.GetFreshLicense(a.Config.LCPServer, transaction)
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
-	io.Copy(w, bytes.NewReader(licenceBytes))
+	io.Copy(w, bytes.NewReader(data))
 
 }

@@ -370,22 +370,6 @@ const docTemplate = `{
                 }
             }
         },
-        "api.Category": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.Language": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                }
-            }
-        },
         "api.Publication": {
             "type": "object",
             "properties": {
@@ -393,12 +377,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.Author"
-                    }
-                },
-                "category": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.Category"
                     }
                 },
                 "cover_url": {
@@ -409,12 +387,6 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
-                },
-                "language": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.Language"
-                    }
                 },
                 "publisher": {
                     "type": "array",

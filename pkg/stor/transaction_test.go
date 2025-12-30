@@ -15,12 +15,12 @@ func TestTransactionCRUD(t *testing.T) {
 
 	// create a new user
 	user := &User{
-		UUID:       gofakeit.UUID(),
-		Name:       "Pierre 1er",
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
+		UUID:        gofakeit.UUID(),
+		Name:        "Pierre 1er",
+		Email:       gofakeit.Email(),
+		HPassword:   "hashed-password",
+		HPassphrase: "hashed-passphrase",
+		TextHint:    "hint",
 	}
 
 	err := store.CreateUser(user)
@@ -30,25 +30,11 @@ func TestTransactionCRUD(t *testing.T) {
 	publication := &Publication{
 		Title:         "Test Publication",
 		UUID:          gofakeit.UUID(),
-		DatePublished: "2022-12-31",
+		AltId:         "test-alt-id-6",
 		Description:   "Test description",
 		CoverUrl:      "http://example.com/cover.jpg",
-		Language: []Language{
-			{Code: "en"},
-			{Code: "fr"},
-		},
-		Publisher: []Publisher{
-			{Name: "Test Publisher A"},
-			{Name: "Test Publisher B"},
-		},
-		Author: []Author{
-			{Name: "Test Author A"},
-			{Name: "Test Author B"},
-		},
-		Category: []Category{
-			{Name: "Test Category A"},
-			{Name: "Test Category B"},
-		},
+		Publishers:    "Test Publisher A, Test Publisher B",
+		Authors:       "Test Author A, Test Author B",
 	}
 
 	err = store.CreatePublication(publication)
@@ -60,51 +46,53 @@ func TestTransactionCRUD(t *testing.T) {
 	transaction := &Transaction{
 		UserID:        user.ID,
 		PublicationID: publication.ID,
-		LicenceId:     gofakeit.UUID(),
+		LicenseId:     gofakeit.UUID(),
+		Status:        "ready",
 	}
 
 	err = store.CreateTransaction(transaction)
 	assert.NoError(t, err)
 	assert.NotZero(t, transaction.ID)
 
-	// read the transaction by licence ID
-	readTransaction, err := store.GetTransactionByLicence(transaction.LicenceId)
+	// read the transaction by license ID
+	readTransaction, err := store.GetTransactionByLicense(transaction.LicenseId)
 	assert.NoError(t, err)
 	assert.Equal(t, transaction.ID, readTransaction.ID)
 	assert.Equal(t, transaction.UserID, readTransaction.UserID)
 	assert.Equal(t, transaction.PublicationID, readTransaction.PublicationID)
-	assert.Equal(t, transaction.LicenceId, readTransaction.LicenceId)
+	assert.Equal(t, transaction.LicenseId, readTransaction.LicenseId)
 
 	// update the transaction
-	transaction.LicenceId = gofakeit.UUID()
+	transaction.Status = "expired"
+	transaction.LicenseId = gofakeit.UUID()
 	err = store.UpdateTransaction(transaction)
 	assert.NoError(t, err)
 
 	// verify the updated transaction
-	updatedTransaction, err := store.GetTransactionByLicence(transaction.LicenceId)
+	updatedTransaction, err := store.GetTransactionByLicense(transaction.LicenseId)
 	assert.NoError(t, err)
-	assert.Equal(t, transaction.LicenceId, updatedTransaction.LicenceId)
+	assert.Equal(t, transaction.LicenseId, updatedTransaction.LicenseId)
 
 	// retrieve the transaction by userID and publicationID
 	readTransaction2, err := store.GetTransactionByUserAndPublication(transaction.UserID, transaction.PublicationID)
 	assert.NoError(t, err)
 	assert.Equal(t, readTransaction2.UserID, updatedTransaction.UserID)
 	assert.Equal(t, readTransaction2.PublicationID, updatedTransaction.PublicationID)
-	assert.Equal(t, readTransaction2.LicenceId, updatedTransaction.LicenceId)
+	assert.Equal(t, readTransaction2.LicenseId, updatedTransaction.LicenseId)
 
 	// retrieves the array to transactions made by the user
 	transactions, err := store.FindTransactionsByUser(user.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, readTransaction2.UserID, (*transactions)[0].UserID)
 	assert.Equal(t, readTransaction2.PublicationID, (*transactions)[0].PublicationID)
-	assert.Equal(t, readTransaction2.LicenceId, (*transactions)[0].LicenceId)
+	assert.Equal(t, readTransaction2.LicenseId, (*transactions)[0].LicenseId)
 
 	// delete the transaction
 	err = store.DeleteTransaction(transaction)
 	assert.NoError(t, err)
 
 	// verify that the transaction is deleted
-	_, err = store.GetTransactionByLicence(transaction.LicenceId)
+	_, err = store.GetTransactionByLicense(transaction.LicenseId)
 	assert.Error(t, err)
 
 	// delete the publication

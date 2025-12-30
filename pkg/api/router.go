@@ -16,7 +16,6 @@ import (
 	"github.com/edrlab/pubstore/pkg/internal/auth"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/oauth"
 	"github.com/go-chi/render"
@@ -77,16 +76,6 @@ func (a *Api) Router(r chi.Router) {
 
 	r.Get("/api/swagger/*", httpSwagger.WrapHandler)
 
-	credentials := make(map[string]string)
-	credentials[a.Config.UserName] = a.Config.Password
-
-	// Create a publication using basic auth (used by the LCP encryption tool)
-	r.Route("/api/notify", func(r chi.Router) {
-		r.Use(middleware.BasicAuth("restricted", credentials))
-		r.Use(render.SetContentType(render.ContentTypeJSON))
-		r.Post("/", a.createPublication)
-	})
-
 	/*
 		 Generate a token using username & password
 			POST http://localhost:8080/api/token
@@ -102,6 +91,14 @@ func (a *Api) Router(r chi.Router) {
 	r.Post("/api/token", s.UserCredentials)
 	r.Post("/api/auth", s.ClientCredentials)
 
+	// Sync publications from the the LCP Server
+	// This is the simplest way to synchronize PubFront with the associated LCP Server.
+	r.Route("/api/synchronize", func(r chi.Router) {
+		r.Use(oauth.Authorize(a.Config.OAuthSeed, nil))
+		r.Get("/", a.syncPublications)
+	})
+
+	// CRUD routes for publications
 	r.Route("/api/publications", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 		r.With(paginate).Get("/", a.listPublications)
@@ -120,6 +117,8 @@ func (a *Api) Router(r chi.Router) {
 			})
 		})
 	})
+
+	// CRUD routes for users
 	r.Route("/api/users", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 		r.With(paginate).Get("/", a.listUsers)
@@ -138,7 +137,7 @@ func (a *Api) Router(r chi.Router) {
 		})
 	})
 
-	// License gateway
+	// License Gateway
 	r.Route("/licenses", func(r chi.Router) {
 		r.Use(render.SetContentType(render.ContentTypeJSON))
 		r.Route("/{id}", func(r chi.Router) {
@@ -146,6 +145,7 @@ func (a *Api) Router(r chi.Router) {
 			r.Get("/", a.getFreshLicense)
 		})
 	})
+
 
 }
 
@@ -184,7 +184,7 @@ func (a *Api) licenseId(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		licID := chi.URLParam(r, "id")
-		trans, err := a.Store.GetTransactionByLicence(licID)
+		trans, err := a.Store.GetTransactionByLicense(licID)
 		if err != nil {
 			render.Render(w, r, ErrNotFound)
 			return

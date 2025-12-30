@@ -46,13 +46,13 @@ func TestClientHandler(t *testing.T) {
 
 	// init a test user
 	newUser := &stor.User{
-		UUID:       gofakeit.UUID(),
-		Name:       "Pierre ler",
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
-		SessionId:  gofakeit.UUID(),
+		UUID:        gofakeit.UUID(),
+		Name:        "Pierre ler",
+		Email:       gofakeit.Email(),
+		HPassword:   "hashed-password",
+		HPassphrase: "hashed-passphrase",
+		TextHint:    "hint",
+		SessionId:   gofakeit.UUID(),
 	}
 
 	newUserBytes, err := json.Marshal(newUser)

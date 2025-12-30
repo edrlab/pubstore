@@ -6,6 +6,8 @@ package api
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +18,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -30,25 +33,11 @@ func TestPublicationHandler(t *testing.T) {
 		UUID:          gofakeit.UUID(),
 		Title:         "Test Publication",
 		ContentType:   "application/epub+zip",
-		DatePublished: "2022-12-31",
+		AltId:         "test-alt-id-7",
 		Description:   "Test description",
 		CoverUrl:      "http://example.com/cover.jpg",
-		Language: []stor.Language{
-			{Code: "en"},
-			{Code: "fr"},
-		},
-		Publisher: []stor.Publisher{
-			{Name: "Publisher A"},
-			{Name: "Publisher B"},
-		},
-		Author: []stor.Author{
-			{Name: "Author A"},
-			{Name: "Author B"},
-		},
-		Category: []stor.Category{
-			{Name: "Category A"},
-			{Name: "Category B"},
-		},
+		Publishers:    "Publisher A, Publisher B",
+		Authors:       "Author A, Author B",
 	}
 
 	pubBytes, err := json.Marshal(newPublication)
@@ -61,13 +50,24 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 	assert.NoError(t, err)
 
+	// generate a hash of the user password
+	userPassword := "user-password"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userPassword), bcrypt.DefaultCost)
+	assert.NoError(t, err)
+
+	// generate a hash of the lcp passphrase
+	var hashedPassphrase string
+	hash := sha256.Sum256([]byte("lcpPassphrase"))
+	hashedPassphrase = hex.EncodeToString(hash[:])
+
 	// init a new user for testing
 	newUser := &stor.User{
-		Name:       "Albert ler",
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
+		UUID:        gofakeit.UUID(),
+		Name:        "Albert ler",
+		Email:       gofakeit.Email(),
+		HPassword:   string(hashedPassword),
+		HPassphrase: hashedPassphrase,
+		TextHint:    "hint",
 	}
 	// create the user in the database
 	err = testapi.CreateUser(newUser)
@@ -78,7 +78,7 @@ func TestPublicationHandler(t *testing.T) {
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {newUser.Email},
-		"password":   {newUser.Password},
+		"password":   {userPassword},
 	}
 	tokenReq := httptest.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
 	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -129,13 +129,11 @@ func TestPublicationHandler(t *testing.T) {
 	assert.Equal(t, newPublication.UUID, retrievedPub.UUID)
 	assert.Equal(t, newPublication.Title, retrievedPub.Title)
 	assert.Equal(t, newPublication.ContentType, retrievedPub.ContentType)
-	assert.Equal(t, newPublication.DatePublished, retrievedPub.DatePublished)
+	assert.Equal(t, newPublication.AltId, retrievedPub.AltId)
 	assert.Equal(t, newPublication.Description, retrievedPub.Description)
 	assert.Equal(t, newPublication.CoverUrl, retrievedPub.CoverUrl)
-	assert.Equal(t, newPublication.Language[0].Code, retrievedPub.Language[0].Code)
-	assert.Equal(t, newPublication.Publisher[0].Name, retrievedPub.Publisher[0].Name)
-	assert.Equal(t, newPublication.Author[0].Name, retrievedPub.Author[0].Name)
-	assert.Equal(t, newPublication.Category[0].Name, retrievedPub.Category[0].Name)
+	assert.Equal(t, newPublication.Publishers, retrievedPub.Publishers)
+	assert.Equal(t, newPublication.Authors, retrievedPub.Authors)
 
 	// update the publication
 	updatePubURL := "/api/publications/" + newPublication.UUID

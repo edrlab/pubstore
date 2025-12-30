@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# local debug directives
+.vscode/launch.json
+.vscode/settings.json
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -20,7 +24,13 @@
 # Go workspace file
 go.work
 
+# local debug directives
+.vscode/launch.json
 
 build
 .idea
 pubstore.db
+pubstore.sqlite
+pubstore.sqlite-shm
+pubstore.sqlite-wal
+.DS_Store

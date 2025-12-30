@@ -1,13 +1,11 @@
-// Copyright 2022 European Digital Reading Lab. All rights reserved.
+// Copyright 2025 European Digital Reading Lab. All rights reserved.
 // Use of this source code is governed by a BSD-style license
 // specified in the Github project LICENSE file.
 
 package web
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -31,16 +29,21 @@ func (web *Web) createLicense(w http.ResponseWriter, r *http.Request) {
 	licenseReq := lcp.LicenseRequest{}
 
 	// sanitize params
-	var print, copy int
+	var print, copy int32
 	var start, end time.Time
+	var i int
 	var err error
-	if print, err = strconv.Atoi(printParam); err != nil {
+	if i, err = strconv.Atoi(printParam); err != nil {
 		fmt.Println(err.Error())
-		print = web.Config.PrintLimit
+		print = int32(web.Config.PrintLimit)
+	} else {
+		print = int32(i)
 	}
-	if copy, err = strconv.Atoi(copyParam); err != nil {
+	if i, err = strconv.Atoi(copyParam); err != nil {
 		fmt.Println(err.Error())
-		copy = web.Config.CopyLimit
+		copy = int32(web.Config.CopyLimit)
+	} else {
+		copy = int32(i)
 	}
 	// start & end params may be empty strings. In this case their time representation keep a zero value
 	if startParam != "" {
@@ -59,9 +62,18 @@ func (web *Web) createLicense(w http.ResponseWriter, r *http.Request) {
 	// get user information
 	user := web.getUserByCookie(r)
 
+	// get publication information
+	errMessage := "License acquisition failed: "
+
+	publication, err := web.GetPublication(pubUUID)
+	if err != nil {
+		acquisitionFailure(w, r, pubUUID, errMessage+err.Error())
+		return
+	}
+
 	licenseReq.PublicationID = pubUUID
 
-	// negative values for print and copy are considered void (therefore unconstrained)
+	// negative values for print and copy are considered unconstrained
 	if print >= 0 {
 		licenseReq.Print = &print
 	}
@@ -79,33 +91,44 @@ func (web *Web) createLicense(w http.ResponseWriter, r *http.Request) {
 	licenseReq.UserName = user.Name
 	licenseReq.UserEmail = user.Email
 	licenseReq.UserEncrypted = []string{"email"}
+	licenseReq.Profile = web.Config.EncryptionProfile
 	licenseReq.TextHint = user.TextHint
 	licenseReq.PassHash = user.HPassphrase
 
-	errMessage := "License acquisition failed: "
-
-	licence, err := lcp.GenerateLicense(web.Config.LCPServer, licenseReq)
+	license, _, err := lcp.GenerateLicense(web.Config.LCPServer, licenseReq)
 	if err != nil {
 		acquisitionFailure(w, r, pubUUID, errMessage+err.Error())
 		return
 	}
 
-	licenseId, pubTitle, _, _, _, _, _, err := lcp.ParseLicense(licence)
-	if err != nil {
-		acquisitionFailure(w, r, pubUUID, errMessage+err.Error())
-		return
+	// Extract the link to the status document
+	var statusDocLink lcp.Link
+	for _, l := range license.Links {
+		if l.Rel == "status" {
+			statusDocLink = l
+			break
+		}
 	}
 
-	publication, err := web.GetPublication(pubUUID)
-	if err != nil {
-		acquisitionFailure(w, r, pubUUID, errMessage+err.Error())
-		return
+	noLimit := int32(-1) // -1 stored for no print/copy limits
+	if license.Rights.Copy == nil {
+		license.Rights.Copy = &noLimit
+	}
+	if license.Rights.Print == nil {
+		license.Rights.Print = &noLimit
 	}
 
+	// create a transaction
 	transaction := &stor.Transaction{
 		UserID:        user.ID,
 		PublicationID: publication.ID,
-		LicenceId:     licenseId,
+		LicenseId:     license.ID,
+		Status:        "ready", // license is ready to be used
+		StatusDocLink: statusDocLink.Href,
+		Print:         *license.Rights.Print,
+		Copy:          *license.Rights.Copy,
+		Start:         license.Rights.Start,
+		End:           license.Rights.End,
 	}
 
 	err = web.CreateTransaction(transaction)
@@ -114,14 +137,10 @@ func (web *Web) createLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// return the license to the caller
-	w.Header().Set("Content-Disposition", "attachment; filename="+pubTitle+".lcpl")
-	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
-	w.Header().Set("Content-Length", strconv.Itoa(len(licence)))
-
-	io.Copy(w, bytes.NewReader(licence))
+	http.Redirect(w, r, fmt.Sprintf("/bookshelf/publications/%s?license=%s&success=%s", pubUUID, license.ID, url.QueryEscape("License created successfully")), http.StatusFound)
 }
 
+// acquisitionFailure is a helper function that redirects to the publication page with an error message
 func acquisitionFailure(w http.ResponseWriter, r *http.Request, pubID string, message string) {
-	http.Redirect(w, r, fmt.Sprintf("/catalog/publication/%s?err=%s", pubID, url.QueryEscape(message)), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("/catalog/publications/%s?err=%s", pubID, url.QueryEscape(message)), http.StatusFound)
 }

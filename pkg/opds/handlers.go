@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/edrlab/pubstore/pkg/lcp"
 	"github.com/edrlab/pubstore/pkg/stor"
@@ -96,13 +95,13 @@ func (o *Opds) GetPublication(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			// http.Error(w, "Failed to get user", http.StatusInternalServerError)
 			fmt.Println("Failed to get user : " + credential)
-			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
+			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", nil, nil))
 			return
 		}
 
 		transaction, err := o.getTransactionFromUserAndPubUUID(user, storPublication.UUID)
 		if err != nil {
-			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
+			pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentified", storPublication.UUID, "", "", nil, nil))
 			return
 		}
 
@@ -110,11 +109,11 @@ func (o *Opds) GetPublication(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			lsdStatus = &lcp.LsdStatus{}
 		}
-		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentifiedAndBorrowed", storPublication.UUID, lsdStatus.StatusCode, user.HPassphrase, lsdStatus.StartDate, lsdStatus.EndDate))
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("authentifiedAndBorrowed", storPublication.UUID, lsdStatus.StatusCode, user.HPassphrase, lsdStatus.Start, lsdStatus.End))
 
 	} else {
 		// add borrow link
-		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", time.Time{}, time.Time{}))
+		pub.Links = append(pub.Links, publicationAcquisitionLinkChoice("notAuthentified", storPublication.UUID, "", "", nil, nil))
 	}
 }
 
@@ -157,14 +156,14 @@ func (opds *Opds) GetPublicationLoan(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		licenceBytes, err := lcp.LicenceLoan(storPublication.UUID, user.UUID, user.Email, user.TextHint, user.HPassphrase, 100, 2000, time.Now(), time.Now().AddDate(0, 0, 7))
+		licenseBytes, err := lcp.LicenseLoan(storPublication.UUID, user.UUID, user.Email, user.TextHint, user.HPassphrase, 100, 2000, time.Now(), time.Now().AddDate(0, 0, 7))
 		if err != nil {
 			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
-		io.Copy(w, bytes.NewReader(licenceBytes))
+		io.Copy(w, bytes.NewReader(licenseBytes))
 	*/
 }
 
@@ -195,14 +194,14 @@ func (o *Opds) GetPublicationLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	licenceBytes, err := lcp.GetFreshLicense(o.Config.LCPServer, transaction)
+	_, licenseBytes, err := lcp.GetFreshLicense(o.Config.LCPServer, transaction)
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/vnd.readium.lcp.license.v1.0+json")
-	io.Copy(w, bytes.NewReader(licenceBytes))
+	io.Copy(w, bytes.NewReader(licenseBytes))
 }
 
 // GetBookshelf returns a personal bookshelf feed

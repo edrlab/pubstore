@@ -1,19 +1,17 @@
-const modalWindow = document.querySelector('#modal-window');
-const modal = document.querySelector('.modal');
+const modalWindow = document.getElementById('modal-window');
+const modal = document.getElementById('modal');
 const modalBackGround = document.querySelector('.modal-backdrop');
+
 let modalState = null;
 
-
-const purchaseButton = document.querySelector("#buy");
-const loanButton = document.querySelector("#loan");
+const purchaseButton = document.getElementById("buy");
+const loanButton = document.getElementById("loan");
 
 const buyForm = document.getElementById("buyForm");
 const loanForm = document.getElementById("loanForm");
 
-const submitButtonBuy = document.querySelector(".modal-loan-buttons button[value='Buy']");
-const submitButtonLoan = document.querySelector(".modal-loan-buttons button[value='Loan']");
-const backToPresentationButtonBuy = document.querySelector("#backButtonBuy");
-const backToPresentationButtonLoan = document.querySelector("#backButtonLoan");
+const submitButtonBuy = document.getElementById("submitBuy");
+const submitButtonLoan = document.getElementById("submitLoan");
 
 let form = document.querySelector(".modal-form-options");
 
@@ -38,6 +36,17 @@ purchaseButton.addEventListener('click', (e) => {
     loanForm.style.display = "none";
 })
 
+console.log({
+  purchaseButton,
+  loanButton,
+  submitButtonBuy,
+  submitButtonLoan,
+  modalWindow,
+  modal,
+  buyForm,
+  loanForm
+});
+
 loanButton.addEventListener('click', (e) => {
     e.preventDefault();
     createModal()
@@ -57,17 +66,6 @@ submitButtonLoan.addEventListener('click', (e) => {
         window.location.reload();
     }, 1000)
 });
-
-backToPresentationButtonBuy.addEventListener("click", (e) => {
-    e.preventDefault();
-    closeModal(e);
-})
-
-backToPresentationButtonLoan.addEventListener("click", (e) => {
-    e.preventDefault();
-    closeModal(e);
-})
-
 
 const closeModal = (e) => {
     modalWindow.style.display = 'none';

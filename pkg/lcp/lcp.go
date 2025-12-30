@@ -1,4 +1,4 @@
-// Copyright 2023 European Digital Reading Lab. All rights reserved.
+// Copyright 2025 European Digital Reading Lab. All rights reserved.
 // Use of this source code is governed by a BSD-style license
 // specified in the Github project LICENSE file.
 
@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -29,40 +30,57 @@ type LicenseRequest struct {
 	UserEncrypted []string   `json:"user_encrypted,omitempty"`
 	Start         *time.Time `json:"start,omitempty"`
 	End           *time.Time `json:"end,omitempty"`
-	Copy          *int       `json:"copy,omitempty"`
-	Print         *int       `json:"print,omitempty"`
+	Copy          *int32     `json:"copy,omitempty"`
+	Print         *int32     `json:"print,omitempty"`
 	Profile       string     `json:"profile"`
 	TextHint      string     `json:"text_hint"`
 	PassHash      string     `json:"pass_hash"`
 }
 
-/* Example of License Request V1
-`{
-	  "user": {
-	    "id": "d9f298a7-7f34-49e7-8aae-4378ecb1d597",
-	    "email": "user@mymail.com",
-	    "encrypted": ["email"]
-	  },
-	  "encryption": {
-	    "user_key": {
-	      "text_hint": "The title of the first book you ever read",
-	      "hex_value": "4981AA0A50D563040519E9032B5D74367B1D129E239A1BA82667A57333866494"
-	    }
-	  },
-	  "rights": {
-	    "print": 10,
-	    "copy": 2048,
-	    "start": "2023-06-14T01:08:15+01:00",
-	    "end": "2024-11-25T01:08:15+01:00"
-	  }
-	}`
-*/
-
-type LicenceRequestV1 struct {
+// LicenseRequestV1 represents the structure of a license request for the LCP Server version 1
+type LicenseRequestV1 struct {
 	Provider   string     `json:"provider"`
 	User       User       `json:"user"`
 	Encryption Encryption `json:"encryption"`
 	Rights     Rights     `json:"rights,omitempty"`
+}
+
+type LCPLicense struct {
+	Provider   string     `json:"provider"`
+	ID         string     `json:"id"`
+	Issued     string     `json:"issued"`
+	Encryption Encryption `json:"encryption"`
+	Links      []Link     `json:"links"`
+	User       User       `json:"user"`
+	Rights     Rights     `json:"rights"`
+	Signature  Signature  `json:"signature"`
+}
+
+type Encryption struct {
+	Profile    string     `json:"profile"`
+	ContentKey ContentKey `json:"content_key"`
+	UserKey    UserKey    `json:"user_key"`
+}
+
+type ContentKey struct {
+	Algorithm      string `json:"algorithm"`
+	EncryptedValue string `json:"encrypted_value"`
+}
+
+type UserKey struct {
+	Algorithm string `json:"algorithm"`
+	TextHint  string `json:"text_hint"`
+	KeyCheck  string `json:"key_check"`
+	HexValue  string `json:"hex_value"`
+}
+
+type Link struct {
+	Rel    string `json:"rel"`
+	Href   string `json:"href"`
+	Type   string `json:"type"`
+	Title  string `json:"title,omitempty"`
+	Length int    `json:"length,omitempty"`
+	Hash   string `json:"hash,omitempty"`
 }
 
 type User struct {
@@ -71,20 +89,17 @@ type User struct {
 	Encrypted []string `json:"encrypted"`
 }
 
-type Encryption struct {
-	UserKey UserKey `json:"user_key"`
-}
-
-type UserKey struct {
-	TextHint string `json:"text_hint"`
-	HexValue string `json:"hex_value"`
-}
-
 type Rights struct {
-	Print *int       `json:"print,omitempty"`
-	Copy  *int       `json:"copy,omitempty"`
+	Print *int32     `json:"print,omitempty"`
+	Copy  *int32     `json:"copy,omitempty"`
 	Start *time.Time `json:"start,omitempty"`
 	End   *time.Time `json:"end,omitempty"`
+}
+
+type Signature struct {
+	Certificate string `json:"certificate"`
+	Value       string `json:"value"`
+	Algorithm   string `json:"algorithm"`
 }
 
 // HashPassphrase generates the hash of a passphrase
@@ -97,7 +112,7 @@ func HashPassphrase(passphrase string) string {
 }
 
 // v1Request prepares a license request in the form expected by the License Server V1
-func v1Request(licenseReq LicenseRequest) LicenceRequestV1 {
+func v1Request(licenseReq LicenseRequest) LicenseRequestV1 {
 	user := User{
 		ID:        licenseReq.UserID,
 		Email:     licenseReq.UserEmail,
@@ -120,22 +135,25 @@ func v1Request(licenseReq LicenseRequest) LicenceRequestV1 {
 		End:   licenseReq.End,
 	}
 
-	licence := LicenceRequestV1{
+	license := LicenseRequestV1{
 		Provider:   "https://edrlab.org",
 		User:       user,
 		Encryption: encryption,
 		Rights:     rights,
 	}
 
-	return licence
+	return license
 }
 
 // GenerateLicense sends a request to the License Server and returns a new license to the caller
-func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) ([]byte, error) {
+func GenerateLicense(lcpsv conf.LCPServer, licenseReq LicenseRequest) (LCPLicense, []byte, error) {
 
+	var license LCPLicense
 	var url string
 	var payload []byte
 	var err error
+
+	log.Println("Requesting the generation of a license...")
 
 	// License Server V1
 	if lcpsv.Version == "v1" {
@@ -143,7 +161,7 @@ func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) ([]b
 		v1req := v1Request(licenseReq)
 		payload, err = json.Marshal(v1req)
 		if err != nil {
-			return nil, err
+			return license, nil, err
 		}
 
 		// License Server V2
@@ -151,54 +169,26 @@ func GenerateLicense(lcpsv conf.LCPServerAccess, licenseReq LicenseRequest) ([]b
 		url = lcpsv.Url + "/licenses"
 		payload, err = json.Marshal(licenseReq)
 		if err != nil {
-			return nil, err
+			return license, nil, err
 		}
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(lcpsv.UserName, lcpsv.Password)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return nil, errors.New("failed to send a license request to the License Server")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusCreated {
-		fmt.Println("License created successfully.")
-	} else if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
-		return nil, fmt.Errorf("a client error occurred. Status code: %d", resp.StatusCode)
-	} else if resp.StatusCode == http.StatusInternalServerError {
-		return nil, fmt.Errorf("a server error occurred. Status code: %d", resp.StatusCode)
-	} else {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
+	return executeLicenseRequest(lcpsv, url, payload)
 }
 
 // GetFreshLicense sends a request to the License Server and returns the fresh license to the caller
-func GetFreshLicense(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) ([]byte, error) {
+func GetFreshLicense(lcpsv conf.LCPServer, transaction *stor.Transaction) (LCPLicense, []byte, error) {
 
+	var license LCPLicense
 	var url string
 	var payload []byte
 	var err error
 
+	log.Println("Requesting a fresh license...")
+
 	// License Server V1
 	if lcpsv.Version == "v1" {
-		url = lcpsv.Url + "/licenses/" + transaction.LicenceId
+		url = lcpsv.Url + "/licenses/" + transaction.LicenseId
 
 		user := User{
 			Email:     transaction.User.Email,
@@ -211,18 +201,18 @@ func GetFreshLicense(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) 
 		encryption := Encryption{
 			UserKey: userKey,
 		}
-		licence := LicenceRequestV1{
+		licenseReq := LicenseRequestV1{
 			User:       user,
 			Encryption: encryption,
 		}
-		payload, err = json.Marshal(licence)
+		payload, err = json.Marshal(licenseReq)
 		if err != nil {
-			return nil, err
+			return license, nil, err
 		}
 
 		// License Server V2
 	} else {
-		url = lcpsv.Url + "/licenses/" + transaction.LicenceId
+		url = lcpsv.Url + "/licenses/" + transaction.LicenseId
 
 		licenseReq := LicenseRequest{
 			PublicationID: transaction.Publication.UUID,
@@ -234,13 +224,21 @@ func GetFreshLicense(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) 
 		}
 		payload, err = json.Marshal(licenseReq)
 		if err != nil {
-			return nil, err
+			return license, nil, err
 		}
 	}
+	return executeLicenseRequest(lcpsv, url, payload)
+}
+
+// executeLicenseRequest sends a request to the License Server and returns the license
+func executeLicenseRequest(lcpsv conf.LCPServer, url string, payload []byte) (LCPLicense, []byte, error) {
+
+	var license LCPLicense
+	var err error
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
-		return nil, err
+		return license, nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -250,69 +248,29 @@ func GetFreshLicense(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) 
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return nil, err
+		return license, nil, errors.New("failed to send a license request to the License Server")
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		fmt.Println("Fresh License successfully fetched.")
-	} else if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
-		return nil, fmt.Errorf("client error occurred. Status code: %d", resp.StatusCode)
-	} else if resp.StatusCode == http.StatusInternalServerError {
-		return nil, fmt.Errorf("server error occurred. Status code: %d", resp.StatusCode)
-	} else {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
+			return license, nil, fmt.Errorf("client error occurred. Status code: %d", resp.StatusCode)
+		} else if resp.StatusCode == http.StatusInternalServerError {
+			return license, nil, fmt.Errorf("server error occurred. Status code: %d", resp.StatusCode)
+		} else {
+			return license, nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return license, nil, err
 	}
 
-	return body, nil
-}
-
-type LsdStatus struct {
-	StatusMessage      string
-	StatusCode         string
-	EndPotentialRights time.Time
-	PrintLimit         int
-	CopyLimit          int
-	StartDate          time.Time
-	EndDate            time.Time
-}
-
-// GetStatusDocument sends a request to the License Server and returns a status document to the caller
-func GetStatusDocument(lcpsv conf.LCPServerAccess, transaction *stor.Transaction) (*LsdStatus, error) {
-
-	// TODO: avoid fetching the fresh license first, just to get the url to the status document.
-	licenceBytes, err := GetFreshLicense(lcpsv, transaction)
+	err = json.Unmarshal(body, &license)
 	if err != nil {
-		return nil, err
+		return license, nil, err
 	}
 
-	_, _, publicationStatusHref, printRights, copyRights, startDate, endDate, err := ParseLicense(licenceBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	// make a request on publicationStatusHref
-	lsd, err := getStatusDocFromUrl(publicationStatusHref)
-	if err != nil {
-		return nil, err
-	}
-
-	statusMessage := lsd.Message
-	endPotentialRights := lsd.PotentialRights.End
-	statusCode := lsd.Status
-
-	return &LsdStatus{
-		StatusMessage:      statusMessage,
-		StatusCode:         statusCode,
-		EndPotentialRights: endPotentialRights,
-		PrintLimit:         printRights,
-		CopyLimit:          copyRights,
-		StartDate:          startDate,
-		EndDate:            endDate,
-	}, nil
+	return license, body, nil
 }

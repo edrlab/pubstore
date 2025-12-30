@@ -5,25 +5,11 @@ definitions:
       name:
         type: string
     type: object
-  api.Category:
-    properties:
-      name:
-        type: string
-    type: object
-  api.Language:
-    properties:
-      code:
-        type: string
-    type: object
   api.Publication:
     properties:
       author:
         items:
           $ref: '#/definitions/api.Author'
-        type: array
-      category:
-        items:
-          $ref: '#/definitions/api.Category'
         type: array
       cover_url:
         type: string
@@ -31,10 +17,6 @@ definitions:
         type: string
       description:
         type: string
-      language:
-        items:
-          $ref: '#/definitions/api.Language'
-        type: array
       publisher:
         items:
           $ref: '#/definitions/api.Publisher'

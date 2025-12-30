@@ -6,6 +6,8 @@ package api
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +19,7 @@ import (
 	"github.com/edrlab/pubstore/pkg/stor"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestUserHandler(t *testing.T) {
@@ -24,19 +27,30 @@ func TestUserHandler(t *testing.T) {
 	r := chi.NewRouter()
 	r.Group(testapi.Router)
 
+	// generate a hash of the user password
+	userPassword := "user-password"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userPassword), bcrypt.DefaultCost)
+	assert.NoError(t, err)
+
+	// generate a hash of the lcp passphrase
+	var hashedPassphrase string
+	hash := sha256.Sum256([]byte("lcpPassphrase"))
+	hashedPassphrase = hex.EncodeToString(hash[:])
+
 	// init an admin user, who will be able to create other users
 	// this user has no initial UUID and no session id
 	adminUser := &stor.User{
-		Name:       "Admin",
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
+		UUID:				gofakeit.UUID(),
+		Name:        "Admin",
+		Email:       gofakeit.Email(),
+		HPassword:   string(hashedPassword),
+		HPassphrase: hashedPassphrase,
+		TextHint:    "hint",
 	}
 
 	// create the user in the database, so that a token can be acquired
 	// note: the creation replace the clear password by its hash
-	err := testapi.Store.CreateUser(adminUser)
+	err = testapi.Store.CreateUser(adminUser)
 	assert.NoError(t, err)
 
 	// generate a bearer token
@@ -44,7 +58,7 @@ func TestUserHandler(t *testing.T) {
 	tokenData := url.Values{
 		"grant_type": {"password"},
 		"username":   {adminUser.Email},
-		"password":   {adminUser.Password},
+		"password":   {userPassword},
 	}
 	tokenReq := httptest.NewRequest("POST", tokenURL, strings.NewReader(tokenData.Encode()))
 	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -65,12 +79,12 @@ func TestUserHandler(t *testing.T) {
 	// init a test user
 	// this user has an initial UUID
 	newUser := &stor.User{
-		UUID:       gofakeit.UUID(),
-		Name:       gofakeit.Name(),
-		Email:      gofakeit.Email(),
-		Password:   "password",
-		TextHint:   "hint",
-		Passphrase: "passphrase",
+		UUID:        gofakeit.UUID(),
+		Name:        gofakeit.Name(),
+		Email:       gofakeit.Email(),
+		HPassword:   "hashed-password",
+		HPassphrase: "hashed-passphrase",
+		TextHint:    "hint",
 	}
 	userBytes, err := json.Marshal(newUser)
 	assert.NoError(t, err)
@@ -115,9 +129,7 @@ func TestUserHandler(t *testing.T) {
 	assert.Equal(t, newUser.Email, retrievedUser.Email)
 	assert.Equal(t, newUser.TextHint, retrievedUser.TextHint)
 	// these are not returned (filtered on rendering)
-	assert.Equal(t, "", retrievedUser.Password)
 	assert.Equal(t, "", retrievedUser.HPassword)
-	assert.Equal(t, "", retrievedUser.Passphrase)
 	assert.Equal(t, "", retrievedUser.HPassphrase)
 	assert.Equal(t, "", retrievedUser.SessionId)
 
