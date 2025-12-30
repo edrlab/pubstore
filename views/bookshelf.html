@@ -10,6 +10,61 @@
     dropdown.forEach(input => input.addEventListener('click', function () {
         input.classList.toggle('active')
     }));
+
+    // Ouvrir automatiquement les dropdowns qui ont des filtres actifs
+    window.addEventListener('DOMContentLoaded', function() {
+        // Vérifier Format
+        const formatDropdown = document.querySelector('.dropdown:nth-child(1)');
+        const formatChecked = formatDropdown?.querySelectorAll('input[type="checkbox"]:checked');
+        if (formatChecked && formatChecked.length > 0) {
+            formatDropdown.classList.add('active');
+        }
+
+        // Vérifier Status
+        const statusDropdown = document.querySelector('.dropdown:nth-child(2)');
+        const statusChecked = statusDropdown?.querySelectorAll('input[type="checkbox"]:checked');
+        if (statusChecked && statusChecked.length > 0) {
+            statusDropdown.classList.add('active');
+        }
+
+        // Vérifier Transaction
+        const transactionDropdown = document.querySelector('.dropdown:nth-child(3)');
+        const transactionChecked = transactionDropdown?.querySelectorAll('input[type="checkbox"]:checked');
+        if (transactionChecked && transactionChecked.length > 0) {
+            transactionDropdown.classList.add('active');
+        }
+
+        // Gérer les changements de checkbox en préservant tous les paramètres
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function(e) {
+                e.preventDefault();
+                
+                // Construire l'URL avec tous les paramètres actuels
+                const url = new URL(window.location.href);
+                const params = new URLSearchParams(url.search);
+                
+                const name = this.name;
+                const value = this.value;
+                
+                if (this.checked) {
+                    // Ajouter le paramètre
+                    params.append(name, value);
+                } else {
+                    // Retirer le paramètre
+                    const allValues = params.getAll(name);
+                    params.delete(name);
+                    allValues.forEach(v => {
+                        if (v !== value) {
+                            params.append(name, v);
+                        }
+                    });
+                }
+                
+                // Rediriger vers la nouvelle URL
+                window.location.href = '/user/bookshelf?' + params.toString();
+            });
+        });
+    });
 </script>
 {{end}}
 
@@ -23,77 +78,71 @@
                     <input type="text" class="textBox" placeholder="Format" readonly>
                 </div>
                 <ul class="option">
-                    <form method="GET" action="/user/bookshelf">
-                        {{range .uniqueFormats}}
-                            <ul>
-                                <li>
-                                    <input type="checkbox" id="format-{{.}}" name="format" value="{{.}}" 
-                                        {{if index $.formatFilters .}}checked{{end}} onchange="this.form.submit()" />
-                                    <label for="format-{{.}}">{{.}}</label>
-                                </li>
-                            </ul>
-                        {{end}}
-                    </form>
+                    {{range .uniqueFormats}}
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="format-{{.}}" name="format" value="{{.}}" 
+                                    {{if index $.formatFilters .}}checked{{end}} />
+                                <label for="format-{{.}}">{{.}}</label>
+                            </li>
+                        </ul>
+                    {{end}}
                 </ul>
             </li>
             <li class="dropdown">
                 <div class="filter-title" data-open="false">
                     <input type="text" class="textBox" placeholder="Status" readonly>
                 </div>
-                <form method="GET" action="/user/bookshelf" class="filter-state option">
-                    <ul>
-                        <li>
-                            <input type="checkbox" id="ready" name="ready" value="on" {{if index .filters "ready"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="ready">Ready</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="active" name="active" value="on" {{if index .filters "active"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="active">Active</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="expired" name="expired" value="on" {{if index .filters "expired"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="expired">Expired</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="returned" name="returned" value="on" {{if index .filters "returned"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="returned">Returned</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="revoked" name="revoked" value="on" {{if index .filters "revoked"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="revoked">Revoked</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="cancelled" name="cancelled" value="on" {{if index .filters "cancelled"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="cancelled">Cancelled</label>
-                        </li>
-                    </ul>
-                </form>
+                <ul class="filter-state option">
+                    <li>
+                        <input type="checkbox" id="ready" name="ready" value="on" {{if index .filters "ready"
+                            }}checked{{end}} />
+                        <label for="ready">Ready</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="active" name="active" value="on" {{if index .filters "active"
+                            }}checked{{end}} />
+                        <label for="active">Active</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="expired" name="expired" value="on" {{if index .filters "expired"
+                            }}checked{{end}} />
+                        <label for="expired">Expired</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="returned" name="returned" value="on" {{if index .filters "returned"
+                            }}checked{{end}} />
+                        <label for="returned">Returned</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="revoked" name="revoked" value="on" {{if index .filters "revoked"
+                            }}checked{{end}} />
+                        <label for="revoked">Revoked</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="cancelled" name="cancelled" value="on" {{if index .filters "cancelled"
+                            }}checked{{end}} />
+                        <label for="cancelled">Cancelled</label>
+                    </li>
+                </ul>
             </li>
             <li class="dropdown">
                 <div class="filter-title" data-open="false">
                     <input type="text" class="textBox" placeholder="Transaction" readonly>
                 </div>
                 <ul class="option">
-                    <form method="GET" action="/user/bookshelf">
-                        <ul>
-                            <li>
-                                <input type="checkbox" id="buy" name="buy" value="on" {{if index .transactionTypes "buy"
-                                    }}checked{{end}} onchange="this.form.submit()" />
-                                <label for="buy">Buy</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="loan" name="loan" value="on" {{if index .transactionTypes "loan"
-                                    }}checked{{end}} onchange="this.form.submit()" />
-                                <label for="loan">Loan</label>
-                            </li>
-                        </ul>
-                    </form>
+                    <ul>
+                        <li>
+                            <input type="checkbox" id="buy" name="buy" value="on" {{if index .transactionTypes "buy"
+                                }}checked{{end}} />
+                            <label for="buy">Buy</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="loan" name="loan" value="on" {{if index .transactionTypes "loan"
+                                }}checked{{end}} />
+                            <label for="loan">Loan</label>
+                        </li>
+                    </ul>
                 </ul>
             </li>
         </ul>
@@ -114,77 +163,71 @@
                     <input type="text" class="textBox" placeholder="Format" readonly>
                 </div>
                 <ul class="option">
-                    <form method="GET" action="/user/bookshelf">
-                        {{range .uniqueFormats}}
-                            <ul>
-                                <li>
-                                    <input type="checkbox" id="format-{{.}}" name="format" value="{{.}}" 
-                                        {{if index $.formatFilters .}}checked{{end}} onchange="this.form.submit()" />
-                                    <label for="format-{{.}}">{{.}}</label>
-                                </li>
-                            </ul>
-                        {{end}}
-                    </form>
+                    {{range .uniqueFormats}}
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="format-mobile-{{.}}" name="format" value="{{.}}" 
+                                    {{if index $.formatFilters .}}checked{{end}} />
+                                <label for="format-mobile-{{.}}">{{.}}</label>
+                            </li>
+                        </ul>
+                    {{end}}
                 </ul>
             </li>
             <li class="dropdown">
                 <div class="filter-title" data-open="false">
                     <input type="text" class="textBox" placeholder="Status" readonly>
                 </div>
-                <form method="GET" action="/user/bookshelf" class="filter-state option">
-                    <ul>
-                        <li>
-                            <input type="checkbox" id="ready" name="ready" value="on" {{if index .filters "ready"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="ready">Ready</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="active" name="active" value="on" {{if index .filters "active"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="active">Active</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="expired" name="expired" value="on" {{if index .filters "expired"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="expired">Expired</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="returned" name="returned" value="on" {{if index .filters "returned"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="returned">Returned</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="revoked" name="revoked" value="on" {{if index .filters "revoked"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="revoked">Revoked</label>
-                        </li>
-                        <li>
-                            <input type="checkbox" id="cancelled" name="cancelled" value="on" {{if index .filters "cancelled"
-                                }}checked{{end}} onchange="this.form.submit()" />
-                            <label for="cancelled">Cancelled</label>
-                        </li>
-                    </ul>
-                </form>
+                <ul class="filter-state option">
+                    <li>
+                        <input type="checkbox" id="ready-mobile" name="ready" value="on" {{if index .filters "ready"
+                            }}checked{{end}} />
+                        <label for="ready-mobile">Ready</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="active-mobile" name="active" value="on" {{if index .filters "active"
+                            }}checked{{end}} />
+                        <label for="active-mobile">Active</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="expired-mobile" name="expired" value="on" {{if index .filters "expired"
+                            }}checked{{end}} />
+                        <label for="expired-mobile">Expired</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="returned-mobile" name="returned" value="on" {{if index .filters "returned"
+                            }}checked{{end}} />
+                        <label for="returned-mobile">Returned</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="revoked-mobile" name="revoked" value="on" {{if index .filters "revoked"
+                            }}checked{{end}} />
+                        <label for="revoked-mobile">Revoked</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="cancelled-mobile" name="cancelled" value="on" {{if index .filters "cancelled"
+                            }}checked{{end}} />
+                        <label for="cancelled-mobile">Cancelled</label>
+                    </li>
+                </ul>
             </li>
-                        <li class="dropdown">
+            <li class="dropdown">
                 <div class="filter-title" data-open="false">
                     <input type="text" class="textBox" placeholder="Transaction" readonly>
                 </div>
                 <ul class="option">
-                    <form method="GET" action="/user/bookshelf">
-                        <ul>
-                            <li>
-                                <input type="checkbox" id="buy" name="buy" value="on" {{if index .transactionTypes "buy"
-                                    }}checked{{end}} onchange="this.form.submit()" />
-                                <label for="buy">Buy</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="loan" name="loan" value="on" {{if index .transactionTypes "loan"
-                                    }}checked{{end}} onchange="this.form.submit()" />
-                                <label for="loan">Loan</label>
-                            </li>
-                        </ul>
-                    </form>
+                    <ul>
+                        <li>
+                            <input type="checkbox" id="buy-mobile" name="buy" value="on" {{if index .transactionTypes "buy"
+                                }}checked{{end}} />
+                            <label for="buy-mobile">Buy</label>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="loan-mobile" name="loan" value="on" {{if index .transactionTypes "loan"
+                                }}checked{{end}} />
+                            <label for="loan-mobile">Loan</label>
+                        </li>
+                    </ul>
                 </ul>
             </li>
         </ul>

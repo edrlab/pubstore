@@ -6,18 +6,21 @@
     <script src="https://www.w3schools.com/lib/w3.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/static/css/variables.css" rel="stylesheet" />
+    <link href="/static/css/accessibility.css" rel="stylesheet" />
     <title>LCP PubStore {{.title}}</title>
     {{template "head" .}}
   </head>
   <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <header>
     {{include "layouts/header"}}
   </header>
-  <main class="main-content">
+  <main class="main-content" id="main-content" tabindex="-1">
     {{template "content" .}}
   </main>
-    <div class="modal-backdrop fade show"></div>
+  <div class="modal-backdrop"></div>
   <footer>
     {{include "layouts/footer"}}
   </footer>

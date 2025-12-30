@@ -1,6 +1,6 @@
 .modal {
     position: absolute;
-    margin: 1.75rem auto;
+    margin: var(--spacing-xl) auto;
     pointer-events: none;
     box-sizing: border-box;
     transform: translate(-50%, -50%);
@@ -12,7 +12,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 1055;
+    z-index: var(--z-modal);
     display: none;
     width: 100%;
     height: 100%;
@@ -20,7 +20,7 @@
     overflow-y: auto;
     outline: 0;
     opacity: 0;
-    transition: opacity .3s linear;
+    transition: opacity var(--transition-base);
 }
 
 .modal-wrapper {
@@ -28,18 +28,17 @@
     display: flex;
     flex-direction: column;
     pointer-events: auto;
-    background-color: #fff;
+    background-color: #ffffff;
     background-clip: padding-box;
     border: none;
-    border-radius: 0.3rem;
+    border-radius: var(--radius-xl);
     outline: 0;
-    box-shadow: 28px 28px 55px rgba(0,0,0,0.3),
-    -28px -28px 55px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-2xl);
 }
 
 .modal-body-publications {
     position: relative;
-    padding: 2rem;
+    padding: var(--spacing-2xl);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -47,14 +46,17 @@
 }
 
 .modal-body-publications span {
-    background: #f59595;
+    background: var(--color-error);
+    color: var(--text-inverse);
     text-align: center;
-    padding: 5px 0;
+    padding: var(--spacing-sm) var(--spacing-md);
     width: 100%;
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
 }
 
 .hidden {
-    display: none!important;
+    display: none !important;
 }
 
 .modal-backdrop {
@@ -64,49 +66,101 @@
     z-index: -1;
     width: 100vw;
     height: 100vh;
-    background-color: #000;
+    background-color: rgba(0, 0, 0, 0.2);
     opacity: 0;
+    pointer-events: none;
 }
 
 .modal-button {
-    font-size: 18px;
-    border: 1px solid #DDDBDD;
-    border-radius: 25px;
-    width: 150px;
-    background-color: black;
-    color: white;
-    padding: 10px 15px;
+    font-size: var(--font-size-lg);
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    min-width: 150px;
+    background-color: var(--color-primary);
+    color: var(--text-inverse);
+    padding: var(--spacing-md) var(--spacing-xl);
     cursor: pointer;
     align-self: center;
+    font-weight: var(--font-weight-medium);
+    transition: var(--transition-base);
+    box-shadow: var(--shadow-sm);
 }
 
 .modal-button:hover {
-    box-shadow: 5px 5px 5px grey;
+    background-color: var(--color-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .modal-button:active {
-    scale: 0.9;
+    transform: scale(0.98);
 }
-
 
 .modal-form-options {
     display: none;
     flex-direction: column;
     justify-content: space-evenly;
-    gap: 50px;
+    gap: var(--spacing-lg);
+    width: 100%;
+    min-width: 400px;
 }
 
 .select-loan-dates,
 .select-global-options {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    font-size: 24px;
-    justify-content: space-evenly;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-base);
+}
 
+.select-loan-dates label,
+.select-global-options label {
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    margin-bottom: 0;
+}
+
+.select-loan-dates input,
+.select-global-options input {
+    padding: var(--spacing-md);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    transition: var(--transition-fast);
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-primary);
+}
+
+.select-loan-dates input[type="datetime-local"] {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+    cursor: pointer;
+    color: var(--text-primary);
+    background-color: var(--bg-muted);
+}
+
+.select-loan-dates input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    margin-left: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+.select-loan-dates input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    background-color: var(--color-gray-200);
+}
+
+.select-loan-dates input:focus,
+.select-global-options input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 .modal-loan-buttons {
     display: flex;
-    gap: 10px;
+    gap: var(--spacing-md);
+    justify-content: center;
+    margin-top: var(--spacing-md);
 }

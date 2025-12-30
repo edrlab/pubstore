@@ -6,7 +6,7 @@
                 <h1>PubStore</h1>
             </a>
         </div>
-        <nav>
+        <nav aria-label="Main navigation">
             <ul>
                 <li><a href="/catalog">Catalog</a></li>
                 {{ if .userIsAuthenticated}}
@@ -24,8 +24,9 @@
                 name="q"
                 id="searchBar"
                 placeholder="Search a publication title"
+                autocomplete="off"
             />
-            <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+            <button type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
         </form>
         <div class="header-options">
             <div class="header-options_settings">
@@ -40,14 +41,14 @@
             </div>
         </div>
     </div>
-     <div class="burger-menu" onclick="toggleMobileMenu()">
+     <button class="burger-menu" onclick="toggleMobileMenu()" aria-label="Toggle mobile menu" aria-expanded="false" aria-controls="mobileMenu">
             <div class="burger-line"></div>
             <div class="burger-line"></div>
             <div class="burger-line"></div>
-        </div>
+        </button>
 
         <!-- Menu mobile -->
-        <div class="mobile-menu" id="mobileMenu">
+        <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
             <nav>
                 <ul>
                     <li><a href="/catalog">Catalog</a></li>
@@ -59,8 +60,9 @@
                     type="search"
                     name="q"
                     placeholder="Search a publication title"
+                    autocomplete="off"
                 />
-                <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <button type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
             </form>
             <div class="header-options_settings">
                 {{ if .userIsAuthenticated}}
@@ -72,16 +74,18 @@
                 <a href="/signup" id="signup-button">Sign Up</a>
                 {{ end }}
             </div>
-        </div>
+        </nav>
     </div>
 
     <script>
         function toggleMobileMenu() {
             const mobileMenu = document.getElementById('mobileMenu');
             const burgerMenu = document.querySelector('.burger-menu');
+            const isExpanded = mobileMenu.classList.contains('active');
             
             mobileMenu.classList.toggle('active');
             burgerMenu.classList.toggle('active');
+            burgerMenu.setAttribute('aria-expanded', !isExpanded);
         }
 
         // Fermer le menu si on clique ailleurs
@@ -93,6 +97,7 @@
             if (!header.contains(event.target)) {
                 mobileMenu.classList.remove('active');
                 burgerMenu.classList.remove('active');
+                burgerMenu.setAttribute('aria-expanded', 'false');
             }
         });
 
@@ -103,6 +108,7 @@
             if (mobileMenu.classList.contains("active") && window.innerWidth > 980) {
                 mobileMenu.classList.remove('active');
                 burgerMenu.classList.remove('active');
+                burgerMenu.setAttribute('aria-expanded', 'false');
                 console.log(window.innerWidth, "CLOSED")
             }
         }

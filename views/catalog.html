@@ -32,14 +32,16 @@
             <a href="/catalog" class="reset">Clear Filter</a>
             {{end}}
         </div>
+        {{ if .userIsAuthenticated}}
         <a href="#" class="synchronize" onclick="synchronizePublications(event)">Synchronize</a>
+        {{ end }}
     </aside>
-    <button id="mobile-facets-button" class="mobile-facets-button" onclick="toggleMobileFacets()">
-        <img src="/static/images/filter.svg" />
+    <button id="mobile-facets-button" class="mobile-facets-button" onclick="toggleMobileFacets()" aria-label="Open filters" aria-expanded="false" aria-controls="mobile-facets">
+        <img src="/static/images/filter.svg" alt="" />
     </button>
-    <div class="mobile-facets" id="mobile-facets">
-        <button id="mobile-facets-close-button" class="mobile-facets-close-button" onclick="toggleMobileFacets()">
-            <img src="/static/images/close.svg" />
+    <div class="mobile-facets" id="mobile-facets" role="dialog" aria-label="Filters">
+        <button id="mobile-facets-close-button" class="mobile-facets-close-button" onclick="toggleMobileFacets()" aria-label="Close filters">
+            <img src="/static/images/close.svg" alt="" />
         </button>
         <ul>
             <li class="dropdown">
@@ -56,7 +58,6 @@
         {{if .currentFacetValue}}
         <a href="/catalog" class="reset">Clear Filter</a>
         {{end}}
-        <a href="#" class="synchronize" onclick="synchronizePublications(event)">Synchronize</a>
     </div>
     <div style="width: 100%; display: flex; flex-direction: column; justify-content: space-between;">
         <div class="main-content-header">
@@ -71,7 +72,7 @@
             <li>
                 <a href="/catalog/publications/{{.UUID}}">
                     <div class="book-cover-container">
-                        <img class="book-cover" src="{{.CoverHref}}">
+                        <img class="book-cover" src="{{.CoverHref}}" alt="Cover of {{.Title}}">
                         <!--<i class="fa-solid fa-bookmark"></i>-->
                          <p class="book-format">{{.Format}}</p>
                     </div>
@@ -81,16 +82,16 @@
             </li>
             {{end}}
         </ul>
-        <div class="pages">
+        <nav class="pages" aria-label="Pagination">
             <p>Page</p>
             {{range $page := .pageRange}}
             {{ if eq $page $.currentPage }}
-            <a href="/catalog?page={{.}}" style="font-weight: bold; text-decoration: underline">{{$page}}</a>
+            <a href="/catalog?page={{.}}" aria-current="page" style="font-weight: bold; text-decoration: underline">{{$page}}</a>
             {{ else }}
-            <a href="/catalog?page={{.}}">{{$page}}</a>
+            <a href="/catalog?page={{.}}" aria-label="Go to page {{$page}}">{{$page}}</a>
             {{end}}
             {{end}}
-        </div>
+        </nav>
     </div>
 
         <script>
@@ -98,10 +99,17 @@
             const mobileFacets = document.getElementById('mobile-facets');
             const mobileFacetsButton = document.querySelector('.mobile-facets-button');
             const backdrop = document.querySelector(".backdrop");
+            const isExpanded = mobileFacets.classList.contains('active');
             
             mobileFacets.classList.toggle('active');
             mobileFacetsButton.classList.toggle('active');
             backdrop.classList.toggle('active');
+            mobileFacetsButton.setAttribute('aria-expanded', !isExpanded);
+            
+            // Gérer le focus pour l'accessibilité
+            if (!isExpanded) {
+                mobileFacets.focus();
+            }
         }
 
         function closeMobileMenu() {
@@ -113,6 +121,7 @@
                 mobileFacets.classList.remove('active');
                 mobileFacetsButton.classList.remove('active');
                 backdrop.classList.remove('active');
+                mobileFacetsButton.setAttribute('aria-expanded', 'false');
             }
         }
 
@@ -126,12 +135,21 @@
             mobileFacets.classList.remove('active');
             mobileFacetsButton.classList.remove('active');
             backdrop.classList.remove('active');
+            mobileFacetsButton.setAttribute('aria-expanded', 'false');
         });
 
         function synchronizePublications(event) {
             event.preventDefault();
             
-            if (confirm('Do you really want to synchronize the publications?')) {
+            if (confirm('Do you really want to synchronize the publications with the content of the LCP Server?')) {
+                // Annoncer le début de l'opération pour les lecteurs d'écran
+                const announcement = document.createElement('div');
+                announcement.setAttribute('role', 'status');
+                announcement.setAttribute('aria-live', 'polite');
+                announcement.className = 'sr-only';
+                announcement.textContent = 'Synchronization in progress...';
+                document.body.appendChild(announcement);
+                
                 fetch('/catalog/syncpub/', {
                     method: 'GET',
                     headers: {
@@ -140,14 +158,16 @@
                 })
                 .then(response => {
                     if (response.ok) {
-                        alert('Synchronization successful!');
-                        window.location.reload();
+                        announcement.textContent = 'Synchronization successful! Page will reload.';
+                        setTimeout(() => window.location.reload(), 1000);
                     } else {
+                        announcement.textContent = 'Error during synchronization';
                         alert('Error during synchronization');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    announcement.textContent = 'Error during synchronization';
                     alert('Error during synchronization');
                 });
             }

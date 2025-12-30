@@ -10,10 +10,15 @@
                 return;
             }
             tab.addEventListener('click', function() {
+                // Mettre à jour aria-selected pour tous les tabs
                 tab.parentElement.querySelectorAll('.tab').forEach(function(atab) {
                     atab.classList.remove('tab--active');
+                    atab.setAttribute('aria-selected', 'false');
                 });
                 tab.classList.add('tab--active');
+                tab.setAttribute('aria-selected', 'true');
+                
+                // Cacher tous les panels et afficher le bon
                 tab.parentElement.parentElement.querySelectorAll('.tabbed').forEach(function(tabbed) {
                     tabbed.style.display = 'none';
                 });
@@ -33,11 +38,9 @@
 
 {{define "content"}}
 {{if .errLcp}}
-<div style="background-color: #ffcccc; padding: 10px; margin: ;">{{.errLcp}}</div>
+<div class="alert alert-error">{{.errLcp}}</div>
 {{else if .successMsg}}
-<div style="background-color: #ccffcc; padding: 10px;">{{.successMsg}}</div>
-{{else}}
-<div style="font-color: white; padding: 10px; height: 100%;">&nbsp</div>
+<div class="alert alert-success">{{.successMsg}}</div>
 {{end}}
 
 <div class="pub-container">
@@ -59,7 +62,7 @@
                             Download <i class="fa-solid fa-cloud-arrow-down"></i>
                         </a>
                         <a href="thorium://{{.host}}/bookshelf/licenses/{{.transaction.LicenseId}}" class="download-action">
-                            Open in Thorium <img src="/static/images/ThoriumLogo.png" class="thorium-logo">
+                            Open in Thorium <img src="/static/images/ThoriumLogo.png" class="thorium-logo" alt="Thorium Reader logo">
                         </a>
                     {{ end }}
                 {{ else }}
@@ -70,17 +73,17 @@
                 <p>Please sign-in to generate a license.</p>
             {{ end }}
         </div>
-        <div class="tab-bar">
+        <div class="tab-bar" role="tablist">
             {{ if and .licenseFound .IsBookshelfPage }}
-                <button class="tab tab--active" data-for="lcp-infos">LCP Infos</button>
-                <button class="tab" data-for="summary">Summary</button>
+                <button class="tab tab--active" data-for="lcp-infos" role="tab" aria-selected="true" aria-controls="lcp-infos">LCP Infos</button>
+                <button class="tab" data-for="summary" role="tab" aria-selected="false" aria-controls="summary">Summary</button>
             {{else}}
-                <button class="tab tab--active" data-for="summary">Summary</button>
+                <button class="tab tab--active" data-for="summary" role="tab" aria-selected="true" aria-controls="summary">Summary</button>
             {{end}}
-            <button class="tab" data-for="details">Details</button>
+            <button class="tab" data-for="details" role="tab" aria-selected="false" aria-controls="details">Details</button>
         </div>
             {{ if and .licenseFound .IsBookshelfPage }}
-                <div class="lcp-infos tabbed" id="lcp-infos">
+                <div class="lcp-infos tabbed" id="lcp-infos" role="tabpanel" aria-labelledby="lcp-infos">
                     <div>
                         <p>id: {{.transaction.LicenseId}}</p>
                         <p>Copy: {{.transaction.PublicationCopyRights}}</p>
@@ -113,10 +116,10 @@
                     </div>
                 </div>
             {{end}}
-        <div class="tabbed" id="summary" style="display:none;">
+        <div class="tabbed" id="summary" style="display:none;" role="tabpanel" aria-labelledby="summary">
             <p>{{.description}}</p>
         </div>
-        <div class="tabbed" id="details" style="display:none;">
+        <div class="tabbed" id="details" style="display:none;" role="tabpanel" aria-labelledby="details">
             <p>Format : {{.format}}</p>
         </div>
     </div>
