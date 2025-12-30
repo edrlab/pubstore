@@ -36,12 +36,14 @@ func (view *View) GetTransactionViewFromTransactionStor(transaction *stor.Transa
 	var start, end, copy, print string
 	unknown := "unknown"
 	if transaction.Start != nil {
-		start = transaction.Start.Format("2006-01-02 15:04:05")
+		//start = transaction.Start.Format("2006-01-02 15:04:05")
+		start = transaction.Start.Format("2 January 2006, 15:04:05 MST")
 	} else {
 		start = unknown
 	}
 	if transaction.End != nil {
-		end = transaction.End.Format("2006-01-02 15:04:05")
+		//end = transaction.End.Format("2006-01-02 15:04:05")
+		end = transaction.End.Format("2 January 2006, 15:04:05 MST")
 	} else {
 		end = unknown
 	}
