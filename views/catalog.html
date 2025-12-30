@@ -67,6 +67,7 @@
             <!--        <p>Results by page : {{.currentPageSize}}</p>-->
             <p>{{.publicationCount}} results found</p>
         </div>
+        {{if .publications}}
         <ul class="book-list" id="searchList">
             {{range .publications}}
             <li>
@@ -82,6 +83,28 @@
             </li>
             {{end}}
         </ul>
+        {{else}}
+        <div class="empty-state">
+            <i class="fa-solid fa-magnifying-glass empty-state-icon" aria-hidden="true"></i>
+            <h3 class="empty-state-title">No results found</h3>
+            <p class="empty-state-description">
+                We couldn't find any publications matching your search. 
+                Try adjusting your filters or search terms.
+            </p>
+            <div class="empty-state-actions">
+                <a href="/catalog" class="btn-primary">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Clear filters
+                </a>
+            </div>
+        </div>
+        {{end}}
+                <a href="/catalog" class="btn-primary">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Clear filters
+                </a>
+            </div>
+        </div>
+        {{end}}
+        {{if .publications}}
         <nav class="pages" aria-label="Pagination">
             <p>Page</p>
             {{range $page := .pageRange}}
