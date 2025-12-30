@@ -70,17 +70,13 @@ func (web *Web) Router(r chi.Router) {
 		})
 		r.Get("/catalog", web.catalogHandler)
 		r.Get("/catalog/publications/{id}", web.publicationHandler)
+		r.Get("/catalog/syncpub", web.syncpubHandler)
 		r.Get("/bookshelf/publications/{id}", web.publicationHandler)
 		r.Get("/bookshelf/licenses/{id}", web.freshLicenseHandler)
 		r.Get("/bookshelf/licenses/{id}/register", web.licenseRegisterHandler)
 		r.Get("/bookshelf/licenses/{id}/renew", web.licenseRenewHandler)
 		r.Get("/bookshelf/licenses/{id}/return", web.licenseReturnHandler)
 		r.Get("/bookshelf/licenses/{id}/revoke", web.licenseRevokeHandler)
-
-		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, "static/404.html")
-			w.WriteHeader(http.StatusNotFound)
-		})
 	})
 
 	// Public signin/signout/signup
@@ -100,6 +96,12 @@ func (web *Web) Router(r chi.Router) {
 		r.Get("/user/bookshelf", web.bookshelfHandler)
 		r.Get("/catalog/publications/{id}/buy", web.createLicense)
 		r.Get("/catalog/publications/{id}/loan", web.createLicense)
+	})
+
+	// 404 Handler - doit être défini au niveau du router principal, pas dans un groupe
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		http.ServeFile(w, r, filepath.Join(web.Config.RootDir, "static", "404.html"))
 	})
 }
 

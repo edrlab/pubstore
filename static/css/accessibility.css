@@ -1,0 +1,83 @@
+/* Classes utilitaires pour l'accessibilité */
+
+/* Classe pour masquer visuellement mais rendre accessible aux lecteurs d'écran */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Styles pour améliorer la visibilité du focus clavier */
+*:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Exceptions pour certains éléments qui ont déjà un bon style de focus */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Améliorer la visibilité des liens dans les textes */
+a:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Skip link pour navigation clavier */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--color-gray-700);
+    color: var(--text-inverse);
+    padding: var(--spacing-md);
+    text-decoration: none;
+    z-index: 1000;
+    border-radius: 0 0 var(--radius-md) 0;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Assurer un contraste suffisant pour les états désactivés */
+button:disabled,
+a.inactive {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Indicateurs visuels pour les états interactifs */
+button:hover:not(:disabled),
+a:hover:not(.inactive) {
+    transform: translateY(-2px);
+}
+
+button:active:not(:disabled),
+a:active:not(.inactive) {
+    transform: scale(0.98);
+}
+
+/* Améliorer la lisibilité avec un interlignage suffisant */
+p, li {
+    line-height: 1.6;
+}
+
+/* Assurer que les icônes FontAwesome sont cachées des lecteurs d'écran */
+.fa-solid,
+.fa-regular,
+.fa-brands {
+    aria-hidden: true;
+}

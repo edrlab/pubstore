@@ -36,14 +36,17 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	viewTransaction := view.TransactionView{}
+
+	// get the user (if authenticated)
 	var userName string
+	user := web.getUserByCookie(r)
+	if user != nil {
+		userName = user.Name
+	}
+
 	// detect if the request comes from the bookshelf page
 	if strings.Contains(r.URL.Path, "bookshelf") {
 		IsBookshelfPage = true
-
-		// get the user (must be authenticated)
-		user := web.getUserByCookie(r)
-		userName = user.Name
 
 		// get the transaction ID from the query parameter
 		if licenseID == "" {
@@ -76,11 +79,14 @@ func (web *Web) publicationHandler(w http.ResponseWriter, r *http.Request) {
 		viewTransaction.LicenseStatusMessage = lsdStatus.StatusMessage
 		var maxEnd string
 		if lsdStatus.MaxEnd != nil {
-			maxEnd = lsdStatus.MaxEnd.Format("2006-01-02 15:04:05")
+			//maxEnd = lsdStatus.MaxEnd.Format("2006-01-02 15:04:05")
+			maxEnd = lsdStatus.MaxEnd.Format("2 January 2006, 15:04:05 MST")
 		} else {
 			maxEnd = "unknown"
 		}
 		viewTransaction.LicenseMaxEnd = maxEnd
+
+		log.Println("maxEnd:", maxEnd)
 
 		if transaction.Status == "ready" {
 			licenseReady = true

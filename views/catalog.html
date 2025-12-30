@@ -15,28 +15,33 @@
 <div class="catalog-content">
     <div class="backdrop"></div>
     <aside class="filters">
-        <ul>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Format" readonly>
-                </div>
-                <ul class="option">
-                    {{range .formats}}
-                    <li><a href="/catalog?format={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-        </ul>
-        {{if .currentFacetValue}}
-        <a href="/catalog" class="reset">Clear Filter</a>
-        {{end}}
+        <div>
+            <ul>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Format" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .formats}}
+                        <li><a href="/catalog?format={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+            </ul>
+            {{if .currentFacetValue}}
+            <a href="/catalog" class="reset">Clear Filter</a>
+            {{end}}
+        </div>
+        {{ if .userIsAuthenticated}}
+        <a href="#" class="synchronize" onclick="synchronizePublications(event)">Synchronize</a>
+        {{ end }}
     </aside>
-    <button id="mobile-facets-button" class="mobile-facets-button" onclick="toggleMobileFacets()">
-        <img src="/static/images/filter.svg" />
+    <button id="mobile-facets-button" class="mobile-facets-button" onclick="toggleMobileFacets()" aria-label="Open filters" aria-expanded="false" aria-controls="mobile-facets">
+        <img src="/static/images/filter.svg" alt="" />
     </button>
-    <div class="mobile-facets" id="mobile-facets">
-        <button id="mobile-facets-close-button" class="mobile-facets-close-button" onclick="toggleMobileFacets()">
-            <img src="/static/images/close.svg" />
+    <div class="mobile-facets" id="mobile-facets" role="dialog" aria-label="Filters">
+        <button id="mobile-facets-close-button" class="mobile-facets-close-button" onclick="toggleMobileFacets()" aria-label="Close filters">
+            <img src="/static/images/close.svg" alt="" />
         </button>
         <ul>
             <li class="dropdown">
@@ -62,12 +67,13 @@
             <!--        <p>Results by page : {{.currentPageSize}}</p>-->
             <p>{{.publicationCount}} results found</p>
         </div>
+        {{if .publications}}
         <ul class="book-list" id="searchList">
             {{range .publications}}
             <li>
                 <a href="/catalog/publications/{{.UUID}}">
                     <div class="book-cover-container">
-                        <img class="book-cover" src="{{.CoverHref}}">
+                        <img class="book-cover" src="{{.CoverHref}}" alt="Cover of {{.Title}}">
                         <!--<i class="fa-solid fa-bookmark"></i>-->
                          <p class="book-format">{{.Format}}</p>
                     </div>
@@ -77,16 +83,38 @@
             </li>
             {{end}}
         </ul>
-        <div class="pages">
+        {{else}}
+        <div class="empty-state">
+            <i class="fa-solid fa-magnifying-glass empty-state-icon" aria-hidden="true"></i>
+            <h3 class="empty-state-title">No results found</h3>
+            <p class="empty-state-description">
+                We couldn't find any publications matching your search. 
+                Try adjusting your filters or search terms.
+            </p>
+            <div class="empty-state-actions">
+                <a href="/catalog" class="btn-primary">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Clear filters
+                </a>
+            </div>
+        </div>
+        {{end}}
+                <a href="/catalog" class="btn-primary">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Clear filters
+                </a>
+            </div>
+        </div>
+        {{end}}
+        {{if .publications}}
+        <nav class="pages" aria-label="Pagination">
             <p>Page</p>
             {{range $page := .pageRange}}
             {{ if eq $page $.currentPage }}
-            <a href="/catalog?page={{.}}" style="font-weight: bold; text-decoration: underline">{{$page}}</a>
+            <a href="/catalog?page={{.}}" aria-current="page" style="font-weight: bold; text-decoration: underline">{{$page}}</a>
             {{ else }}
-            <a href="/catalog?page={{.}}">{{$page}}</a>
+            <a href="/catalog?page={{.}}" aria-label="Go to page {{$page}}">{{$page}}</a>
             {{end}}
             {{end}}
-        </div>
+        </nav>
     </div>
 
         <script>
@@ -94,10 +122,17 @@
             const mobileFacets = document.getElementById('mobile-facets');
             const mobileFacetsButton = document.querySelector('.mobile-facets-button');
             const backdrop = document.querySelector(".backdrop");
+            const isExpanded = mobileFacets.classList.contains('active');
             
             mobileFacets.classList.toggle('active');
             mobileFacetsButton.classList.toggle('active');
             backdrop.classList.toggle('active');
+            mobileFacetsButton.setAttribute('aria-expanded', !isExpanded);
+            
+            // Gérer le focus pour l'accessibilité
+            if (!isExpanded) {
+                mobileFacets.focus();
+            }
         }
 
         function closeMobileMenu() {
@@ -109,6 +144,7 @@
                 mobileFacets.classList.remove('active');
                 mobileFacetsButton.classList.remove('active');
                 backdrop.classList.remove('active');
+                mobileFacetsButton.setAttribute('aria-expanded', 'false');
             }
         }
 
@@ -118,11 +154,47 @@
         const mobileFacetsButton = document.querySelector('.mobile-facets-button');
         const backdrop = document.querySelector(".backdrop");
 
-            backdrop.addEventListener('click', event => {
-                mobileFacets.classList.remove('active');
-                mobileFacetsButton.classList.remove('active');
-                backdrop.classList.remove('active');
-            })
+        backdrop.addEventListener('click', event => {
+            mobileFacets.classList.remove('active');
+            mobileFacetsButton.classList.remove('active');
+            backdrop.classList.remove('active');
+            mobileFacetsButton.setAttribute('aria-expanded', 'false');
+        });
+
+        function synchronizePublications(event) {
+            event.preventDefault();
+            
+            if (confirm('Do you really want to synchronize the publications with the content of the LCP Server?')) {
+                // Annoncer le début de l'opération pour les lecteurs d'écran
+                const announcement = document.createElement('div');
+                announcement.setAttribute('role', 'status');
+                announcement.setAttribute('aria-live', 'polite');
+                announcement.className = 'sr-only';
+                announcement.textContent = 'Synchronization in progress...';
+                document.body.appendChild(announcement);
+                
+                fetch('/catalog/syncpub/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        announcement.textContent = 'Synchronization successful! Page will reload.';
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        announcement.textContent = 'Error during synchronization';
+                        alert('Error during synchronization');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    announcement.textContent = 'Error during synchronization';
+                    alert('Error during synchronization');
+                });
+            }
+        }
     </script>
 </div>
 {{end}}

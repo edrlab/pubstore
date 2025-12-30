@@ -12,21 +12,21 @@
     color: white;
 }
 
-.ready {
+.status.ready {
     background: #00acee;
 }
 
-.active {
+.status.active {
     background: #1c7430;
 }
 
-.expired,
-.returned,
-.cancelled {
+.status.expired,
+.status.returned,
+.status.cancelled {
     background: #a19349;
 }
 
-.revoked {
+.status.revoked {
     background: #f35b5b;
 }
 
