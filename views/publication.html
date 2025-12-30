@@ -20,6 +20,12 @@
                 tab.parentElement.parentElement.querySelector('#' + tab.dataset.for).style.display = 'block';
             });
         });
+        
+        // Afficher l'onglet actif au chargement
+        const activeTab = document.querySelector('.tab-bar .tab.tab--active');
+        if (activeTab && activeTab.dataset.for) {
+            document.querySelector('#' + activeTab.dataset.for).style.display = 'block';
+        }
     });
 </script>
 <script src="https://kit.fontawesome.com/a9faad54a1.js" crossorigin="anonymous"></script>
@@ -27,11 +33,13 @@
 
 {{define "content"}}
 {{if .errLcp}}
-<div style="background-color: #ffcccc; padding: 10px; margin-bottom: 10px;">{{.errLcp}}</div>
+<div style="background-color: #ffcccc; padding: 10px; margin: ;">{{.errLcp}}</div>
+{{else if .successMsg}}
+<div style="background-color: #ccffcc; padding: 10px;">{{.successMsg}}</div>
+{{else}}
+<div style="font-color: white; padding: 10px; height: 100%;">&nbsp</div>
 {{end}}
-{{if .successMsg}}
-<div style="background-color: #ccffcc; padding: 10px; margin-bottom: 10px;">{{.successMsg}}</div>
-{{end}}
+
 <div class="pub-container">
     <div class="pub-left-side">
         <div class="book-cover-container">
@@ -53,10 +61,10 @@
                         <a href="thorium://{{.host}}/bookshelf/licenses/{{.transaction.LicenseId}}" class="download-action">
                             Open in Thorium <img src="/static/images/ThoriumLogo.png" class="thorium-logo">
                         </a>
-                    {{ else }}
+                    {{ end }}
+                {{ else }}
                         <button id="buy">Buy</button>
                         <button id="loan">Borrow</button>
-                    {{ end }}
                 {{ end }}
             {{ else }}
                 <p>Please sign-in to generate a license.</p>
@@ -75,16 +83,16 @@
                 <div class="lcp-infos tabbed" id="lcp-infos">
                     <div>
                         <p>id: {{.transaction.LicenseId}}</p>
-                        <p>Copy : {{.transaction.PublicationCopyRights}}</p>
-                        <p>Print : {{.transaction.PublicationPrintRights}}</p>
+                        <p>Copy: {{.transaction.PublicationCopyRights}}</p>
+                        <p>Print: {{.transaction.PublicationPrintRights}}</p>
                         {{if ne .transaction.PublicationStartDate "unknown"}}
-                            <p>Start Date : {{.transaction.PublicationStartDate}}</p>
+                            <p>Start Date: {{.transaction.PublicationStartDate}}</p>
                         {{end}}
                         {{if ne .transaction.PublicationEndDate "unknown"}}
-                            <p>End Date : {{.transaction.PublicationEndDate}}</p>
+                            <p>End Date: {{.transaction.PublicationEndDate}}</p>
                         {{end}}
                         {{if ne .transaction.LicenseMaxEnd "unknown"}}
-                            <p>End Potential Rights : {{.transaction.LicenseMaxEnd}}</p>
+                            <p>Ultimate End Date: {{.transaction.LicenseMaxEnd}}</p>
                         {{end}}
                         <p>License Status : <span class="status {{.transaction.LicenseStatus}}">{{.transaction.LicenseStatusMessage}}</span></p>
                     </div>
