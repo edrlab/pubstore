@@ -123,27 +123,12 @@
     font-weight: var(--font-weight-medium);
     border: 1px solid transparent;
     font-size: var(--font-size-lg);
-}
-
-.pub-actions #buy {
-    background-color: var(--color-gray-50);
-    color: var(--text-primary);
-    border-color: var(--color-gray-300);
-}
-
-.pub-actions #loan {
     background-color: var(--color-primary);
     color: var(--text-inverse) !important;
     box-shadow: var(--shadow-sm);
 }
 
-.pub-actions #buy:hover {
-    background-color: var(--color-gray-200);
-    border-color: var(--color-gray-400);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-}
-
+.pub-actions #buy:hover,
 .pub-actions #loan:hover {
     background-color: var(--color-primary-dark);
     transform: translateY(-2px);
