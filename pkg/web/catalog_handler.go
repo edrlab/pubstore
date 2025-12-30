@@ -63,10 +63,10 @@ func (web *Web) catalogHandler(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < pageInt; i++ {
 		pageRange[i] = fmt.Sprintf("%d", i+1)
 	}
-	userStor := web.getUserByCookie(r)
-	userName := ""
-	if userStor != nil {
-		userName = userStor.Name
+	var userName string
+	user := web.getUserByCookie(r)
+	if user != nil {
+		userName = user.Name
 	}
 
 	goviewModel := goview.M{
