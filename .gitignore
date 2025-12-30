@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# local debug directives
+.vscode/launch.json
+.vscode/settings.json
+
 # Test binary, built with `go test -c`
 *.test
 
