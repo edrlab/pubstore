@@ -40,6 +40,7 @@ func TestUserHandler(t *testing.T) {
 	// init an admin user, who will be able to create other users
 	// this user has no initial UUID and no session id
 	adminUser := &stor.User{
+		UUID:				gofakeit.UUID(),
 		Name:        "Admin",
 		Email:       gofakeit.Email(),
 		HPassword:   string(hashedPassword),
