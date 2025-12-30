@@ -15,21 +15,24 @@
 <div class="catalog-content">
     <div class="backdrop"></div>
     <aside class="filters">
-        <ul>
-            <li class="dropdown">
-                <div class="filter-title" data-open="false">
-                    <input type="text" class="textBox" placeholder="Format" readonly>
-                </div>
-                <ul class="option">
-                    {{range .formats}}
-                    <li><a href="/catalog?format={{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
-        </ul>
-        {{if .currentFacetValue}}
-        <a href="/catalog" class="reset">Clear Filter</a>
-        {{end}}
+        <div>
+            <ul>
+                <li class="dropdown">
+                    <div class="filter-title" data-open="false">
+                        <input type="text" class="textBox" placeholder="Format" readonly>
+                    </div>
+                    <ul class="option">
+                        {{range .formats}}
+                        <li><a href="/catalog?format={{.}}">{{.}}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+            </ul>
+            {{if .currentFacetValue}}
+            <a href="/catalog" class="reset">Clear Filter</a>
+            {{end}}
+        </div>
+        <a href="#" class="synchronize" onclick="synchronizePublications(event)">Synchronize</a>
     </aside>
     <button id="mobile-facets-button" class="mobile-facets-button" onclick="toggleMobileFacets()">
         <img src="/static/images/filter.svg" />
@@ -53,6 +56,7 @@
         {{if .currentFacetValue}}
         <a href="/catalog" class="reset">Clear Filter</a>
         {{end}}
+        <a href="#" class="synchronize" onclick="synchronizePublications(event)">Synchronize</a>
     </div>
     <div style="width: 100%; display: flex; flex-direction: column; justify-content: space-between;">
         <div class="main-content-header">
@@ -118,11 +122,36 @@
         const mobileFacetsButton = document.querySelector('.mobile-facets-button');
         const backdrop = document.querySelector(".backdrop");
 
-            backdrop.addEventListener('click', event => {
-                mobileFacets.classList.remove('active');
-                mobileFacetsButton.classList.remove('active');
-                backdrop.classList.remove('active');
-            })
+        backdrop.addEventListener('click', event => {
+            mobileFacets.classList.remove('active');
+            mobileFacetsButton.classList.remove('active');
+            backdrop.classList.remove('active');
+        });
+
+        function synchronizePublications(event) {
+            event.preventDefault();
+            
+            if (confirm('Do you really want to synchronize the publications?')) {
+                fetch('/catalog/syncpub/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Synchronization successful!');
+                        window.location.reload();
+                    } else {
+                        alert('Error during synchronization');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error during synchronization');
+                });
+            }
+        }
     </script>
 </div>
 {{end}}

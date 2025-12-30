@@ -70,6 +70,7 @@ func (web *Web) Router(r chi.Router) {
 		})
 		r.Get("/catalog", web.catalogHandler)
 		r.Get("/catalog/publications/{id}", web.publicationHandler)
+		r.Get("/catalog/syncpub", web.syncpubHandler)
 		r.Get("/bookshelf/publications/{id}", web.publicationHandler)
 		r.Get("/bookshelf/licenses/{id}", web.freshLicenseHandler)
 		r.Get("/bookshelf/licenses/{id}/register", web.licenseRegisterHandler)
