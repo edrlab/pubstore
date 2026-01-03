@@ -21,8 +21,6 @@ type Config struct {
 	OAuthSeed string `yaml:"oauth_seed" envconfig:"OAUTH_SEED"`
 	// Path to static files and views
 	RootDir string `yaml:"root_dir" split_words:"true"`
-	// Path to resources, especially cover images
-	//Resources string `yaml:"resources"`
 	// Page size used in the REST API and Web interface
 	PageSize int `yaml:"page_size"  split_words:"true"`
 	// LCP Encryption Profile

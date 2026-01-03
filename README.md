@@ -1,60 +1,50 @@
 # pubstore
-A publication store, to be associated with an LCP Server.
+A publication store associated with an LCP Server.
 
 **Note: This project is for demonstration purposes only and should not be used in a production environment.**
 
 ## Quick Start
 
+```sh
+# fetch, build and install the application
+go install github.com/edrlab/pubstore/cmd/pubstore@latest
+```
+
+FOr a full install, allowing you to modify the code:
+
 1. Clone the repository:
 
 ```shell
-   git clone https://github.com/edrlab/pubstore.git
+# clone the codebase
+git clone https://github.com/edrlab/pubstore.git
+
+# compile the software
+go build -o $GOPATH/bin/pubstore  ./cmd/pubstore/.
 ```
 
-2. Compile
-```shell
-make build
-```
-
-or 
-
-```shell
-GOPATH=$PWD/build go install cmd/pubstore/pubstore.go
-```
-
-3. run
+## Run and use
 
 ```shell
-make run
+   pubstore
 ```
 
-or 
-
-```shell
-./build/bin/pubstore
-```
-
-4. Run the PubStore server:
-
-Access the PubStore API at http://localhost:8080 (or the appropriate base URL according to your configuration).
+Access the PubStore API at http://localhost:8080 (or the appropriate base URL, according to your configuration).
 
 
 ### Configuration
 
 The configuration of the server is kept both in a configuration file and in environment variables. It is possible to mix both sets;  environment variables are expressly recommended for confidential information. 
 
-The server will use the PUBSTORE_CONFIG environment variable to find a configuration file. Its value must be a file path. 
+The server will use the `PUBSTORE_CONFIG` environment variable to find a configuration file. Its value must be a file path. 
 
 Configuration properties are expressed in snake case in the configuration file, and screaming snake case prefixed by `PUBSTORE` when expressed as environment variables. 
-As an example, the `port` conguration property becomes the `PUBSTORE_PORT` environment variable, `public_base_url` becomes `PUBSTORE_PUBLIC_BASE_URL`, 
-and the `version` property of the `lcp_server` section becomes `PUBSTORE_LCP_SERVER_VERSION`.
+As an example, the `port` conguration property becomes the `PUBSTORE_PORT` environment variable, `public_base_url` becomes `PUBSTORE_PUBLIC_BASE_URL`, and the `version` property of the `lcp_server` section becomes `PUBSTORE_LCPSERVER_VERSION`.
 
 - `port`:tThe port on which the HTTP server will listen. Default value: `8080`.
 - `public_base_url`: the base URL for the pubstore server. Default value: `http://localhost:8080`.
 - `dsn`: the data source name, i.e. database connection string. Default value: `sqlite3://pubstore.sqlite`.
 - `oauth_seed`: a string used as a seed for OAuth2 server authorization. 
 - `root_dir`: the path to static files and views used by the web interface. Default value: current directory.
-//- `resources`: the path to the cover images used by the Web interface.
 - `page_size`: the page size used  in the REST API and Web interface.
 - `print_limit`: the print limit set in LCP licenses generated from the associated LCP Server. 
 - `copy_limit`: the copy limit set in LCP licenses generated from the associated LCP Server. 
